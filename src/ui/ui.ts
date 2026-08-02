@@ -160,18 +160,42 @@ function syncJson(): void {
   setJsonStatus(true, "Valid");
 }
 
+// Coerce a parsed value into a renderable flow, or return null if it can't be.
+// Guards the render pipeline against structurally-valid-but-broken input
+// (empty screens, a screen with no layout/children, null entries in children).
+function normalizeFlow(parsed: unknown): FlowJSON | null {
+  if (!parsed || typeof parsed !== "object") return null;
+  const f = parsed as FlowJSON;
+  if (!Array.isArray(f.screens) || f.screens.length === 0) return null;
+  for (const s of f.screens) {
+    if (!s || typeof s !== "object") return null;
+    if (!s.layout || typeof s.layout !== "object") s.layout = { type: "SingleColumnLayout", children: [] };
+    if (!Array.isArray(s.layout.children)) s.layout.children = [];
+    s.layout.children = s.layout.children.filter(
+      (c) => !!c && typeof c === "object" && typeof (c as { type?: unknown }).type === "string",
+    );
+  }
+  return f;
+}
+
 function onJsonInput(): void {
   const raw = ($("#json") as HTMLTextAreaElement).value;
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(raw) as FlowJSON;
-    if (!parsed.screens || !Array.isArray(parsed.screens)) throw new Error("Missing screens[]");
-    flow = parsed;
-    if (current >= flow.screens.length) current = 0;
-    setJsonStatus(true, "Valid");
-    renderAll(); // refresh Build + Preview + Validation (does not rewrite the textarea)
+    parsed = JSON.parse(raw);
   } catch (err) {
     setJsonStatus(false, "Invalid JSON: " + (err instanceof Error ? err.message : String(err)));
+    return;
   }
+  const normalized = normalizeFlow(parsed);
+  if (!normalized) {
+    setJsonStatus(false, "A flow needs a non-empty screens[] array of screen objects.");
+    return;
+  }
+  flow = normalized;
+  if (current >= flow.screens.length) current = 0;
+  setJsonStatus(true, "Valid");
+  renderAll(); // refresh Build + Preview + Validation (does not rewrite the textarea)
 }
 
 function setJsonStatus(ok: boolean, msg: string): void {
@@ -277,11 +301,12 @@ function uniqueId(base: string): string {
 
 // Validate structure and load a flow from a template or file.
 function loadFlow(parsed: unknown, sourceName: string): void {
-  if (!parsed || typeof parsed !== "object" || !Array.isArray((parsed as FlowJSON).screens)) {
-    postToMain({ type: "notify", message: `${sourceName}: not a valid Flow JSON (missing screens[]).` });
+  const normalized = normalizeFlow(parsed);
+  if (!normalized) {
+    postToMain({ type: "notify", message: `${sourceName}: not a valid Flow (needs a non-empty screens[] array).` });
     return;
   }
-  flow = parsed as FlowJSON;
+  flow = normalized;
   current = 0;
   syncAndRender();
   const errors = validateFlow(flow).filter((i) => i.level === "error").length;
