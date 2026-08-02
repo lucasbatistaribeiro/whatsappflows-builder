@@ -3,6 +3,7 @@
 // so the preview and the generated frames stay in sync.
 import type { FlowJSON, Screen, Component, DataSourceItem } from "../model/flowTypes";
 import { COLOR } from "../main/theme";
+import { t } from "./i18n";
 
 // Push theme tokens into CSS custom properties once, so the stylesheet in
 // ui.html can reference the same values the Figma renderer uses.
@@ -73,7 +74,7 @@ function previewTabs(flow: FlowJSON): HTMLElement {
     t.onclick = () => { selected = s.id; rerender(flow); };
     wrap.appendChild(t);
   });
-  const sum = el("button", "pv-tab" + (selected === SUMMARY ? " active" : ""), "Summary");
+  const sum = el("button", "pv-tab" + (selected === SUMMARY ? " active" : ""), t("summary"));
   sum.onclick = () => { selected = SUMMARY; rerender(flow); };
   wrap.appendChild(sum);
   return wrap;

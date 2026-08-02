@@ -1,7 +1,7 @@
 // Plugin main thread (Figma sandbox). Receives a Flow JSON from the UI and
 // renders navigable WhatsApp-styled screens on the canvas.
 import type { FlowJSON } from "../model/flowTypes";
-import type { UIToMain } from "../shared/messages";
+import type { UIToMain, Prefs } from "../shared/messages";
 import { DEVICE } from "./theme";
 import { loadFonts } from "./fonts";
 import { buildScreen, type BuiltScreen } from "./screen";
@@ -10,7 +10,16 @@ import { createUIKit } from "./waKit";
 
 const GAP = 56;
 
+const PREFS_KEY = "flows-builder-prefs";
+const DEFAULT_PREFS: Prefs = { theme: "system", lang: "en" };
+
 figma.showUI(__html__, { width: 500, height: 740, themeColors: true });
+
+// Send saved preferences to the UI once it's up.
+figma.clientStorage.getAsync(PREFS_KEY).then((saved: unknown) => {
+  const prefs = (saved && typeof saved === "object" ? saved : DEFAULT_PREFS) as Prefs;
+  figma.ui.postMessage({ type: "prefs", prefs });
+});
 
 figma.ui.onmessage = async (msg: UIToMain) => {
   try {
@@ -20,6 +29,10 @@ figma.ui.onmessage = async (msg: UIToMain) => {
     }
     if (msg.type === "notify") {
       figma.notify(msg.message);
+      return;
+    }
+    if (msg.type === "savePrefs") {
+      await figma.clientStorage.setAsync(PREFS_KEY, msg.prefs);
       return;
     }
     if (msg.type === "generate") {
