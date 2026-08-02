@@ -1,6 +1,7 @@
 // Per-component property editor shown inside each Build-tab card. Returns a
 // form whose controls mutate the component in place, then call back to sync.
 import type { Component, DataSourceItem, ActionName } from "../model/flowTypes";
+import { iconEl } from "./icons";
 
 export interface EditorCallbacks {
   // Value changed but the set of fields did not — cheap sync (keeps focus).
@@ -131,12 +132,11 @@ function dataSourceEditor(c: Component, cb: EditorCallbacks): HTMLElement {
   const wrap = div("pe-sub");
   const head = div("pe-sub-head");
   head.appendChild(spanText("Options"));
-  const add = button("+ add", () => {
+  head.appendChild(addButton(() => {
     const items = ((c["data-source"] as DataSourceItem[]) ??= []);
     items.push({ id: String(items.length), title: `Option ${items.length + 1}` });
     cb.structural();
-  });
-  head.appendChild(add);
+  }));
   wrap.appendChild(head);
 
   const items = (c["data-source"] as DataSourceItem[]) ?? [];
@@ -146,7 +146,7 @@ function dataSourceEditor(c: Component, cb: EditorCallbacks): HTMLElement {
     title.type = "text"; title.value = it.title; title.placeholder = "title";
     title.oninput = () => { it.title = title.value; cb.soft(); };
     row.appendChild(title);
-    row.appendChild(button("✕", () => { items.splice(i, 1); cb.structural(); }, "pe-x"));
+    row.appendChild(removeButton(() => { items.splice(i, 1); cb.structural(); }));
     wrap.appendChild(row);
   });
   return wrap;
@@ -160,7 +160,7 @@ function navItemsEditor(c: Component, cb: EditorCallbacks): HTMLElement {
   const wrap = div("pe-sub");
   const head = div("pe-sub-head");
   head.appendChild(spanText("Items"));
-  head.appendChild(button("+ add", () => {
+  head.appendChild(addButton(() => {
     const items = ((c["list-items"] as NavItem[]) ??= []);
     items.push({ id: String(items.length), "main-content": { title: `Item ${items.length + 1}`, description: "Description" } });
     cb.structural();
@@ -175,7 +175,7 @@ function navItemsEditor(c: Component, cb: EditorCallbacks): HTMLElement {
     title.type = "text"; title.value = mc.title ?? ""; title.placeholder = "title";
     title.oninput = () => { mc.title = title.value; cb.soft(); };
     row.appendChild(title);
-    row.appendChild(button("✕", () => { items.splice(i, 1); cb.structural(); }, "pe-x"));
+    row.appendChild(removeButton(() => { items.splice(i, 1); cb.structural(); }));
     wrap.appendChild(row);
   });
   return wrap;
@@ -241,5 +241,20 @@ function check(labelText: string, checked: boolean, onChange: (v: boolean) => vo
 function button(label: string, onClick: () => void, cls = "pe-btn"): HTMLButtonElement {
   const b = document.createElement("button");
   b.className = cls; b.textContent = label; b.onclick = onClick;
+  return b;
+}
+
+// "+ Add" button with a Lucide plus icon.
+function addButton(onClick: () => void): HTMLButtonElement {
+  const b = button("Add", onClick);
+  b.prepend(iconEl("plus", 12));
+  return b;
+}
+
+// Small remove button with a Lucide x icon.
+function removeButton(onClick: () => void): HTMLButtonElement {
+  const b = button("", onClick, "pe-x");
+  b.title = "Remove";
+  b.appendChild(iconEl("x", 12));
   return b;
 }
