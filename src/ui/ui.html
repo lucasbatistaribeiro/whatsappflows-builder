@@ -130,13 +130,11 @@
   /* Component cards */
   .comp-list { display: flex; flex-direction: column; gap: 7px; }
   .comp { border: 1px solid var(--border); border-radius: var(--radius); background: var(--elev);
-    padding: 9px; display: flex; flex-direction: column; gap: 8px; transition: border-color .12s; }
-  .comp:hover { border-color: var(--dim); }
+    padding: 9px; display: flex; flex-direction: column; gap: 8px; transition: border-color .12s, background .12s; }
+  .comp:hover { border-color: var(--dim); background: var(--panel); }
   .comp.collapsed { padding: 4px 9px; }
   .comp .row { display: flex; align-items: center; gap: 6px; }
-  .comp-head { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; cursor: pointer;
-    border-radius: 5px; padding: 3px 2px; margin: -3px -2px; }
-  .comp-head:hover { background: var(--panel); }
+  .comp-head { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; cursor: pointer; }
   .comp-chev { display: inline-flex; color: var(--dim); flex: none; }
   .comp .type { font-weight: 600; font-size: 12px; flex: none; }
   .comp-sum { color: var(--dim); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
