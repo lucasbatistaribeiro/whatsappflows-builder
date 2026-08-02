@@ -85,7 +85,9 @@ export function createDropdown(cfg: DDConfig): HTMLElement {
     const onDocDown = (e: MouseEvent) => {
       if (!list.contains(e.target as Node) && !dd.contains(e.target as Node)) close();
     };
-    const onScroll = () => close();
+    // Close when the page/container scrolls (the fixed popup would detach),
+    // but not when the user scrolls inside the list itself.
+    const onScroll = (e: Event) => { if (!list.contains(e.target as Node)) close(); };
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
     setTimeout(() => {
       document.addEventListener("mousedown", onDocDown);
