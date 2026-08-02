@@ -5,6 +5,47 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Menu drawer shadow/border showed when closed — [#41](https://github.com/lucasbatistaribeiro/whatsappflows-builder/pull/41)
+
+**Symptom.** With the hamburger menu closed, a shadow strip lingered on the left
+edge of the screen.
+
+**Root cause.** Closed, the drawer sits at `translateX(-100%)` with its right edge
+exactly at `x=0`, so its `box-shadow` (10px offset + 30px blur) and `border-right`
+spilled into the visible area.
+
+**Fix.** Apply the shadow and border on `#menu.open` only, so they exist while the
+drawer is open and disappear when it's closed.
+
+---
+
+## Generated status bar was ~115px tall — [#38](https://github.com/lucasbatistaribeiro/whatsappflows-builder/pull/38)
+
+**Symptom.** The status bar of generated Figma screens rendered far too tall
+(~115px) for a phone.
+
+**Root cause.** An empty spacer frame inflated the row, and the icons imported via
+`figma.createNodeFromSvg` came in larger than intended.
+
+**Fix.** Drop the spacer and use `primaryAxisAlignItems = "SPACE_BETWEEN"` (time
+left / icons right), and `rescale` each icon to a fixed 11px height regardless of
+its imported size.
+
+---
+
+## Generated status bar used broken block glyphs — [#37](https://github.com/lucasbatistaribeiro/whatsappflows-builder/pull/37)
+
+**Symptom.** The generated status bar showed garbled boxes instead of the
+signal/wifi/battery icons.
+
+**Root cause.** It drew the icons with Unicode block characters (`▂▄▆ ▮`) as text,
+which don't render as intended in Figma.
+
+**Fix.** Use the same iOS-style bar as the live preview — real signal / wifi /
+battery vectors via `figma.createNodeFromSvg` (theme ink baked in).
+
+---
+
 ## Generated Figma layout was broken (full-width fills didn't apply) — [#36](https://github.com/lucasbatistaribeiro/whatsappflows-builder/pull/36)
 
 **Symptom.** Screens generated in Figma looked broken: the footer button hugged
