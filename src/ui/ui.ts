@@ -9,6 +9,7 @@ import { renderPreview, applyThemeVars } from "./preview";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
 import { iconEl, applyIcons } from "./icons";
+import { createDropdown } from "./dropdown";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -85,34 +86,20 @@ const PALETTE_GROUPS = ["Text", "Input", "Selection", "Media", "Action"] as cons
 function renderPalette(): void {
   const host = $("#palette");
   host.innerHTML = "";
-  const select = document.createElement("select");
-  select.className = "palette-select";
+  const groups = PALETTE_GROUPS
+    .map((g) => ({ label: g, options: PALETTE.filter((e) => e.group === g).map((e) => ({ value: e.type, label: e.label })) }))
+    .filter((g) => g.options.length > 0);
 
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "Add a component...";
-  select.appendChild(placeholder);
-
-  for (const group of PALETTE_GROUPS) {
-    const entries = PALETTE.filter((e) => e.group === group);
-    if (entries.length === 0) continue;
-    const og = document.createElement("optgroup");
-    og.label = group;
-    for (const entry of entries) {
-      const o = document.createElement("option");
-      o.value = entry.type;
-      o.textContent = entry.label;
-      og.appendChild(o);
-    }
-    select.appendChild(og);
-  }
-
-  // Adding re-renders the palette, which resets the select to the placeholder.
-  select.onchange = () => {
-    const entry = PALETTE.find((e) => e.type === select.value);
-    if (entry) { screen().layout.children.push(entry.make()); syncAndRender(); }
-  };
-  host.appendChild(select);
+  host.appendChild(createDropdown({
+    value: "",
+    placeholder: "Add a component...",
+    groups,
+    resetAfterSelect: true,
+    onChange: (type) => {
+      const entry = PALETTE.find((e) => e.type === type);
+      if (entry) { screen().layout.children.push(entry.make()); syncAndRender(); }
+    },
+  }));
 }
 
 function renderComponentList(): void {
@@ -344,17 +331,17 @@ function loadFlow(parsed: unknown, sourceName: string): void {
   postToMain({ type: "notify", message: errors ? `Loaded ${sourceName} — ${errors} validation error(s).` : `Loaded ${sourceName}.` });
 }
 
-const templateSel = $("#template") as HTMLSelectElement;
-TEMPLATES.forEach((t, i) => {
-  const o = document.createElement("option");
-  o.value = String(i); o.textContent = t.name;
-  templateSel.appendChild(o);
-});
-templateSel.addEventListener("change", () => {
-  const i = Number(templateSel.value);
-  if (!Number.isNaN(i) && TEMPLATES[i]) loadFlow(clone(TEMPLATES[i].flow), TEMPLATES[i].name);
-  templateSel.value = "";
-});
+$("#template").appendChild(createDropdown({
+  value: "",
+  placeholder: "Template...",
+  options: TEMPLATES.map((t, i) => ({ value: String(i), label: t.name })),
+  resetAfterSelect: true,
+  size: "mini",
+  onChange: (v) => {
+    const i = Number(v);
+    if (TEMPLATES[i]) loadFlow(clone(TEMPLATES[i].flow), TEMPLATES[i].name);
+  },
+}));
 
 $("#import").addEventListener("click", () => ($("#file") as HTMLInputElement).click());
 $("#file").addEventListener("change", (e) => {

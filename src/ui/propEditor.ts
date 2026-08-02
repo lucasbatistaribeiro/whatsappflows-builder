@@ -2,6 +2,7 @@
 // form whose controls mutate the component in place, then call back to sync.
 import type { Component, DataSourceItem, ActionName } from "../model/flowTypes";
 import { iconEl } from "./icons";
+import { createDropdown } from "./dropdown";
 
 export interface EditorCallbacks {
   // Value changed but the set of fields did not — cheap sync (keeps focus).
@@ -216,16 +217,14 @@ function textArea(labelText: string, value: string, onInput: (v: string) => void
 }
 
 function select(labelText: string, value: string, options: string[], onChange: (v: string) => void, emptyLabel?: string): HTMLElement {
-  const sel = document.createElement("select");
-  sel.className = "pe-select";
-  for (const opt of options) {
-    const o = document.createElement("option");
-    o.value = opt; o.textContent = opt === "" ? (emptyLabel ?? "—") : opt;
-    if (opt === value) o.selected = true;
-    sel.appendChild(o);
-  }
-  sel.onchange = () => onChange(sel.value);
-  return labeled(labelText, sel);
+  const dd = createDropdown({
+    value,
+    placeholder: emptyLabel,
+    options: options.map((o) => ({ value: o, label: o === "" ? (emptyLabel ?? "—") : o })),
+    size: "sm",
+    onChange,
+  });
+  return labeled(labelText, dd);
 }
 
 function check(labelText: string, checked: boolean, onChange: (v: boolean) => void): HTMLElement {
