@@ -65,3 +65,6 @@ src/ui/         Plugin UI (playground): palette, screen manager, property
                 editor, live preview, live JSON editor
 esbuild.mjs     Bundles main (dist/code.js) and inlines the UI (dist/ui.html)
 ```
+
+See [docs/BUGFIXES.md](docs/BUGFIXES.md) for a log of bugs found while
+hardening the UI, each with its root cause and fix.
