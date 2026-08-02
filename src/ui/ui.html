@@ -17,6 +17,7 @@
     --ring:    rgba(0, 128, 105, .38);
     --radius:  8px;
     --wa: var(--accent);
+    color-scheme: light dark; /* let native popups/scrollbars follow the theme */
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -279,6 +280,16 @@
     background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%238a9691" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
     background-repeat: no-repeat; background-position: right 9px center; background-size: 14px;
     padding-right: 28px;
+  }
+  /* Themed dropdown list (Chromium applies option/optgroup colors) */
+  select.mini option, .palette-select option, .pe-select option {
+    background: var(--elev); color: var(--text);
+  }
+  select.mini optgroup, .palette-select optgroup, .pe-select optgroup {
+    background: var(--elev); color: var(--dim); font-weight: 600;
+  }
+  select.mini option:checked, .palette-select option:checked, .pe-select option:checked {
+    background: var(--accent-weak);
   }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
