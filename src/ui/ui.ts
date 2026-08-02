@@ -5,6 +5,7 @@ import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
 import { postToMain } from "../shared/messages";
 import { renderPreview, applyThemeVars } from "./preview";
+import { validateFlow, type Issue } from "../model/validate";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -140,7 +141,7 @@ function onJsonInput(): void {
     flow = parsed;
     if (current >= flow.screens.length) current = 0;
     setJsonStatus(true, "Valid");
-    renderScreens(); renderScreenMeta(); renderComponentList();
+    renderAll(); // refresh Build + Preview + Validation (does not rewrite the textarea)
   } catch (err) {
     setJsonStatus(false, "Invalid JSON: " + (err instanceof Error ? err.message : String(err)));
   }
@@ -154,9 +155,48 @@ function setJsonStatus(ok: boolean, msg: string): void {
 
 // ---- Orchestration ------------------------------------------------------
 
+function renderValidation(): void {
+  const issues = validateFlow(flow);
+  const errors = issues.filter((i) => i.level === "error").length;
+  const warnings = issues.length - errors;
+
+  const badge = $("#val-badge");
+  if (issues.length === 0) { badge.className = "badge ok"; badge.textContent = "✓ Valid"; }
+  else if (errors > 0) { badge.className = "badge err"; badge.textContent = `${errors} error${errors > 1 ? "s" : ""}${warnings ? ` · ${warnings}⚠` : ""}`; }
+  else { badge.className = "badge warn"; badge.textContent = `${warnings} warning${warnings > 1 ? "s" : ""}`; }
+
+  const host = $("#validation");
+  host.innerHTML = "";
+  for (const issue of issues) host.appendChild(issueRow(issue));
+}
+
+function issueRow(issue: Issue): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "val-item " + issue.level;
+  const ico = document.createElement("span");
+  ico.className = "val-ico"; ico.textContent = issue.level === "error" ? "✕" : "⚠";
+  row.appendChild(ico);
+  if (issue.screen) {
+    const scr = document.createElement("span");
+    scr.className = "val-scr"; scr.textContent = issue.screen;
+    row.appendChild(scr);
+  }
+  const msg = document.createElement("span");
+  msg.textContent = issue.message;
+  row.appendChild(msg);
+  if (issue.screen) {
+    row.onclick = () => {
+      const idx = flow.screens.findIndex((s) => s.id === issue.screen);
+      if (idx >= 0) { current = idx; renderAll(); }
+    };
+  }
+  return row;
+}
+
 function renderAll(): void {
   renderScreens(); renderScreenMeta(); renderPalette(); renderComponentList();
   renderPreview(flow, $("#preview"), screen().id);
+  renderValidation();
 }
 function syncAndRender(): void { syncJson(); renderAll(); }
 

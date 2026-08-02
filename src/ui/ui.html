@@ -124,11 +124,27 @@
   .wa-sum-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0;
     border-bottom: 1px solid var(--wa-divider); }
   .wa-sum-val { color: var(--wa-text2); }
+
+  /* ---- Validation ---- */
+  .badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; }
+  .badge.ok { background: rgba(0,128,105,.15); color: var(--wa-primary, #008069); }
+  .badge.warn { background: rgba(214,158,0,.18); color: #a8760a; }
+  .badge.err { background: rgba(211,51,51,.15); color: #d33; }
+  #validation { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  #validation:empty { display: none; }
+  .val-item { display: flex; gap: 6px; font-size: 11px; padding: 6px 8px; border-radius: 6px; cursor: pointer; align-items: baseline; }
+  .val-item.error { background: rgba(211,51,51,.10); }
+  .val-item.warning { background: rgba(214,158,0,.12); }
+  .val-item .val-scr { font-weight: 600; opacity: .8; }
+  .val-item .val-ico { font-weight: 700; }
+  .val-item.error .val-ico { color: #d33; }
+  .val-item.warning .val-ico { color: #a8760a; }
 </style>
 
 <div class="app">
   <header>
     <span class="title">WhatsApp Flows Builder</span>
+    <span id="val-badge" class="badge"></span>
     <button id="copy" class="sm">Copy JSON</button>
     <button id="generate" class="primary">Generate in Figma</button>
   </header>
@@ -143,6 +159,7 @@
 
   <div class="body">
     <div class="panel active" id="panel-build">
+      <div id="validation"></div>
       <div class="screen-meta" id="screen-meta"></div>
 
       <div class="section-label">Add component</div>
