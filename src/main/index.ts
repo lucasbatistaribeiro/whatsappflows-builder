@@ -6,6 +6,7 @@ import { DEVICE } from "./theme";
 import { loadFonts } from "./fonts";
 import { buildScreen, type BuiltScreen } from "./screen";
 import { wireNavigation } from "./routing";
+import { createUIKit } from "./waKit";
 
 const GAP = 56;
 
@@ -52,13 +53,19 @@ async function generate(flow: FlowJSON): Promise<void> {
 
   await wireNavigation(built);
 
+  // Ship a reusable component library alongside the screens.
+  const kit = createUIKit();
+  figma.currentPage.appendChild(kit);
+  kit.x = 0;
+  kit.y = DEVICE.height + 160;
+
   // Entry screen = the prototype starting point.
   const entryId = entryScreen(flow);
   const entry = built.find((b) => b.id === entryId) ?? built[0];
   figma.currentPage.flowStartingPoints = [{ nodeId: entry.frame.id, name: `Start: ${entry.id}` }];
 
   figma.currentPage.selection = [section];
-  figma.viewport.scrollAndZoomIntoView(built.map((b) => b.frame));
+  figma.viewport.scrollAndZoomIntoView([...built.map((b) => b.frame), kit]);
   figma.notify(`Generated ${built.length} screen${built.length > 1 ? "s" : ""}.`);
   figma.ui.postMessage({ type: "generated", screenCount: built.length });
 }

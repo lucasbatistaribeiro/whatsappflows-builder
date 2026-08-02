@@ -10,20 +10,29 @@ render navigable, WhatsApp-styled mockups on the canvas.
 - **Palette** — add WhatsApp Flows components to a screen (text, inputs,
   selection, media, footer).
 - **Screens** — add / remove / rename screens, mark terminal screens.
+- **Property editor** — edit each component's real props (input-type, options,
+  action targets, captions…), not just the label.
+- **Live preview** — a WhatsApp phone mockup with a tab per screen + a Summary
+  tab; footer `navigate` actions walk between screens like the real flow.
 - **Flow JSON tab** — a live editor kept in sync with the visual builder in both
   directions; invalid JSON is flagged, never applied.
-- **Copy JSON** — export a Flow JSON ready to paste into WhatsApp Manager.
+- **Validation** — lints WhatsApp Flows constraints (terminal needs a Footer,
+  navigate targets exist, per-component limits…). Errors block generation and
+  highlight the offending screen.
+- **Import & templates** — load a Flow JSON from file or start from a built-in
+  template; **Copy JSON** exports a flow ready for WhatsApp Manager.
 - **Generate in Figma** — draws one phone-sized frame per screen (status bar,
-  header, body, footer) with WhatsApp visual tokens, and wires `navigate`
-  actions into **prototype reactions** so the frames form a clickable prototype.
-  The entry screen becomes the prototype starting point.
+  header, body, footer) with WhatsApp visual tokens, wires `navigate` actions
+  into **prototype reactions** (clickable prototype, entry screen = starting
+  point), and ships a reusable **WhatsApp UI Kit** component library.
 
-## Component coverage (v1)
+## Component coverage
 
 Text (`TextHeading`, `TextSubheading`, `TextBody`, `TextCaption`, `RichText`),
-inputs (`TextInput`, `TextArea`, `DatePicker`, `OptIn`), selection
-(`RadioButtonsGroup`, `CheckboxGroup`, `Dropdown`, `ChipsSelector`), media
-(`Image`, `EmbeddedLink`) and `Footer`.
+inputs (`TextInput`, `TextArea`, `DatePicker`, `CalendarPicker`, `PhotoPicker`,
+`DocumentPicker`, `OptIn`), selection (`RadioButtonsGroup`, `CheckboxGroup`,
+`Dropdown`, `ChipsSelector`, `NavigationList`), media (`Image`, `ImageCarousel`,
+`EmbeddedLink`), `Footer`, and logic (`If`, `Switch`).
 
 > Server-driven behavior (`data_exchange`, `complete`, `If`/`Switch`, dynamic
 > `${data}` lists) renders as a representative static state — Figma prototypes
@@ -47,10 +56,12 @@ npm run typecheck
 ## Architecture
 
 ```
-src/model/      Flow JSON types, component palette, sample flow
+src/model/      Flow JSON types, palette, templates, sample, validation
 src/shared/     UI <-> main message contract
 src/main/       Figma sandbox: theme tokens, node helpers, chrome,
-                per-component renderers, screen assembly, prototype routing
-src/ui/         Plugin UI (playground): palette, screen manager, live JSON editor
+                per-component renderers, screen assembly, prototype routing,
+                reusable UI-kit components (waKit)
+src/ui/         Plugin UI (playground): palette, screen manager, property
+                editor, live preview, live JSON editor
 esbuild.mjs     Bundles main (dist/code.js) and inlines the UI (dist/ui.html)
 ```
