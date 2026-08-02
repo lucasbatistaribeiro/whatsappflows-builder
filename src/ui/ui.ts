@@ -4,6 +4,7 @@ import type { FlowJSON, Screen, Component } from "../model/flowTypes";
 import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
 import { postToMain } from "../shared/messages";
+import { renderPreview, applyThemeVars } from "./preview";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -155,6 +156,7 @@ function setJsonStatus(ok: boolean, msg: string): void {
 
 function renderAll(): void {
   renderScreens(); renderScreenMeta(); renderPalette(); renderComponentList();
+  renderPreview(flow, $("#preview"), screen().id);
 }
 function syncAndRender(): void { syncJson(); renderAll(); }
 
@@ -192,7 +194,9 @@ document.querySelectorAll(".tab").forEach((t) => {
     t.classList.add("active");
     const name = (t as HTMLElement).dataset.tab;
     $("#panel-build").classList.toggle("active", name === "build");
+    $("#panel-preview").classList.toggle("active", name === "preview");
     $("#panel-json").classList.toggle("active", name === "json");
+    if (name === "preview") renderPreview(flow, $("#preview"), screen().id);
   });
 });
 
@@ -208,5 +212,6 @@ $("#copy").addEventListener("click", () => {
   );
 });
 
+applyThemeVars();
 syncJson();
 renderAll();
