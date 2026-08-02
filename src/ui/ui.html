@@ -25,6 +25,8 @@
   button.primary { background: var(--wa); color: #fff; font-weight: 600; }
   button.ghost { background: transparent; }
   button.sm { padding: 4px 8px; font-size: 11px; }
+  header select.sm { font: inherit; font-size: 11px; padding: 4px 6px; border-radius: 6px;
+    border: 1px solid var(--figma-color-border, #e6e6e6); background: var(--figma-color-bg-secondary, #f0f0f0); color: inherit; }
 
   .tabs { display: flex; gap: 4px; padding: 8px 12px 0; }
   .tab { padding: 6px 10px; border-radius: 6px 6px 0 0; cursor: pointer; opacity: 0.6; }
@@ -174,8 +176,11 @@
   <header>
     <span class="title">WhatsApp Flows Builder</span>
     <span id="val-badge" class="badge"></span>
+    <select id="template" class="sm"><option value="">Template...</option></select>
+    <button id="import" class="sm">Import</button>
     <button id="copy" class="sm">Copy JSON</button>
     <button id="generate" class="primary">Generate in Figma</button>
+    <input id="file" type="file" accept="application/json,.json" hidden>
   </header>
 
   <div class="tabs">
