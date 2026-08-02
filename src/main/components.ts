@@ -3,17 +3,17 @@
 import type { Component, DataSourceItem } from "../model/flowTypes";
 import { COLOR, RADIUS, SPACE, fill } from "./theme";
 import { FONT } from "./fonts";
-import { autoFrame, text, strokedBox } from "./nodes";
+import { autoFrame, text, strokedBox, markFill } from "./nodes";
 
-function stretch(node: SceneNode & LayoutMixin): void {
-  node.layoutAlign = "STRETCH";
+function stretch(node: SceneNode): void {
+  markFill(node);
 }
 
 // Text that wraps to the container width instead of hugging its content.
 function para(chars: string, opts: Parameters<typeof text>[1] = {}): TextNode {
   const t = text(chars, opts);
   t.textAutoResize = "HEIGHT";
-  t.layoutAlign = "STRETCH";
+  markFill(t);
   return t;
 }
 
@@ -45,7 +45,7 @@ function inputBox(placeholder: string, height = 48, trailing?: string): FrameNod
   box.resize(box.width || 1, height);
   stretch(box); // fill width
   const ph = text(placeholder, { color: COLOR.placeholder, size: 15 });
-  ph.layoutGrow = 1;
+  markFill(ph);
   box.appendChild(ph);
   if (trailing) box.appendChild(text(trailing, { size: 15, color: COLOR.textSecondary }));
   return box;
@@ -77,7 +77,7 @@ function optionRow(mark: SceneNode, title: string, description?: string): FrameN
   stretch(row);
   row.appendChild(mark);
   const texts = autoFrame({ gap: 2 });
-  texts.layoutGrow = 1;
+  markFill(texts);
   texts.appendChild(para(title, { size: 15 }));
   if (description) texts.appendChild(para(description, { size: 13, color: COLOR.textSecondary }));
   row.appendChild(texts);
@@ -179,7 +179,7 @@ function navigationList(c: Component): FrameNode {
     row.counterAxisAlignItems = "CENTER";
     stretch(row);
     const texts = autoFrame({ gap: 2 });
-    texts.layoutGrow = 1;
+    markFill(texts);
     texts.appendChild(para(String(main["title"] ?? "Item"), { size: 15, font: FONT.medium }));
     if (main["description"]) texts.appendChild(para(String(main["description"]), { size: 13, color: COLOR.textSecondary }));
     row.appendChild(texts);

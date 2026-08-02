@@ -5,6 +5,26 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Generated Figma layout was broken (full-width fills didn't apply) — [#36](https://github.com/lucasbatistaribeiro/whatsappflows-builder/pull/36)
+
+**Symptom.** Screens generated in Figma looked broken: the footer button hugged
+its label (small, bottom-left) instead of stretching full width, radio/checkbox
+option titles disappeared (their text column collapsed to ~0 width, wrapping into
+an invisible sliver), and the OptIn label was missing.
+
+**Root cause.** The generator used the old `layoutAlign = "STRETCH"` /
+`layoutGrow = 1` model to make children fill the width. That's unreliable for
+nested auto-layout **frames** whose parent's own axis was set to "hug" — the fill
+had no definite width to resolve against, so it collapsed.
+
+**Fix.** Switch to the modern, unambiguous `layoutSizingHorizontal` /
+`layoutSizingVertical = "FILL"`. Because that API requires the node to already be
+inside a non-hug auto-layout parent, fill intent is *marked* during the build and
+resolved in a second pass (`applyFills`) that walks the finished tree **pre-order**
+(parent sized before child) after the frames are on the page.
+
+---
+
 ## Dropdown list width didn't match the combobox — [#28](https://github.com/lucasbatistaribeiro/whatsappflows-builder/pull/28)
 
 **Symptom.** The open dropdown list rendered ~10px narrower than its trigger.

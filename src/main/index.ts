@@ -3,6 +3,7 @@
 import type { FlowJSON } from "../model/flowTypes";
 import type { UIToMain, Prefs } from "../shared/messages";
 import { DEVICE } from "./theme";
+import { applyFills } from "./nodes";
 import { loadFonts } from "./fonts";
 import { buildScreen, type BuiltScreen } from "./screen";
 import { wireNavigation } from "./routing";
@@ -62,6 +63,8 @@ async function generate(flow: FlowJSON): Promise<void> {
     section.appendChild(b.frame);
     b.frame.x = i * (DEVICE.width + GAP);
     b.frame.y = 0;
+    // Resolve "fill container" sizing now the frame is on the page/auto-layout tree.
+    applyFills(b.frame);
   });
 
   await wireNavigation(built);

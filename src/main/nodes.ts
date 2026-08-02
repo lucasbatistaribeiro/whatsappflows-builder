@@ -77,14 +77,28 @@ export function autoFrame(opts: FrameOpts = {}): FrameNode {
   return f;
 }
 
-// Make a child stretch across the container's counter axis (full width in a column).
-export function fillWidth(node: SceneNode & LayoutMixin): void {
-  node.layoutAlign = "STRETCH";
-}
+// Auto-layout "Fill container" is applied in a second pass (applyFills) once the
+// whole tree is assembled, because layoutSizingHorizontal/Vertical requires the
+// node to already be inside an auto-layout parent whose own sizing isn't "hug".
+// We just mark intent here; applyFills resolves it top-down.
+const FILL_H = new WeakSet<SceneNode>();
+const FILL_V = new WeakSet<SceneNode>();
 
-// Make a child grow along the container's main axis (fill remaining space).
-export function grow(node: SceneNode & LayoutMixin): void {
-  node.layoutGrow = 1;
+export function markFill<T extends SceneNode>(node: T): T { FILL_H.add(node); return node; }
+export function markFillV<T extends SceneNode>(node: T): T { FILL_V.add(node); return node; }
+
+// Back-compat: "fill width" = fill the horizontal axis.
+export function fillWidth(node: SceneNode): void { FILL_H.add(node); }
+
+// Pre-order walk: a parent is sized before its children, so a FILL child always
+// sees a non-hug parent. Failures are swallowed so one node can't abort a screen.
+export function applyFills(root: SceneNode): void {
+  const set = (n: SceneNode) => {
+    if (FILL_H.has(n)) { try { (n as SceneNode & { layoutSizingHorizontal?: string }).layoutSizingHorizontal = "FILL"; } catch { /* not fillable */ } }
+    if (FILL_V.has(n)) { try { (n as SceneNode & { layoutSizingVertical?: string }).layoutSizingVertical = "FILL"; } catch { /* not fillable */ } }
+    if ("children" in n) for (const c of (n as ChildrenMixin & SceneNode).children) set(c);
+  };
+  set(root);
 }
 
 export function divider(): RectangleNode {
@@ -92,7 +106,7 @@ export function divider(): RectangleNode {
   r.name = "divider";
   r.resize(1, 1);
   r.fills = [fill(COLOR.divider)];
-  r.layoutAlign = "STRETCH";
+  FILL_H.add(r);
   return r;
 }
 
