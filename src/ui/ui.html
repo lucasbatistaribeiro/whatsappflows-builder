@@ -1,0 +1,103 @@
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --wa: #008069;
+    --radius: 8px;
+  }
+  body {
+    margin: 0;
+    font: 12px/1.4 Inter, -apple-system, system-ui, sans-serif;
+    color: var(--figma-color-text, #1e1e1e);
+    background: var(--figma-color-bg, #fff);
+  }
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 12px; border-bottom: 1px solid var(--figma-color-border, #e6e6e6);
+  }
+  header .title { font-weight: 600; font-size: 13px; flex: 1; }
+  button {
+    font: inherit; border: none; border-radius: 6px; padding: 7px 12px;
+    cursor: pointer; background: var(--figma-color-bg-secondary, #f0f0f0);
+    color: var(--figma-color-text, #1e1e1e);
+  }
+  button:hover { filter: brightness(0.97); }
+  button.primary { background: var(--wa); color: #fff; font-weight: 600; }
+  button.ghost { background: transparent; }
+  button.sm { padding: 4px 8px; font-size: 11px; }
+
+  .tabs { display: flex; gap: 4px; padding: 8px 12px 0; }
+  .tab { padding: 6px 10px; border-radius: 6px 6px 0 0; cursor: pointer; opacity: 0.6; }
+  .tab.active { opacity: 1; background: var(--figma-color-bg-secondary, #f0f0f0); font-weight: 600; }
+
+  .screens { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid var(--figma-color-border, #e6e6e6); }
+  .chip { padding: 5px 10px; border-radius: 14px; background: var(--figma-color-bg-secondary, #f0f0f0); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .chip.active { background: var(--wa); color: #fff; }
+  .chip .x { opacity: 0.7; }
+
+  .body { flex: 1; overflow: auto; padding: 12px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; opacity: .6; margin: 12px 0 6px; }
+  .palette { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .palette button { text-align: left; }
+
+  .screen-meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; margin-bottom: 8px; }
+  label.f { font-size: 11px; opacity: .7; }
+  input[type=text], textarea {
+    width: 100%; font: inherit; padding: 6px 8px; border-radius: 6px;
+    border: 1px solid var(--figma-color-border, #d9d9d9);
+    background: var(--figma-color-bg, #fff); color: inherit;
+  }
+  .comp-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .comp {
+    border: 1px solid var(--figma-color-border, #e6e6e6); border-radius: 8px; padding: 8px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .comp .row { display: flex; align-items: center; gap: 6px; }
+  .comp .type { font-weight: 600; flex: 1; }
+  .comp .drag { cursor: default; opacity: .5; }
+
+  textarea#json { height: calc(100vh - 220px); min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; white-space: pre; resize: none; }
+  .json-status { margin-top: 6px; font-size: 11px; }
+  .json-status.ok { color: var(--wa); }
+  .json-status.err { color: #d33; }
+  .hint { font-size: 11px; opacity: .6; margin-top: 4px; }
+  .empty { opacity: .5; padding: 20px 0; text-align: center; }
+</style>
+
+<div class="app">
+  <header>
+    <span class="title">WhatsApp Flows Builder</span>
+    <button id="copy" class="sm">Copy JSON</button>
+    <button id="generate" class="primary">Generate in Figma</button>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="build">Build</div>
+    <div class="tab" data-tab="json">Flow JSON</div>
+  </div>
+
+  <div class="screens" id="screens"></div>
+
+  <div class="body">
+    <div class="panel active" id="panel-build">
+      <div class="screen-meta" id="screen-meta"></div>
+
+      <div class="section-label">Add component</div>
+      <div class="palette" id="palette"></div>
+
+      <div class="section-label">Components on this screen</div>
+      <div class="comp-list" id="comp-list"></div>
+    </div>
+
+    <div class="panel" id="panel-json">
+      <textarea id="json" spellcheck="false"></textarea>
+      <div class="json-status ok" id="json-status">Valid</div>
+      <div class="hint">Edits here sync back to the Build tab when valid.</div>
+    </div>
+  </div>
+</div>
+
+<script>/*__UI_BUNDLE__*/</script>

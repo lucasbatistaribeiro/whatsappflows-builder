@@ -1,0 +1,16 @@
+{
+  "name": "whatsappflows-builder",
+  "version": "0.1.0",
+  "description": "Figma plugin that turns the WhatsApp Flows Playground into a visual builder: compose screens, edit Flow JSON live, and generate navigable WhatsApp-UI mockups in Figma.",
+  "license": "MIT",
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.0"
+  }
+}
