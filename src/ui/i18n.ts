@@ -34,6 +34,7 @@ const DICT: Record<string, Entry> = {
   terminal: { en: "Terminal", pt: "Terminal" },
   addScreen: { en: "Screen", pt: "Tela" },
   palettePlaceholder: { en: "Add a component...", pt: "Adicionar componente..." },
+  searchComponent: { en: "Search components...", pt: "Buscar componente..." },
   templatePlaceholder: { en: "Template...", pt: "Modelo..." },
   noComponents: { en: "No components yet. Add one above.", pt: "Nenhum componente ainda. Adicione um acima." },
   // preview / json

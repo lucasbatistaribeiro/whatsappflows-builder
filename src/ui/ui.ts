@@ -96,6 +96,8 @@ function renderPalette(): void {
     value: "",
     placeholder: t("palettePlaceholder"),
     groups,
+    searchable: true,
+    searchPlaceholder: t("searchComponent"),
     resetAfterSelect: true,
     onChange: (type) => {
       const entry = PALETTE.find((e) => e.type === type);
