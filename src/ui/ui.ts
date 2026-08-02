@@ -340,10 +340,26 @@ $("#template").appendChild(createDropdown({
   onChange: (v) => {
     const i = Number(v);
     if (TEMPLATES[i]) loadFlow(clone(TEMPLATES[i].flow), TEMPLATES[i].name);
+    closeMenu();
   },
 }));
 
-$("#import").addEventListener("click", () => ($("#file") as HTMLInputElement).click());
+// ---- Actions drawer (right-side hamburger menu) -------------------------
+
+function openMenu(): void {
+  $("#menu").classList.add("open");
+  $("#menu-backdrop").classList.add("open");
+}
+function closeMenu(): void {
+  $("#menu").classList.remove("open");
+  $("#menu-backdrop").classList.remove("open");
+}
+$("#menu-btn").addEventListener("click", openMenu);
+$("#menu-close").addEventListener("click", closeMenu);
+$("#menu-backdrop").addEventListener("click", closeMenu);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
+
+$("#import").addEventListener("click", () => { closeMenu(); ($("#file") as HTMLInputElement).click(); });
 $("#file").addEventListener("change", (e) => {
   const input = e.target as HTMLInputElement;
   const file = input.files && input.files[0];
@@ -376,6 +392,7 @@ $("#json").addEventListener("input", onJsonInput);
 $("#generate").addEventListener("click", () => postToMain({ type: "generate", flow }));
 
 $("#copy").addEventListener("click", () => {
+  closeMenu();
   const text = JSON.stringify(flow, null, 2);
   navigator.clipboard?.writeText(text).then(
     () => postToMain({ type: "notify", message: "Flow JSON copied to clipboard." }),
