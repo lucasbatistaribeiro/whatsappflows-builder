@@ -22,9 +22,9 @@ render navigable, WhatsApp-styled mockups on the canvas.
 - **Import & templates** — load a Flow JSON from file or start from a built-in
   template; **Copy JSON** exports a flow ready for WhatsApp Manager.
 - **Generate in Figma** — draws one phone-sized frame per screen (status bar,
-  header, body, footer) with WhatsApp visual tokens, wires `navigate` actions
+  header, body, footer) with WhatsApp visual tokens and wires `navigate` actions
   into **prototype reactions** (clickable prototype, entry screen = starting
-  point), and ships a reusable **WhatsApp UI Kit** component library.
+  point).
 
 ## Component coverage
 
@@ -59,8 +59,7 @@ npm run typecheck
 src/model/      Flow JSON types, palette, templates, sample, validation
 src/shared/     UI <-> main message contract
 src/main/       Figma sandbox: theme tokens, node helpers, chrome,
-                per-component renderers, screen assembly, prototype routing,
-                reusable UI-kit components (waKit)
+                per-component renderers, screen assembly, prototype routing
 src/ui/         Plugin UI (playground): palette, screen manager, property
                 editor, live preview, live JSON editor
 esbuild.mjs     Bundles main (dist/code.js) and inlines the UI (dist/ui.html)
