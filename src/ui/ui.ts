@@ -309,7 +309,9 @@ document.querySelectorAll(".tab").forEach((t) => {
     t.classList.add("active");
     const name = (t as HTMLElement).dataset.tab;
     $("#panel-build").classList.toggle("active", name === "build");
+    $("#panel-preview").classList.toggle("active", name === "preview");
     $("#panel-json").classList.toggle("active", name === "json");
+    if (name === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
   });
 });
 
