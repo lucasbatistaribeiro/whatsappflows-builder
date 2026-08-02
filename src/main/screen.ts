@@ -7,6 +7,13 @@ import { autoFrame, text, divider } from "./nodes";
 import { statusBar, header } from "./chrome";
 import { renderComponent } from "./components";
 
+// Captions for footer actions that a Figma prototype can't execute.
+const ACTION_NOTE: Record<string, string> = {
+  complete: "completes the flow (sends result to chat)",
+  data_exchange: "calls the data endpoint (server decides next screen)",
+  update_data: "updates screen data",
+};
+
 export interface NavTarget {
   node: SceneNode;
   target: string; // destination screen id
@@ -71,9 +78,22 @@ export function buildScreen(screen: Screen): BuiltScreen {
     area.appendChild(divider());
     const btn = footerButton(footer);
     area.appendChild(btn);
-    frame.appendChild(area);
+
     const t = navTargetOf(footer);
-    if (t) navTargets.push({ node: btn, target: t });
+    if (t) {
+      navTargets.push({ node: btn, target: t });
+    } else {
+      // Non-navigate actions can't be prototyped — annotate what happens.
+      const action = footer["on-click-action"];
+      const note = action ? ACTION_NOTE[action.name] : undefined;
+      if (note) {
+        const cap = text(note, { size: 11, color: COLOR.textSecondary });
+        cap.layoutAlign = "STRETCH";
+        cap.textAlignHorizontal = "CENTER";
+        area.appendChild(cap);
+      }
+    }
+    frame.appendChild(area);
   }
 
   return { id: screen.id, frame, navTargets };

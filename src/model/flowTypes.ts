@@ -54,10 +54,17 @@ export type ComponentType =
   | "Dropdown"
   | "ChipsSelector"
   | "DatePicker"
+  | "CalendarPicker"
   | "Image"
+  | "ImageCarousel"
+  | "PhotoPicker"
+  | "DocumentPicker"
+  | "NavigationList"
   | "EmbeddedLink"
   | "OptIn"
-  | "Footer";
+  | "Footer"
+  | "If"
+  | "Switch";
 
 export interface DataSourceItem {
   id: string;

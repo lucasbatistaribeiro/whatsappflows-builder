@@ -129,6 +129,66 @@ function imagePlaceholder(c: Component): FrameNode {
   return box;
 }
 
+function renderChildren(children: Component[]): SceneNode[] {
+  const out: SceneNode[] = [];
+  for (const child of children) {
+    const n = renderComponent(child);
+    if (n) out.push(n);
+  }
+  return out;
+}
+
+// Dashed, labelled container used to make If/Switch branches visible in the
+// static mockup (Figma can't evaluate the condition, so we show one branch).
+function conditionalBox(caption: string, children: Component[]): FrameNode {
+  const box = strokedBox({
+    radius: RADIUS.card, strokeColor: COLOR.primary,
+    padding: SPACE.gap, gap: SPACE.gapSm,
+  });
+  box.dashPattern = [4, 3];
+  stretch(box);
+  const tag = para(caption, { size: 12, color: COLOR.primary, font: FONT.medium });
+  box.appendChild(tag);
+  for (const child of renderChildren(children)) box.appendChild(child);
+  return box;
+}
+
+function uploader(labelText: string, description: string, icon: string): FrameNode {
+  const box = strokedBox({
+    radius: RADIUS.card, strokeColor: COLOR.inputBorder,
+    padding: SPACE.gap, gap: SPACE.gapXs, axis: "VERTICAL",
+  });
+  box.dashPattern = [4, 3];
+  box.counterAxisAlignItems = "CENTER";
+  stretch(box);
+  box.appendChild(text(icon, { size: 22 }));
+  box.appendChild(text(labelText || "Upload", { size: 14, font: FONT.medium }));
+  if (description) box.appendChild(text(description, { size: 12, color: COLOR.textSecondary }));
+  return box;
+}
+
+function navigationList(c: Component): FrameNode {
+  const wrap = autoFrame({ gap: SPACE.gapSm });
+  stretch(wrap);
+  const items = (c["list-items"] as Array<Record<string, unknown>>) ?? [];
+  for (const it of items) {
+    const main = (it["main-content"] as Record<string, unknown>) ?? {};
+    const row = strokedBox({
+      radius: RADIUS.card, axis: "HORIZONTAL", padding: [12, 14, 12, 14], gap: 12,
+    });
+    row.counterAxisAlignItems = "CENTER";
+    stretch(row);
+    const texts = autoFrame({ gap: 2 });
+    texts.layoutGrow = 1;
+    texts.appendChild(para(String(main["title"] ?? "Item"), { size: 15, font: FONT.medium }));
+    if (main["description"]) texts.appendChild(para(String(main["description"]), { size: 13, color: COLOR.textSecondary }));
+    row.appendChild(texts);
+    row.appendChild(text("›", { size: 20, color: COLOR.textSecondary }));
+    wrap.appendChild(row);
+  }
+  return wrap;
+}
+
 export function renderComponent(c: Component): SceneNode | null {
   switch (c.type) {
     case "TextHeading":
@@ -148,6 +208,8 @@ export function renderComponent(c: Component): SceneNode | null {
       return field(c.label ?? "", inputBox("Type here...", 96), c["helper-text"]);
     case "DatePicker":
       return field(c.label ?? "", inputBox("Select date", 48, "📅"));
+    case "CalendarPicker":
+      return field(labelText(c) ?? "", inputBox(c.mode === "range" ? "Select date range" : "Select date", 48, "📅"));
     case "Dropdown":
       return field(c.label ?? "", inputBox(firstTitle(c) ?? "Choose", 48, "▾"));
 
@@ -168,10 +230,45 @@ export function renderComponent(c: Component): SceneNode | null {
 
     case "Image":
       return imagePlaceholder(c);
+    case "ImageCarousel": {
+      const imgs = (c.images as unknown[]) ?? [];
+      const box = imagePlaceholder(c);
+      box.appendChild(text(`Carousel · ${imgs.length || 0} images`, { color: COLOR.textSecondary, size: 12 }));
+      return box;
+    }
+
+    case "PhotoPicker":
+      return uploader(c.label ?? "Add photos", String(c.description ?? ""), "📷");
+    case "DocumentPicker":
+      return uploader(c.label ?? "Add documents", String(c.description ?? ""), "📎");
+
+    case "NavigationList":
+      return navigationList(c);
+
+    case "If":
+      return conditionalBox(`If  ${String(c.condition ?? "")}`, (c.then as Component[]) ?? []);
+    case "Switch": {
+      const cases = (c.cases as Record<string, Component[]>) ?? {};
+      const firstKey = Object.keys(cases)[0];
+      return conditionalBox(
+        `Switch ${String(c.value ?? "")} → "${firstKey ?? ""}"`,
+        firstKey ? cases[firstKey] : [],
+      );
+    }
 
     default:
       return para(`[${c.type}]`, { size: 13, color: COLOR.textSecondary });
   }
+}
+
+function labelText(c: Component): string | undefined {
+  const l = c.label;
+  if (typeof l === "string") return l;
+  if (l && typeof l === "object") {
+    const o = l as Record<string, unknown>;
+    return String(o["start-date"] ?? o["end-date"] ?? "");
+  }
+  return undefined;
 }
 
 function firstTitle(c: Component): string | undefined {
