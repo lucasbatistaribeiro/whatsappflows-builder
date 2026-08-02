@@ -21,11 +21,18 @@ const BATTERY_SVG =
   `<rect x="3" y="3" width="16" height="6" rx="1.5" fill="${INK}"/>` +
   `<path d="M25 4.2a2 2 0 0 1 0 3.6z" fill="${INK}" fill-opacity="0.4"/></svg>`;
 
+// Import an SVG and rescale it to a fixed height, whatever size Figma gives it.
+function iconNode(svg: string, targetH = 11): FrameNode {
+  const n = figma.createNodeFromSvg(svg);
+  if (n.height > 0 && Math.abs(n.height - targetH) > 0.5) n.rescale(targetH / n.height);
+  return n;
+}
+
 function statusIcons(): FrameNode {
   const wrap = autoFrame({ axis: "HORIZONTAL", gap: 6, counterAlign: "CENTER" });
-  wrap.appendChild(figma.createNodeFromSvg(SIGNAL_SVG));
-  wrap.appendChild(figma.createNodeFromSvg(WIFI_SVG));
-  wrap.appendChild(figma.createNodeFromSvg(BATTERY_SVG));
+  wrap.appendChild(iconNode(SIGNAL_SVG));
+  wrap.appendChild(iconNode(WIFI_SVG));
+  wrap.appendChild(iconNode(BATTERY_SVG));
   return wrap;
 }
 
@@ -33,13 +40,10 @@ export function statusBar(): FrameNode {
   const bar = autoFrame({
     name: "status-bar", axis: "HORIZONTAL", gap: 0,
     padding: [9, 16, 6, 16], bg: COLOR.statusBar,
-    align: "MIN", counterAlign: "CENTER", width: DEVICE.width,
+    counterAlign: "CENTER", width: DEVICE.width,
   });
-  const time = text("9:41", { font: FONT.semibold, size: 13, color: COLOR.textPrimary });
-  const spacer = autoFrame({ axis: "HORIZONTAL" });
-  markFill(spacer);
-  bar.appendChild(time);
-  bar.appendChild(spacer);
+  bar.primaryAxisAlignItems = "SPACE_BETWEEN"; // time left, icons right (no filler frame)
+  bar.appendChild(text("9:41", { font: FONT.semibold, size: 13, color: COLOR.textPrimary }));
   bar.appendChild(statusIcons());
   return bar;
 }
