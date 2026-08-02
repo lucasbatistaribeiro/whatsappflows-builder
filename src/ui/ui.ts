@@ -3,6 +3,7 @@
 import type { FlowJSON, Screen } from "../model/flowTypes";
 import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
+import { TEMPLATES } from "../model/templates";
 import { postToMain } from "../shared/messages";
 import { renderPreview, applyThemeVars } from "./preview";
 import { validateFlow, type Issue } from "../model/validate";
@@ -230,6 +231,47 @@ function uniqueId(base: string): string {
   while (has(id)) id = `${base}_${++n}`;
   return id;
 }
+
+// ---- Import & templates -------------------------------------------------
+
+// Validate structure and load a flow from a template or file.
+function loadFlow(parsed: unknown, sourceName: string): void {
+  if (!parsed || typeof parsed !== "object" || !Array.isArray((parsed as FlowJSON).screens)) {
+    postToMain({ type: "notify", message: `${sourceName}: not a valid Flow JSON (missing screens[]).` });
+    return;
+  }
+  flow = parsed as FlowJSON;
+  current = 0;
+  syncAndRender();
+  const errors = validateFlow(flow).filter((i) => i.level === "error").length;
+  postToMain({ type: "notify", message: errors ? `Loaded ${sourceName} — ${errors} validation error(s).` : `Loaded ${sourceName}.` });
+}
+
+const templateSel = $("#template") as HTMLSelectElement;
+TEMPLATES.forEach((t, i) => {
+  const o = document.createElement("option");
+  o.value = String(i); o.textContent = t.name;
+  templateSel.appendChild(o);
+});
+templateSel.addEventListener("change", () => {
+  const i = Number(templateSel.value);
+  if (!Number.isNaN(i) && TEMPLATES[i]) loadFlow(clone(TEMPLATES[i].flow), TEMPLATES[i].name);
+  templateSel.value = "";
+});
+
+$("#import").addEventListener("click", () => ($("#file") as HTMLInputElement).click());
+$("#file").addEventListener("change", (e) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { loadFlow(JSON.parse(String(reader.result)), file.name); }
+    catch (err) { postToMain({ type: "notify", message: `Import failed: ${err instanceof Error ? err.message : String(err)}` }); }
+    input.value = "";
+  };
+  reader.readAsText(file);
+});
 
 // ---- Wiring -------------------------------------------------------------
 
