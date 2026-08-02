@@ -30,6 +30,7 @@ export function applyThemeVars(): void {
 // Preview keeps its own selected tab, independent of the Build tab.
 let selected: string | null = null; // screen id, or "__summary__"
 const SUMMARY = "__summary__";
+let errScreens: Set<string> = new Set(); // screen ids with validation errors
 
 function el(tag: string, className?: string, text?: string): HTMLElement {
   const n = document.createElement(tag);
@@ -38,7 +39,8 @@ function el(tag: string, className?: string, text?: string): HTMLElement {
   return n;
 }
 
-export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenId?: string): void {
+export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenId?: string, errorScreens?: Set<string>): void {
+  if (errorScreens) errScreens = errorScreens;
   host.innerHTML = "";
   const ids = flow.screens.map((s) => s.id);
   if (selected !== SUMMARY && (selected === null || !ids.includes(selected))) {
@@ -47,7 +49,8 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
 
   host.appendChild(previewTabs(flow));
 
-  const phone = el("div", "wa-phone");
+  const invalid = selected !== SUMMARY && selected !== null && errScreens.has(selected);
+  const phone = el("div", "wa-phone" + (invalid ? " has-error" : ""));
   phone.appendChild(statusBar());
   if (selected === SUMMARY) {
     phone.appendChild(header("Review and submit"));
@@ -65,7 +68,8 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
 function previewTabs(flow: FlowJSON): HTMLElement {
   const wrap = el("div", "pv-tabs");
   flow.screens.forEach((s) => {
-    const t = el("button", "pv-tab" + (selected === s.id ? " active" : ""), s.id);
+    const cls = "pv-tab" + (selected === s.id ? " active" : "") + (errScreens.has(s.id) ? " err" : "");
+    const t = el("button", cls, s.id);
     t.onclick = () => { selected = s.id; rerender(flow); };
     wrap.appendChild(t);
   });

@@ -21,12 +21,20 @@ function screen(): Screen {
 
 // ---- Rendering ----------------------------------------------------------
 
+// Screen ids that carry at least one error-level validation issue.
+function errorScreenIds(): Set<string> {
+  const set = new Set<string>();
+  for (const issue of validateFlow(flow)) if (issue.level === "error" && issue.screen) set.add(issue.screen);
+  return set;
+}
+
 function renderScreens(): void {
   const host = $("#screens");
   host.innerHTML = "";
+  const errs = errorScreenIds();
   flow.screens.forEach((s, i) => {
     const chip = document.createElement("div");
-    chip.className = "chip" + (i === current ? " active" : "");
+    chip.className = "chip" + (i === current ? " active" : "") + (errs.has(s.id) ? " has-error" : "");
     const label = document.createElement("span");
     label.textContent = s.id + (s.terminal ? " ●" : "");
     label.onclick = () => { current = i; renderAll(); };
@@ -161,6 +169,11 @@ function renderValidation(): void {
   const host = $("#validation");
   host.innerHTML = "";
   for (const issue of issues) host.appendChild(issueRow(issue));
+
+  // Block generation while errors exist (warnings still allowed).
+  const gen = $("#generate") as HTMLButtonElement;
+  gen.disabled = errors > 0;
+  gen.title = errors > 0 ? `Fix ${errors} error${errors > 1 ? "s" : ""} before generating` : "";
 }
 
 function issueRow(issue: Issue): HTMLElement {
@@ -188,7 +201,7 @@ function issueRow(issue: Issue): HTMLElement {
 
 function renderAll(): void {
   renderScreens(); renderScreenMeta(); renderPalette(); renderComponentList();
-  renderPreview(flow, $("#preview"), screen().id);
+  renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
   renderValidation();
 }
 function syncAndRender(): void { syncJson(); renderAll(); }
@@ -283,7 +296,7 @@ document.querySelectorAll(".tab").forEach((t) => {
     $("#panel-build").classList.toggle("active", name === "build");
     $("#panel-preview").classList.toggle("active", name === "preview");
     $("#panel-json").classList.toggle("active", name === "json");
-    if (name === "preview") renderPreview(flow, $("#preview"), screen().id);
+    if (name === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
   });
 });
 
