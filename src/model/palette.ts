@@ -21,6 +21,9 @@ export const PALETTE: PaletteEntry[] = [
   { type: "TextInput", label: "Text input", group: "Input", make: () => ({ type: "TextInput", name: "field", label: "Label", "input-type": "text" }) },
   { type: "TextArea", label: "Text area", group: "Input", make: () => ({ type: "TextArea", name: "notes", label: "Label" }) },
   { type: "DatePicker", label: "Date picker", group: "Input", make: () => ({ type: "DatePicker", name: "date", label: "Select date" }) },
+  { type: "CalendarPicker", label: "Calendar", group: "Input", make: () => ({ type: "CalendarPicker", name: "range", label: "Select date", mode: "single" }) },
+  { type: "PhotoPicker", label: "Photo upload", group: "Input", make: () => ({ type: "PhotoPicker", name: "photos", label: "Add photos", description: "Upload up to 5 photos" }) },
+  { type: "DocumentPicker", label: "Doc upload", group: "Input", make: () => ({ type: "DocumentPicker", name: "docs", label: "Add documents" }) },
   { type: "OptIn", label: "Opt-in", group: "Input", make: () => ({ type: "OptIn", name: "optin", label: "I agree to the terms" }) },
 
   // Selection
@@ -51,6 +54,14 @@ export const PALETTE: PaletteEntry[] = [
 
   // Media / links
   { type: "Image", label: "Image", group: "Media", make: () => ({ type: "Image", src: "" }) },
+  { type: "ImageCarousel", label: "Carousel", group: "Media", make: () => ({ type: "ImageCarousel", images: [{ src: "", "alt-text": "Image 1" }, { src: "", "alt-text": "Image 2" }] }) },
+  {
+    type: "NavigationList", label: "Nav list", group: "Selection",
+    make: () => ({ type: "NavigationList", name: "nav", "list-items": [
+      { id: "0", "main-content": { title: "First item", description: "Description" } },
+      { id: "1", "main-content": { title: "Second item", description: "Description" } },
+    ] }),
+  },
   { type: "EmbeddedLink", label: "Link", group: "Media", make: () => ({ type: "EmbeddedLink", text: "Learn more", "on-click-action": { name: "navigate", next: { type: "screen", name: "" }, payload: {} } }) },
 
   // Action

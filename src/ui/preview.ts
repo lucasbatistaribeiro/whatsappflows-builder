@@ -168,6 +168,41 @@ function chips(c: Component): HTMLElement {
   return wrap;
 }
 
+function labelStr(label: unknown): string {
+  if (typeof label === "string") return label;
+  if (label && typeof label === "object") {
+    const o = label as Record<string, unknown>;
+    return String(o["start-date"] ?? o["end-date"] ?? "");
+  }
+  return "";
+}
+
+function strOr(v: unknown): string { return v === undefined || v === null ? "" : String(v); }
+
+function uploaderHtml(labelText: string, description: string, icon: string): HTMLElement {
+  const box = el("div", "wa-upload");
+  box.appendChild(el("div", "wa-upload-ico", icon));
+  box.appendChild(el("div", "wa-upload-label", labelText || "Upload"));
+  if (description) box.appendChild(el("div", "wa-help", description));
+  return box;
+}
+
+function navListHtml(c: Component): HTMLElement {
+  const wrap = el("div", "wa-navlist");
+  const items = (c["list-items"] as Array<Record<string, unknown>>) ?? [];
+  items.forEach((it) => {
+    const main = (it["main-content"] as Record<string, unknown>) ?? {};
+    const row = el("div", "wa-nav-row");
+    const texts = el("div");
+    texts.appendChild(el("div", "wa-opt-title", String(main["title"] ?? "Item")));
+    if (main["description"]) texts.appendChild(el("div", "wa-opt-desc", String(main["description"])));
+    row.appendChild(texts);
+    row.appendChild(el("span", "wa-nav-chevron", "›"));
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
 function firstTitle(c: Component): string {
   const items = c["data-source"] as DataSourceItem[] | undefined;
   return items && items.length ? items[0].title : "Choose";
@@ -194,6 +229,7 @@ function renderComp(c: Component, _flow: FlowJSON): HTMLElement {
     case "TextInput": return field(c.label ?? "", inputBox(placeholderFor(c)), c["helper-text"]);
     case "TextArea": return field(c.label ?? "", inputBox("Type here...", true), c["helper-text"]);
     case "DatePicker": return field(c.label ?? "", inputBox("Select date", false, "📅"));
+    case "CalendarPicker": return field(labelStr(c.label), inputBox(c.mode === "range" ? "Select date range" : "Select date", false, "📅"));
     case "Dropdown": return field(c.label ?? "", inputBox(firstTitle(c), false, "▾"));
     case "RadioButtonsGroup": return optionRows(c, "radio");
     case "CheckboxGroup": return optionRows(c, "check");
@@ -206,6 +242,15 @@ function renderComp(c: Component, _flow: FlowJSON): HTMLElement {
     }
     case "EmbeddedLink": return comp("wa-link", c.text ?? "Link");
     case "Image": return el("div", "wa-img");
+    case "ImageCarousel": {
+      const n = ((c.images as unknown[]) ?? []).length;
+      const box = el("div", "wa-img carousel");
+      box.appendChild(el("span", "wa-carousel-badge", `1 / ${n || 1}`));
+      return box;
+    }
+    case "PhotoPicker": return uploaderHtml(c.label ?? "Add photos", strOr(c.description), "📷");
+    case "DocumentPicker": return uploaderHtml(c.label ?? "Add documents", strOr(c.description), "📎");
+    case "NavigationList": return navListHtml(c);
     default: return comp("wa-caption", `[${c.type}]`);
   }
 }

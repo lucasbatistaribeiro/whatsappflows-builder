@@ -81,6 +81,25 @@ function validateScreen(
   const images = kids.filter((c) => c.type === "Image").length;
   if (images > 3) push("error", "Max 3 Image components per screen.", s.id);
 
+  // NavigationList constraints.
+  const navs = kids.filter((c) => c.type === "NavigationList");
+  if (navs.length > 2) push("error", "Max 2 NavigationList components per screen.", s.id);
+  if (navs.length > 0 && kids.length > navs.length) {
+    push("warning", "NavigationList can't be combined with other components on a screen.", s.id);
+  }
+  if (navs.length > 0 && s.terminal) push("error", "NavigationList can't be on a terminal screen.", s.id);
+  for (const nav of navs) {
+    const li = nav["list-items"];
+    if (!Array.isArray(li) || li.length === 0) push("error", "NavigationList needs at least one item.", s.id);
+  }
+
+  // Upload pickers.
+  const photos = kids.filter((c) => c.type === "PhotoPicker").length;
+  const docs = kids.filter((c) => c.type === "DocumentPicker").length;
+  if (photos > 1) push("error", "Only one PhotoPicker per screen.", s.id);
+  if (docs > 1) push("error", "Only one DocumentPicker per screen.", s.id);
+  if (photos > 0 && docs > 0) push("error", "PhotoPicker and DocumentPicker can't share a screen.", s.id);
+
   // Unique input names.
   const names = new Map<string, number>();
   for (const c of kids) {
@@ -118,7 +137,7 @@ function validateComponent(
     }
   }
 
-  const needsName = ["TextInput", "TextArea", "DatePicker", "RadioButtonsGroup", "CheckboxGroup", "ChipsSelector", "OptIn"];
+  const needsName = ["TextInput", "TextArea", "DatePicker", "CalendarPicker", "PhotoPicker", "DocumentPicker", "RadioButtonsGroup", "CheckboxGroup", "ChipsSelector", "OptIn"];
   if (needsName.includes(c.type) && !c.name) {
     push("warning", `${c.type} should have a unique "name".`, screenId);
   }

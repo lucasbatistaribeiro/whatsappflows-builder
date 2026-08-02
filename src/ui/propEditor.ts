@@ -44,6 +44,28 @@ export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCal
       form.appendChild(text("Name", str(c.name), (v) => { set("name", v); cb.soft(); }));
       break;
 
+    case "CalendarPicker":
+      form.appendChild(text("Label", str(c.label), (v) => { set("label", v); cb.soft(); }));
+      form.appendChild(text("Name", str(c.name), (v) => { set("name", v); cb.soft(); }));
+      form.appendChild(select("Mode", str(c.mode) || "single", ["single", "range"], (v) => { set("mode", v); cb.soft(); }));
+      break;
+
+    case "PhotoPicker":
+    case "DocumentPicker":
+      form.appendChild(text("Label", str(c.label), (v) => { set("label", v); cb.soft(); }));
+      form.appendChild(text("Name", str(c.name), (v) => { set("name", v); cb.soft(); }));
+      form.appendChild(text("Description", str(c.description), (v) => { set("description", v || undefined); cb.soft(); }));
+      break;
+
+    case "ImageCarousel":
+      form.appendChild(note("Carousel images are base64 — edit them in the Flow JSON tab."));
+      break;
+
+    case "NavigationList":
+      form.appendChild(text("Name", str(c.name), (v) => { set("name", v); cb.soft(); }));
+      form.appendChild(navItemsEditor(c, cb));
+      break;
+
     case "RadioButtonsGroup":
     case "CheckboxGroup":
     case "Dropdown":
@@ -130,7 +152,43 @@ function dataSourceEditor(c: Component, cb: EditorCallbacks): HTMLElement {
   return wrap;
 }
 
+// ---- NavigationList items sub-editor ------------------------------------
+
+interface NavItem { id?: string; "main-content"?: { title?: string; description?: string } }
+
+function navItemsEditor(c: Component, cb: EditorCallbacks): HTMLElement {
+  const wrap = div("pe-sub");
+  const head = div("pe-sub-head");
+  head.appendChild(spanText("Items"));
+  head.appendChild(button("+ add", () => {
+    const items = ((c["list-items"] as NavItem[]) ??= []);
+    items.push({ id: String(items.length), "main-content": { title: `Item ${items.length + 1}`, description: "Description" } });
+    cb.structural();
+  }));
+  wrap.appendChild(head);
+
+  const items = (c["list-items"] as NavItem[]) ?? [];
+  items.forEach((it, i) => {
+    const mc = (it["main-content"] ??= {});
+    const row = div("pe-ds-row");
+    const title = document.createElement("input");
+    title.type = "text"; title.value = mc.title ?? ""; title.placeholder = "title";
+    title.oninput = () => { mc.title = title.value; cb.soft(); };
+    row.appendChild(title);
+    row.appendChild(button("✕", () => { items.splice(i, 1); cb.structural(); }, "pe-x"));
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
 // ---- primitives ---------------------------------------------------------
+
+function note(t: string): HTMLElement {
+  const n = div("pe-note");
+  n.textContent = t;
+  return n;
+}
+
 
 function div(cls: string): HTMLElement { const d = document.createElement("div"); d.className = cls; return d; }
 function str(v: unknown): string { return v === undefined || v === null ? "" : String(v); }
