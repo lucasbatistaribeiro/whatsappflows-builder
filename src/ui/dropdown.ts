@@ -165,17 +165,29 @@ export function createDropdown(cfg: DDConfig): HTMLElement {
 // Fixed-position the list at the trigger, flipping up when there's no room below.
 function position(list: HTMLElement, trigger: HTMLElement): void {
   const r = trigger.getBoundingClientRect();
-  const gap = 4;
-  const cap = 260;
+  const gap = 4, margin = 8, cap = 260;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
   list.style.position = "fixed";
-  list.style.left = r.left + "px";
-  list.style.minWidth = r.width + "px";
-  const below = window.innerHeight - r.bottom;
+
+  // Width: match the trigger, but never wider than the viewport.
+  list.style.minWidth = Math.min(r.width, vw - margin * 2) + "px";
+  list.style.maxWidth = vw - margin * 2 + "px";
+
+  // Horizontal: align to the trigger, then clamp inside the viewport.
+  const w = list.offsetWidth;
+  let left = r.left;
+  if (left + w > vw - margin) left = vw - margin - w;
+  if (left < margin) left = margin;
+  list.style.left = left + "px";
+
+  // Vertical: flip up when there's no room below.
+  const below = vh - r.bottom;
   if (below < 180 && r.top > below) {
-    list.style.bottom = window.innerHeight - r.top + gap + "px";
-    list.style.maxHeight = Math.min(cap, r.top - gap - 8) + "px";
+    list.style.bottom = vh - r.top + gap + "px";
+    list.style.maxHeight = Math.min(cap, r.top - gap - margin) + "px";
   } else {
     list.style.top = r.bottom + gap + "px";
-    list.style.maxHeight = Math.min(cap, below - gap - 8) + "px";
+    list.style.maxHeight = Math.min(cap, below - gap - margin) + "px";
   }
 }
