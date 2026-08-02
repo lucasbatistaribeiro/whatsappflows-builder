@@ -1,24 +1,18 @@
 // Plugin UI: a lightweight WhatsApp Flows "playground" — compose screens with a
 // palette, edit the Flow JSON live (two-way), export it, and generate in Figma.
-import type { FlowJSON, Screen, Component } from "../model/flowTypes";
+import type { FlowJSON, Screen } from "../model/flowTypes";
 import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
 import { postToMain } from "../shared/messages";
 import { renderPreview, applyThemeVars } from "./preview";
 import { validateFlow, type Issue } from "../model/validate";
+import { buildPropEditor } from "./propEditor";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 let flow: FlowJSON = clone(SAMPLE_FLOW);
 let current = 0; // selected screen index
-
-// The single editable prop shown inline per component in the Build tab.
-function primaryProp(c: Component): "text" | "label" | null {
-  if (["TextHeading", "TextSubheading", "TextBody", "TextCaption", "RichText", "EmbeddedLink"].includes(c.type)) return "text";
-  if (["TextInput", "TextArea", "DatePicker", "Dropdown", "RadioButtonsGroup", "CheckboxGroup", "ChipsSelector", "OptIn", "Footer"].includes(c.type)) return "label";
-  return null;
-}
 
 function screen(): Screen {
   return flow.screens[current];
@@ -110,10 +104,8 @@ function renderComponentList(): void {
     row.appendChild(iconBtn("✕", () => { kids.splice(i, 1); syncAndRender(); }));
     card.appendChild(row);
 
-    const prop = primaryProp(c);
-    if (prop) {
-      card.appendChild(textField(String(c[prop] ?? ""), (v) => { (c as Record<string, unknown>)[prop] = v; syncJson(); }, prop));
-    }
+    const ids = flow.screens.map((s) => s.id);
+    card.appendChild(buildPropEditor(c, ids, { soft: softSync, structural: structuralSync }));
     host.appendChild(card);
   });
 }
@@ -199,6 +191,19 @@ function renderAll(): void {
   renderValidation();
 }
 function syncAndRender(): void { syncJson(); renderAll(); }
+
+// Prop edits: sync the JSON, preview and validation without rebuilding the
+// component cards (keeps input focus while typing).
+function softSync(): void {
+  syncJson();
+  renderPreview(flow, $("#preview"), screen().id);
+  renderValidation();
+}
+// Structural edits (add/remove option, change action shape): rebuild the cards.
+function structuralSync(): void {
+  renderComponentList();
+  softSync();
+}
 
 // ---- Small DOM helpers --------------------------------------------------
 
