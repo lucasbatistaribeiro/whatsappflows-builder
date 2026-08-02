@@ -15,6 +15,8 @@ export interface DDConfig {
   onChange: (value: string) => void;
   size?: "mini" | "md" | "sm";
   resetAfterSelect?: boolean; // action-style triggers (palette/template) keep the placeholder
+  searchable?: boolean; // show a filter input at the top of the open list
+  searchPlaceholder?: string;
 }
 
 let closeCurrent: (() => void) | null = null;
@@ -58,29 +60,62 @@ export function createDropdown(cfg: DDConfig): HTMLElement {
     list.className = "dd-list dd-" + size;
     list.setAttribute("role", "listbox");
 
-    const addOption = (o: DDOption) => {
+    const optionsWrap = document.createElement("div");
+    optionsWrap.className = "dd-options";
+
+    const entries: { el: HTMLElement; label: string; value: string }[] = [];
+    const groupEls: { el: HTMLElement; opts: HTMLElement[] }[] = [];
+
+    const addOption = (o: DDOption, groupOpts?: HTMLElement[]) => {
       const el = document.createElement("div");
       el.className = "dd-option" + (o.value === currentValue ? " selected" : "");
       el.setAttribute("role", "option");
       el.textContent = o.label;
       el.onmousedown = (e) => { e.preventDefault(); select(o.value); };
-      list.appendChild(el);
+      optionsWrap.appendChild(el);
+      entries.push({ el, label: o.label.toLowerCase(), value: o.value });
+      if (groupOpts) groupOpts.push(el);
     };
     if (cfg.groups) {
       for (const g of cfg.groups) {
         if (!g.options.length) continue;
         const gh = document.createElement("div");
         gh.className = "dd-group"; gh.textContent = g.label;
-        list.appendChild(gh);
-        g.options.forEach(addOption);
+        optionsWrap.appendChild(gh);
+        const opts: HTMLElement[] = [];
+        g.options.forEach((o) => addOption(o, opts));
+        groupEls.push({ el: gh, opts });
       }
     } else {
-      (cfg.options ?? []).forEach(addOption);
+      (cfg.options ?? []).forEach((o) => addOption(o));
     }
+
+    let search: HTMLInputElement | null = null;
+    if (cfg.searchable) {
+      search = document.createElement("input");
+      search.type = "text";
+      search.className = "dd-search";
+      search.placeholder = cfg.searchPlaceholder ?? "";
+      const applyFilter = (): void => {
+        const q = search!.value.trim().toLowerCase();
+        for (const e of entries) e.el.style.display = !q || e.label.includes(q) ? "" : "none";
+        for (const g of groupEls) g.el.style.display = g.opts.some((o) => o.style.display !== "none") ? "" : "none";
+      };
+      search.addEventListener("input", applyFilter);
+      search.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const first = entries.find((x) => x.el.style.display !== "none");
+          if (first) { e.preventDefault(); select(first.value); }
+        } else if (e.key === "Escape") { e.preventDefault(); close(); }
+      });
+      list.appendChild(search);
+    }
+    list.appendChild(optionsWrap);
 
     document.body.appendChild(list);
     position(list, dd);
     dd.classList.add("open");
+    if (search) setTimeout(() => search!.focus(), 0);
 
     const onDocDown = (e: MouseEvent) => {
       if (!list.contains(e.target as Node) && !dd.contains(e.target as Node)) close();
