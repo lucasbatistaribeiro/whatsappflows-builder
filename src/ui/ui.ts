@@ -10,6 +10,8 @@ import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
 import { iconEl, applyIcons } from "./icons";
 import { createDropdown } from "./dropdown";
+import { t, setLang, applyI18n, type Lang } from "./i18n";
+import type { Prefs, ThemePref } from "../shared/messages";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -53,7 +55,7 @@ function renderScreens(): void {
   const add = document.createElement("button");
   add.className = "chip add"; add.title = "Add screen";
   add.appendChild(iconEl("plus", 13));
-  add.appendChild(document.createTextNode("Screen"));
+  add.appendChild(document.createTextNode(t("addScreen")));
   add.onclick = () => {
     const id = uniqueId("SCREEN");
     flow.screens.push({ id, title: "New screen", layout: { type: "SingleColumnLayout", children: [] } });
@@ -68,13 +70,13 @@ function renderScreenMeta(): void {
   const s = screen();
   host.innerHTML = "";
 
-  host.appendChild(fieldLabel("Screen id"));
+  host.appendChild(fieldLabel(t("screenId")));
   host.appendChild(textField(s.id, (v) => { s.id = v.trim() || s.id; syncJson(); }));
 
-  host.appendChild(fieldLabel("Title"));
+  host.appendChild(fieldLabel(t("title")));
   host.appendChild(textField(s.title ?? "", (v) => { s.title = v; syncJson(); }));
 
-  host.appendChild(fieldLabel("Terminal"));
+  host.appendChild(fieldLabel(t("terminal")));
   const cb = document.createElement("input");
   cb.type = "checkbox"; cb.checked = !!s.terminal;
   cb.onchange = () => { s.terminal = cb.checked || undefined; renderScreens(); syncJson(); };
@@ -92,7 +94,7 @@ function renderPalette(): void {
 
   host.appendChild(createDropdown({
     value: "",
-    placeholder: "Add a component...",
+    placeholder: t("palettePlaceholder"),
     groups,
     resetAfterSelect: true,
     onChange: (type) => {
@@ -108,7 +110,7 @@ function renderComponentList(): void {
   host.innerHTML = "";
   if (kids.length === 0) {
     const e = document.createElement("div");
-    e.className = "empty"; e.textContent = "No components yet. Add one above.";
+    e.className = "empty"; e.textContent = t("noComponents");
     host.appendChild(e);
     return;
   }
@@ -175,7 +177,7 @@ function move(i: number, dir: number): void {
 
 function syncJson(): void {
   ($("#json") as HTMLTextAreaElement).value = JSON.stringify(flow, null, 2);
-  setJsonStatus(true, "Valid");
+  setJsonStatus(true, t("valid"));
 }
 
 // Coerce a parsed value into a renderable flow, or return null if it can't be.
@@ -212,7 +214,7 @@ function onJsonInput(): void {
   }
   flow = normalized;
   if (current >= flow.screens.length) current = 0;
-  setJsonStatus(true, "Valid");
+  setJsonStatus(true, t("valid"));
   renderAll(); // refresh Build + Preview + Validation (does not rewrite the textarea)
 }
 
@@ -230,9 +232,9 @@ function renderValidation(): void {
   const warnings = issues.length - errors;
 
   const badge = $("#val-badge");
-  if (issues.length === 0) { badge.className = "badge ok"; badge.textContent = "✓ Valid"; }
-  else if (errors > 0) { badge.className = "badge err"; badge.textContent = `${errors} error${errors > 1 ? "s" : ""}${warnings ? ` · ${warnings}⚠` : ""}`; }
-  else { badge.className = "badge warn"; badge.textContent = `${warnings} warning${warnings > 1 ? "s" : ""}`; }
+  if (issues.length === 0) { badge.className = "badge ok"; badge.textContent = "✓ " + t("valid"); }
+  else if (errors > 0) { badge.className = "badge err"; badge.textContent = `${errors} ${t(errors > 1 ? "errors" : "error")}${warnings ? ` · ${warnings}⚠` : ""}`; }
+  else { badge.className = "badge warn"; badge.textContent = `${warnings} ${t(warnings > 1 ? "warnings" : "warning")}`; }
 
   const host = $("#validation");
   host.innerHTML = "";
@@ -331,18 +333,22 @@ function loadFlow(parsed: unknown, sourceName: string): void {
   postToMain({ type: "notify", message: errors ? `Loaded ${sourceName} — ${errors} validation error(s).` : `Loaded ${sourceName}.` });
 }
 
-$("#template").appendChild(createDropdown({
-  value: "",
-  placeholder: "Template...",
-  options: TEMPLATES.map((t, i) => ({ value: String(i), label: t.name })),
-  resetAfterSelect: true,
-  size: "mini",
-  onChange: (v) => {
-    const i = Number(v);
-    if (TEMPLATES[i]) loadFlow(clone(TEMPLATES[i].flow), TEMPLATES[i].name);
-    closeMenu();
-  },
-}));
+function buildTemplateDropdown(): void {
+  const host = $("#template");
+  host.innerHTML = "";
+  host.appendChild(createDropdown({
+    value: "",
+    placeholder: t("templatePlaceholder"),
+    options: TEMPLATES.map((tpl, i) => ({ value: String(i), label: tpl.name })),
+    resetAfterSelect: true,
+    size: "mini",
+    onChange: (v) => {
+      const i = Number(v);
+      if (TEMPLATES[i]) loadFlow(clone(TEMPLATES[i].flow), TEMPLATES[i].name);
+      closeMenu();
+    },
+  }));
+}
 
 // ---- Actions drawer (right-side hamburger menu) -------------------------
 
@@ -358,6 +364,55 @@ $("#menu-btn").addEventListener("click", openMenu);
 $("#menu-close").addEventListener("click", closeMenu);
 $("#menu-backdrop").addEventListener("click", closeMenu);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
+
+// ---- Preferences: theme & language --------------------------------------
+
+let prefs: Prefs = { theme: "system", lang: "en" };
+
+// System = follow the OS/Figma theme (no data-theme); light/dark force it.
+function applyTheme(theme: ThemePref): void {
+  const root = document.documentElement;
+  if (theme === "system") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", theme);
+  document.querySelectorAll<HTMLElement>("#theme-seg .seg-item").forEach((b) =>
+    b.classList.toggle("active", b.dataset.themeOpt === theme));
+}
+
+function applyLang(lang: Lang): void {
+  setLang(lang);
+  applyI18n(document);
+  document.querySelectorAll<HTMLElement>("#lang-seg .seg-item").forEach((b) =>
+    b.classList.toggle("active", b.dataset.langOpt === lang));
+  buildTemplateDropdown();
+  renderAll();
+}
+
+function applyPrefs(p: Prefs): void {
+  prefs = p;
+  applyTheme(p.theme);
+  applyLang(p.lang);
+}
+
+const savePrefs = (): void => postToMain({ type: "savePrefs", prefs });
+
+document.querySelectorAll<HTMLElement>("#theme-seg .seg-item").forEach((b) =>
+  b.addEventListener("click", () => {
+    prefs = { ...prefs, theme: b.dataset.themeOpt as ThemePref };
+    applyTheme(prefs.theme);
+    savePrefs();
+  }));
+document.querySelectorAll<HTMLElement>("#lang-seg .seg-item").forEach((b) =>
+  b.addEventListener("click", () => {
+    prefs = { ...prefs, lang: b.dataset.langOpt as Lang };
+    applyLang(prefs.lang);
+    savePrefs();
+  }));
+
+// Saved prefs pushed from the main thread on startup.
+window.addEventListener("message", (e: MessageEvent) => {
+  const msg = (e.data && (e.data as { pluginMessage?: unknown }).pluginMessage) as { type?: string; prefs?: Prefs } | undefined;
+  if (msg && msg.type === "prefs" && msg.prefs) applyPrefs(msg.prefs);
+});
 
 $("#import").addEventListener("click", () => { closeMenu(); ($("#file") as HTMLInputElement).click(); });
 $("#file").addEventListener("change", (e) => {
@@ -402,5 +457,5 @@ $("#copy").addEventListener("click", () => {
 
 applyThemeVars();
 applyIcons(document);
+applyPrefs(prefs); // default en / system; overwritten when the main thread sends saved prefs
 syncJson();
-renderAll();

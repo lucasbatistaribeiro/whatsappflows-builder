@@ -344,6 +344,13 @@
     font-weight: 600; margin-top: 4px; }
   #menu .dd { width: 100%; }
   .menu-item { width: 100%; justify-content: flex-start; border: 1px solid var(--border); margin-top: 2px; }
+  .menu-group { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border); }
+  .menu-group:last-child { border-bottom: none; padding-bottom: 0; }
+  .menu-group-title { font-size: 10px; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--dim); font-weight: 700; }
+  .menu-seg { width: 100%; }
+  .menu-seg .seg-item { flex: 1; text-align: center; }
 
   /* ---- Responsive (narrow Figma plugin windows, ~300px+) ---- */
   .val-item > :last-child { flex: 1; min-width: 0; }
@@ -367,7 +374,7 @@
     <span class="spacer"></span>
     <button id="generate" class="btn primary" title="Generate the screens in Figma">
       <span class="ic" data-icon="sparkles" data-size="14"></span>
-      Generate
+      <span data-i18n="generate">Generate</span>
     </button>
     <button id="menu-btn" class="icon-btn" title="More actions" aria-label="More actions">
       <span class="ic" data-icon="menu" data-size="18"></span>
@@ -376,32 +383,54 @@
   </header>
 
   <div id="menu-backdrop"></div>
-  <aside id="menu" aria-label="Actions">
+  <aside id="menu" aria-label="Menu">
     <div class="menu-head">
-      <span class="menu-title">Actions</span>
+      <span class="menu-title" data-i18n="menuTitle">Menu</span>
       <button id="menu-close" class="icon-btn" title="Close" aria-label="Close">
         <span class="ic" data-icon="x" data-size="16"></span>
       </button>
     </div>
-    <label class="menu-label">Start from a template</label>
-    <span id="template"></span>
-    <button id="import" class="btn ghost menu-item" title="Import a Flow JSON file">
-      <span class="ic" data-icon="import" data-size="15"></span>
-      Import JSON
-    </button>
-    <button id="copy" class="btn ghost menu-item" title="Copy the Flow JSON">
-      <span class="ic" data-icon="copy" data-size="15"></span>
-      Copy JSON
-    </button>
+
+    <div class="menu-group">
+      <div class="menu-group-title" data-i18n="groupFlow">Flow</div>
+      <label class="menu-label" data-i18n="templateLabel">Start from a template</label>
+      <span id="template"></span>
+      <button id="import" class="btn ghost menu-item" title="Import a Flow JSON file">
+        <span class="ic" data-icon="import" data-size="15"></span>
+        <span data-i18n="import">Import JSON</span>
+      </button>
+      <button id="copy" class="btn ghost menu-item" title="Copy the Flow JSON">
+        <span class="ic" data-icon="copy" data-size="15"></span>
+        <span data-i18n="copy">Copy JSON</span>
+      </button>
+    </div>
+
+    <div class="menu-group">
+      <div class="menu-group-title" data-i18n="groupAppearance">Appearance</div>
+      <label class="menu-label" data-i18n="theme">Theme</label>
+      <div class="seg menu-seg" id="theme-seg" role="tablist">
+        <button class="seg-item" data-theme-opt="system" data-i18n="themeSystem">System</button>
+        <button class="seg-item" data-theme-opt="light" data-i18n="themeLight">Light</button>
+        <button class="seg-item" data-theme-opt="dark" data-i18n="themeDark">Dark</button>
+      </div>
+    </div>
+
+    <div class="menu-group">
+      <div class="menu-group-title" data-i18n="groupLanguage">Language</div>
+      <div class="seg menu-seg" id="lang-seg" role="tablist">
+        <button class="seg-item" data-lang-opt="en" data-i18n="langEn">English</button>
+        <button class="seg-item" data-lang-opt="pt" data-i18n="langPt">Português</button>
+      </div>
+    </div>
   </aside>
 
   <div class="workspace">
     <section class="builder">
       <div class="builder-head">
         <div class="seg" role="tablist">
-          <button class="seg-item tab active" data-tab="build">Build</button>
-          <button class="seg-item tab" data-tab="preview">Preview</button>
-          <button class="seg-item tab" data-tab="json">Flow JSON</button>
+          <button class="seg-item tab active" data-tab="build" data-i18n="build">Build</button>
+          <button class="seg-item tab" data-tab="preview" data-i18n="preview">Preview</button>
+          <button class="seg-item tab" data-tab="json" data-i18n="flowJson">Flow JSON</button>
         </div>
         <div class="screens" id="screens"></div>
       </div>
@@ -411,22 +440,22 @@
           <div id="validation"></div>
           <div class="screen-meta" id="screen-meta"></div>
 
-          <div class="section-label">Add component</div>
+          <div class="section-label" data-i18n="addComponent">Add component</div>
           <div id="palette"></div>
 
-          <div class="section-label">Components on this screen</div>
+          <div class="section-label" data-i18n="componentsOnScreen">Components on this screen</div>
           <div class="comp-list" id="comp-list"></div>
         </div>
 
         <div class="panel" id="panel-preview">
-          <div class="preview-head">Live preview</div>
+          <div class="preview-head" data-i18n="livePreview">Live preview</div>
           <div id="preview"></div>
         </div>
 
         <div class="panel" id="panel-json">
           <textarea id="json" spellcheck="false"></textarea>
           <div class="json-status ok" id="json-status">Valid</div>
-          <div class="hint">Edits here sync back to the Build tab when valid.</div>
+          <div class="hint" data-i18n="jsonHint">Edits here sync back to the Build tab when valid.</div>
         </div>
       </div>
     </section>
