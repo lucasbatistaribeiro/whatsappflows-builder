@@ -117,18 +117,11 @@
   }
   input[type=text]:hover, textarea:hover { border-color: var(--dim); }
 
-  /* Palette, grouped by category */
-  .pal-group { margin-bottom: 12px; }
-  .pal-group h4 { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim);
-    font-weight: 600; margin: 0 0 6px; }
-  .palette { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .palette button { display: flex; align-items: center; gap: 8px; text-align: left; padding: 7px 9px;
-    border-radius: 7px; background: var(--elev); border: 1px solid var(--border); font-size: 12px;
-    color: var(--text); transition: border-color .12s, background .12s; }
-  .palette button:hover { border-color: var(--accent); background: var(--accent-weak); }
-  .palette button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--cat, var(--dim)); }
-  .g-Text { --cat: #6b7280; } .g-Input { --cat: #2f80ed; } .g-Selection { --cat: #9b51e0; }
-  .g-Media { --cat: #eb8c00; } .g-Action { --cat: var(--accent); }
+  /* Palette combobox */
+  .palette-select { width: 100%; font: inherit; font-size: 12px; padding: 9px 10px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--elev); color: inherit; cursor: pointer;
+    transition: border-color .12s; }
+  .palette-select:hover { border-color: var(--accent); }
 
   /* Component cards */
   .comp-list { display: flex; flex-direction: column; gap: 7px; }
