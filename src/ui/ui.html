@@ -324,6 +324,22 @@
     border: 3px solid transparent; background-clip: padding-box; }
   ::-webkit-scrollbar-thumb:hover { background: var(--dim); background-clip: padding-box; border: 3px solid transparent; }
 
+  /* ---- Right-side actions drawer ---- */
+  #menu-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); opacity: 0;
+    pointer-events: none; transition: opacity .22s ease; z-index: 999; }
+  #menu-backdrop.open { opacity: 1; pointer-events: auto; }
+  #menu { position: fixed; top: 0; right: 0; height: 100%; width: 250px; max-width: 82vw;
+    background: var(--elev); border-left: 1px solid var(--border); box-shadow: -10px 0 30px rgba(0,0,0,.22);
+    transform: translateX(100%); transition: transform .22s ease; z-index: 1000;
+    display: flex; flex-direction: column; gap: 10px; padding: 14px; box-sizing: border-box; }
+  #menu.open { transform: translateX(0); }
+  .menu-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+  .menu-title { font-weight: 650; font-size: 13px; }
+  .menu-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim);
+    font-weight: 600; margin-top: 4px; }
+  #menu .dd { width: 100%; }
+  .menu-item { width: 100%; justify-content: flex-start; border: 1px solid var(--border); margin-top: 2px; }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -335,23 +351,35 @@
     </span>
     <span id="val-badge" class="badge"></span>
     <span class="spacer"></span>
-    <div class="toolbar">
-      <span id="template"></span>
-      <button id="import" class="btn ghost" title="Import a Flow JSON file">
-        <span class="ic" data-icon="import" data-size="14"></span>
-        Import
-      </button>
-      <button id="copy" class="btn ghost" title="Copy the Flow JSON">
-        <span class="ic" data-icon="copy" data-size="14"></span>
-        Copy JSON
-      </button>
-    </div>
     <button id="generate" class="btn primary" title="Generate the screens in Figma">
       <span class="ic" data-icon="sparkles" data-size="14"></span>
       Generate
     </button>
+    <button id="menu-btn" class="icon-btn" title="More actions" aria-label="More actions">
+      <span class="ic" data-icon="menu" data-size="18"></span>
+    </button>
     <input id="file" type="file" accept="application/json,.json" hidden>
   </header>
+
+  <div id="menu-backdrop"></div>
+  <aside id="menu" aria-label="Actions">
+    <div class="menu-head">
+      <span class="menu-title">Actions</span>
+      <button id="menu-close" class="icon-btn" title="Close" aria-label="Close">
+        <span class="ic" data-icon="x" data-size="16"></span>
+      </button>
+    </div>
+    <label class="menu-label">Start from a template</label>
+    <span id="template"></span>
+    <button id="import" class="btn ghost menu-item" title="Import a Flow JSON file">
+      <span class="ic" data-icon="import" data-size="15"></span>
+      Import JSON
+    </button>
+    <button id="copy" class="btn ghost menu-item" title="Copy the Flow JSON">
+      <span class="ic" data-icon="copy" data-size="15"></span>
+      Copy JSON
+    </button>
+  </aside>
 
   <div class="workspace">
     <section class="builder">
