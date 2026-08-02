@@ -170,12 +170,13 @@ function position(list: HTMLElement, trigger: HTMLElement): void {
   const vh = window.innerHeight;
   list.style.position = "fixed";
 
-  // Width: match the trigger, but never wider than the viewport.
-  list.style.minWidth = Math.min(r.width, vw - margin * 2) + "px";
-  list.style.maxWidth = vw - margin * 2 + "px";
+  // Width: exactly match the trigger, but never wider than the viewport.
+  const w = Math.min(r.width, vw - margin * 2);
+  list.style.width = w + "px";
+  list.style.minWidth = "0";
+  list.style.maxWidth = "none";
 
   // Horizontal: align to the trigger, then clamp inside the viewport.
-  const w = list.offsetWidth;
   let left = r.left;
   if (left + w > vw - margin) left = vw - margin - w;
   if (left < margin) left = margin;
