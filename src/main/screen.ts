@@ -3,7 +3,7 @@
 import type { Screen, Component } from "../model/flowTypes";
 import { COLOR, DEVICE, RADIUS, SPACE } from "./theme";
 import { FONT } from "./fonts";
-import { autoFrame, text, divider, markFill, markFillV } from "./nodes";
+import { autoFrame, text, divider, markFill } from "./nodes";
 import { statusBar, header } from "./chrome";
 import { renderComponent } from "./components";
 
@@ -46,19 +46,19 @@ function footerButton(c: Component): FrameNode {
 export function buildScreen(screen: Screen): BuiltScreen {
   const navTargets: NavTarget[] = [];
 
+  // Fixed phone width; height hugs the content so the screen grows with it.
   const frame = autoFrame({
     name: screen.id, bg: COLOR.bg,
-    width: DEVICE.width, height: DEVICE.height,
+    width: DEVICE.width,
   });
   frame.clipsContent = true;
   const sb = statusBar(); frame.appendChild(sb); markFill(sb);
   const hd = header(screen.title ?? ""); frame.appendChild(hd); markFill(hd);
 
-  // Body fills the width and grows to take the remaining height (footer pins bottom).
+  // Body fills the width and hugs its height (the screen grows with the content).
   const body = autoFrame({ name: "body", gap: SPACE.gap, padding: SPACE.screenPad });
   frame.appendChild(body);
   markFill(body);
-  markFillV(body);
 
   const children = screen.layout.children ?? [];
   const footer = children.find((c) => c.type === "Footer");
