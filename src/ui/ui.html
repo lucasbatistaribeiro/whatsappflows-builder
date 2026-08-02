@@ -113,8 +113,16 @@
   .screen-meta { display: grid; grid-template-columns: auto 1fr; gap: 7px 10px; align-items: center;
     padding: 10px; background: var(--panel); border-radius: var(--radius); }
   label.f { font-size: 11px; color: var(--dim); }
-  .screen-meta input[type="checkbox"] { justify-self: start; width: 16px; height: 16px;
-    margin: 0; accent-color: var(--accent); cursor: pointer; }
+  .screen-meta input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    justify-self: start; width: 16px; height: 16px; margin: 0; cursor: pointer;
+    border: 1.5px solid var(--border); border-radius: 4px; background: var(--elev);
+    transition: background .12s, border-color .12s; }
+  .screen-meta input[type="checkbox"]:hover { border-color: var(--dim); }
+  .screen-meta input[type="checkbox"]:checked {
+    border-color: var(--accent); background-color: var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center; background-size: 11px; }
   input[type=text], textarea {
     width: 100%; font: inherit; padding: 6px 8px; border-radius: 6px;
     border: 1px solid var(--border); background: var(--elev); color: inherit;
