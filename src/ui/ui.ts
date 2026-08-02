@@ -261,7 +261,7 @@ function issueRow(issue: Issue): HTMLElement {
     row.appendChild(scr);
   }
   const msg = document.createElement("span");
-  msg.textContent = issue.message;
+  msg.textContent = t(issue.key, issue.params);
   row.appendChild(msg);
   if (issue.screen) {
     row.onclick = () => {

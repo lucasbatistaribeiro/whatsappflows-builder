@@ -1,13 +1,16 @@
 // Lints a Flow against the WhatsApp Flows constraints most likely to break a
-// publish or a runtime. Pure and dependency-free so both the UI and (later) the
-// generator can call it.
+// publish or a runtime. Pure and dependency-free (no i18n) — each issue carries
+// a message key + params, and the UI translates it. Keys/text live in i18n.ts.
 import type { FlowJSON, Screen, Component } from "./flowTypes";
 
 export interface Issue {
   level: "error" | "warning";
   screen?: string;
-  message: string;
+  key: string;
+  params?: (string | number)[];
 }
+
+type Push = (level: Issue["level"], key: string, params?: (string | number)[], screen?: string) => void;
 
 const MAX_COMPONENTS = 50;
 const FOOTER_LABEL_MAX = 35;
@@ -16,12 +19,11 @@ const LINK_TEXT_MAX = 25;
 
 export function validateFlow(flow: FlowJSON): Issue[] {
   const issues: Issue[] = [];
-  const push = (level: Issue["level"], message: string, screen?: string) =>
-    issues.push({ level, message, screen });
+  const push: Push = (level, key, params, screen) => issues.push({ level, key, params, screen });
 
-  if (!flow.version) push("warning", "Missing top-level \"version\" (e.g. \"7.3\").");
+  if (!flow.version) push("warning", "vMissingVersion");
   if (!Array.isArray(flow.screens) || flow.screens.length === 0) {
-    push("error", "Flow has no screens.");
+    push("error", "vNoScreens");
     return issues;
   }
 
@@ -31,114 +33,94 @@ export function validateFlow(flow: FlowJSON): Issue[] {
   // Duplicate / reserved ids.
   const seen = new Set<string>();
   for (const id of ids) {
-    if (seen.has(id)) push("error", `Duplicate screen id "${id}".`, id);
+    if (seen.has(id)) push("error", "vDupScreenId", [id], id);
     seen.add(id);
-    if (id === "SUCCESS") push("error", '"SUCCESS" is a reserved screen id.', id);
+    if (id === "SUCCESS") push("error", "vReservedSuccess", undefined, id);
   }
 
-  if (!flow.screens.some((s) => s.terminal)) {
-    push("warning", "No terminal screen — a flow should end on a screen with terminal: true.");
-  }
+  if (!flow.screens.some((s) => s.terminal)) push("warning", "vNoTerminal");
 
   for (const s of flow.screens) validateScreen(s, idSet, push);
   return issues;
 }
 
-function validateScreen(
-  s: Screen,
-  ids: Set<string>,
-  push: (level: Issue["level"], message: string, screen?: string) => void,
-): void {
+function validateScreen(s: Screen, ids: Set<string>, push: Push): void {
   if (!s.layout || s.layout.type !== "SingleColumnLayout") {
-    push("error", "layout.type must be \"SingleColumnLayout\".", s.id);
+    push("error", "vLayoutType", undefined, s.id);
     return;
   }
   const kids = s.layout.children ?? [];
 
   if (kids.length > MAX_COMPONENTS) {
-    push("error", `Screen has ${kids.length} components (max ${MAX_COMPONENTS}).`, s.id);
+    push("error", "vMaxComponents", [kids.length, MAX_COMPONENTS], s.id);
   }
 
   const footers = kids.filter((c) => c.type === "Footer");
-  if (footers.length > 1) push("error", "Only one Footer is allowed per screen.", s.id);
-  if (s.terminal && footers.length === 0) {
-    push("error", "Terminal screen must contain a Footer.", s.id);
-  }
+  if (footers.length > 1) push("error", "vOneFooter", undefined, s.id);
+  if (s.terminal && footers.length === 0) push("error", "vTerminalNoFooter", undefined, s.id);
 
   // Navigation targets must exist.
   for (const c of kids) {
     const a = c["on-click-action"];
     if (a?.name === "navigate") {
       const target = a.next?.name;
-      if (!target) push("error", `${c.type} navigate action has no target screen.`, s.id);
-      else if (!ids.has(target)) push("error", `navigate target "${target}" does not exist.`, s.id);
+      if (!target) push("error", "vNavNoTarget", [c.type], s.id);
+      else if (!ids.has(target)) push("error", "vNavTargetMissing", [target], s.id);
     }
   }
 
   // Per-component limits.
   const links = kids.filter((c) => c.type === "EmbeddedLink").length;
-  if (links > 2) push("error", "Max 2 EmbeddedLink components per screen.", s.id);
+  if (links > 2) push("error", "vMaxLinks", undefined, s.id);
   const images = kids.filter((c) => c.type === "Image").length;
-  if (images > 3) push("error", "Max 3 Image components per screen.", s.id);
+  if (images > 3) push("error", "vMaxImages", undefined, s.id);
 
   // NavigationList constraints.
   const navs = kids.filter((c) => c.type === "NavigationList");
-  if (navs.length > 2) push("error", "Max 2 NavigationList components per screen.", s.id);
-  if (navs.length > 0 && kids.length > navs.length) {
-    push("warning", "NavigationList can't be combined with other components on a screen.", s.id);
-  }
-  if (navs.length > 0 && s.terminal) push("error", "NavigationList can't be on a terminal screen.", s.id);
+  if (navs.length > 2) push("error", "vMaxNavList", undefined, s.id);
+  if (navs.length > 0 && kids.length > navs.length) push("warning", "vNavListCombine", undefined, s.id);
+  if (navs.length > 0 && s.terminal) push("error", "vNavListTerminal", undefined, s.id);
   for (const nav of navs) {
     const li = nav["list-items"];
-    if (!Array.isArray(li) || li.length === 0) push("error", "NavigationList needs at least one item.", s.id);
+    if (!Array.isArray(li) || li.length === 0) push("error", "vNavListItems", undefined, s.id);
   }
 
   // Upload pickers.
   const photos = kids.filter((c) => c.type === "PhotoPicker").length;
   const docs = kids.filter((c) => c.type === "DocumentPicker").length;
-  if (photos > 1) push("error", "Only one PhotoPicker per screen.", s.id);
-  if (docs > 1) push("error", "Only one DocumentPicker per screen.", s.id);
-  if (photos > 0 && docs > 0) push("error", "PhotoPicker and DocumentPicker can't share a screen.", s.id);
+  if (photos > 1) push("error", "vOnePhoto", undefined, s.id);
+  if (docs > 1) push("error", "vOneDoc", undefined, s.id);
+  if (photos > 0 && docs > 0) push("error", "vPhotoDoc", undefined, s.id);
 
   // Unique input names.
   const names = new Map<string, number>();
-  for (const c of kids) {
-    if (c.name) names.set(c.name, (names.get(c.name) ?? 0) + 1);
-  }
+  for (const c of kids) if (c.name) names.set(c.name, (names.get(c.name) ?? 0) + 1);
   for (const [name, count] of names) {
-    if (count > 1) push("error", `Duplicate input name "${name}" on this screen.`, s.id);
+    if (count > 1) push("error", "vDupName", [name], s.id);
   }
 
   for (const c of kids) validateComponent(c, s.id, push);
 }
 
-function validateComponent(
-  c: Component,
-  screenId: string,
-  push: (level: Issue["level"], message: string, screen?: string) => void,
-): void {
+function validateComponent(c: Component, screenId: string, push: Push): void {
   const len = (v: unknown) => (typeof v === "string" ? v.length : 0);
 
   if (c.type === "Footer" && len(c.label) > FOOTER_LABEL_MAX) {
-    push("warning", `Footer label exceeds ${FOOTER_LABEL_MAX} chars.`, screenId);
+    push("warning", "vFooterLen", [FOOTER_LABEL_MAX], screenId);
   }
   if ((c.type === "TextHeading" || c.type === "TextSubheading") && len(c.text) > HEADING_MAX) {
-    push("warning", `${c.type} text exceeds ${HEADING_MAX} chars.`, screenId);
+    push("warning", "vHeadingLen", [c.type, HEADING_MAX], screenId);
   }
   if (c.type === "EmbeddedLink" && len(c.text) > LINK_TEXT_MAX) {
-    push("warning", `EmbeddedLink text exceeds ${LINK_TEXT_MAX} chars.`, screenId);
+    push("warning", "vLinkLen", [LINK_TEXT_MAX], screenId);
   }
 
   const needsData = ["RadioButtonsGroup", "CheckboxGroup", "Dropdown", "ChipsSelector"];
   if (needsData.includes(c.type)) {
     const ds = c["data-source"];
-    if (!Array.isArray(ds) || ds.length === 0) {
-      push("error", `${c.type} needs a non-empty data-source.`, screenId);
-    }
+    if (!Array.isArray(ds) || ds.length === 0) push("error", "vNeedsDataSource", [c.type], screenId);
   }
 
   const needsName = ["TextInput", "TextArea", "DatePicker", "CalendarPicker", "PhotoPicker", "DocumentPicker", "RadioButtonsGroup", "CheckboxGroup", "ChipsSelector", "OptIn"];
-  if (needsName.includes(c.type) && !c.name) {
-    push("warning", `${c.type} should have a unique "name".`, screenId);
-  }
+  if (needsName.includes(c.type) && !c.name) push("warning", "vNeedsName", [c.type], screenId);
 }
