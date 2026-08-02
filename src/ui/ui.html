@@ -23,6 +23,7 @@
   }
   button:hover { filter: brightness(0.97); }
   button.primary { background: var(--wa); color: #fff; font-weight: 600; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
   button.ghost { background: transparent; }
   button.sm { padding: 4px 8px; font-size: 11px; }
   header select.sm { font: inherit; font-size: 11px; padding: 4px 6px; border-radius: 6px;
@@ -35,6 +36,8 @@
   .screens { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid var(--figma-color-border, #e6e6e6); }
   .chip { padding: 5px 10px; border-radius: 14px; background: var(--figma-color-bg-secondary, #f0f0f0); cursor: pointer; display: flex; align-items: center; gap: 6px; }
   .chip.active { background: var(--wa); color: #fff; }
+  .chip.has-error { box-shadow: inset 0 0 0 1.5px #d33; }
+  .chip.has-error.active { box-shadow: inset 0 0 0 1.5px #fff; }
   .chip .x { opacity: 0.7; }
 
   .body { flex: 1; overflow: auto; padding: 12px; }
@@ -72,6 +75,7 @@
   .pv-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .pv-tab { padding: 4px 10px; border-radius: 12px; background: var(--figma-color-bg-secondary, #f0f0f0); font-size: 11px; }
   .pv-tab.active { background: var(--wa-primary); color: #fff; }
+  .pv-tab.err { box-shadow: inset 0 0 0 1.5px #d33; }
 
   .wa-phone {
     width: 300px; margin: 0 auto; border-radius: 22px; overflow: hidden;
@@ -79,6 +83,7 @@
     display: flex; flex-direction: column; height: 560px;
     box-shadow: 0 6px 24px rgba(0,0,0,.18); color: var(--wa-text, #111);
   }
+  .wa-phone.has-error { border-color: #d33; }
   .wa-status { display: flex; justify-content: space-between; align-items: center;
     padding: 6px 14px; font-size: 10px; background: var(--wa-status, #f7f8fa); color: var(--wa-text); }
   .wa-header { display: flex; align-items: center; gap: 14px; padding: 12px 14px;
