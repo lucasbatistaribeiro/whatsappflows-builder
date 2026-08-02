@@ -69,7 +69,7 @@
   .btn.primary { background: var(--accent); color: #fff; font-weight: 600; }
   .btn.primary:hover { filter: brightness(1.05); border-color: transparent; }
   .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
-  .btn:focus-visible, .seg-item:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
+  .btn:focus-visible, .seg-item:focus-visible, .dd:focus-visible, input:focus-visible, textarea:focus-visible {
     outline: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring);
   }
   select.mini {
@@ -292,6 +292,38 @@
     background: var(--accent-weak);
   }
 
+  /* ---- Custom dropdown (replaces native <select> for full theming) ---- */
+  .dd { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;
+    border: 1px solid var(--border); border-radius: 7px; background: var(--elev); color: var(--text);
+    transition: border-color .12s; }
+  .dd:hover, .dd.open { border-color: var(--accent); }
+  .dd-value { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dd-placeholder { color: var(--dim); }
+  .dd-chev { display: inline-flex; color: var(--dim); flex: none; transition: transform .12s; }
+  .dd.open .dd-chev { transform: rotate(180deg); }
+  .dd-mini { font-size: 12px; padding: 6px 8px; }
+  .dd-md   { font-size: 12px; padding: 9px 10px; }
+  .dd-sm   { font-size: 11px; padding: 5px 7px; }
+
+  .dd-list { z-index: 9999; background: var(--elev); border: 1px solid var(--border); border-radius: 8px;
+    padding: 4px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,.22); box-sizing: border-box; font-size: 12px; }
+  .dd-list.dd-sm { font-size: 11px; }
+  .dd-group { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim);
+    font-weight: 600; padding: 8px 8px 4px; }
+  .dd-group:first-child { padding-top: 4px; }
+  .dd-option { padding: 6px 8px; border-radius: 6px; cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dd-option:hover { background: var(--accent-weak); }
+  .dd-option.selected { color: var(--accent); font-weight: 600; }
+
+  /* ---- Themed scrollbars everywhere ---- */
+  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px;
+    border: 3px solid transparent; background-clip: padding-box; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--dim); background-clip: padding-box; border: 3px solid transparent; }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -304,7 +336,7 @@
     <span id="val-badge" class="badge"></span>
     <span class="spacer"></span>
     <div class="toolbar">
-      <select id="template" class="mini"><option value="">Template...</option></select>
+      <span id="template"></span>
       <button id="import" class="btn ghost" title="Import a Flow JSON file">
         <span class="ic" data-icon="import" data-size="14"></span>
         Import
