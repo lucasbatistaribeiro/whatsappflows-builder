@@ -139,6 +139,22 @@
   .val-item .val-ico { font-weight: 700; }
   .val-item.error .val-ico { color: #d33; }
   .val-item.warning .val-ico { color: #a8760a; }
+
+  /* ---- Property editor ---- */
+  .pe-form { display: flex; flex-direction: column; gap: 6px; }
+  .pe-row { display: grid; grid-template-columns: 84px 1fr; gap: 8px; align-items: center; }
+  .pe-label { font-size: 11px; opacity: .7; }
+  .pe-form input[type=text], .pe-select, .pe-ta {
+    width: 100%; font: inherit; font-size: 11px; padding: 5px 7px; border-radius: 5px;
+    border: 1px solid var(--figma-color-border, #d9d9d9); background: var(--figma-color-bg, #fff); color: inherit;
+  }
+  .pe-ta { resize: vertical; font-family: inherit; }
+  .pe-sub { border: 1px solid var(--figma-color-border, #e6e6e6); border-radius: 6px; padding: 7px; display: flex; flex-direction: column; gap: 6px; }
+  .pe-sub-head { display: flex; align-items: center; justify-content: space-between; }
+  .pe-ds-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+  .pe-btn { font-size: 11px; padding: 3px 8px; border-radius: 5px; border: none; cursor: pointer;
+    background: var(--figma-color-bg-secondary, #f0f0f0); color: inherit; }
+  .pe-x { font-size: 11px; padding: 3px 8px; border-radius: 5px; border: none; cursor: pointer; background: transparent; color: inherit; opacity: .6; }
 </style>
 
 <div class="app">
