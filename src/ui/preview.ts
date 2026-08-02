@@ -83,10 +83,26 @@ function previewTabs(flow: FlowJSON): HTMLElement {
 let lastHost: HTMLElement | null = null;
 function rerender(flow: FlowJSON): void { if (lastHost) renderPreview(flow, lastHost); }
 
+// iOS-style status bar: time on the left, signal / wifi / battery on the right.
+const STATUS_ICONS =
+  '<svg viewBox="0 0 18 12" width="17" height="11" fill="currentColor" aria-hidden="true">' +
+  '<rect x="0" y="7.5" width="3" height="4.5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/>' +
+  '<rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>' +
+  '<svg viewBox="0 0 16 12" width="16" height="11" fill="currentColor" aria-hidden="true">' +
+  '<path d="M8 2.2c2.5 0 4.8 1 6.5 2.6l1.3-1.6A11 11 0 0 0 8 .3 11 11 0 0 0 .2 3.2l1.3 1.6A9.3 9.3 0 0 1 8 2.2z"/>' +
+  '<path d="M8 6.1c1.5 0 2.9.6 4 1.6l1.3-1.6A8 8 0 0 0 8 4a8 8 0 0 0-5.3 2.1L4 7.7A6 6 0 0 1 8 6.1z"/>' +
+  '<path d="M8 10.1 9.8 8a2.7 2.7 0 0 0-3.6 0L8 10.1z"/></svg>' +
+  '<svg viewBox="0 0 27 12" width="25" height="11" fill="none" aria-hidden="true">' +
+  '<rect x="1" y="1" width="22" height="10" rx="3" stroke="currentColor" stroke-opacity=".4"/>' +
+  '<rect x="3" y="3" width="16" height="6" rx="1.5" fill="currentColor"/>' +
+  '<path d="M25 4.2a2 2 0 0 1 0 3.6z" fill="currentColor" fill-opacity=".4"/></svg>';
+
 function statusBar(): HTMLElement {
   const bar = el("div", "wa-status");
-  bar.appendChild(el("span", undefined, "9:41"));
-  bar.appendChild(el("span", undefined, "▂▄▆ Wi-Fi ▮"));
+  bar.appendChild(el("span", "wa-status-time", "9:41"));
+  const icons = el("div", "wa-status-icons");
+  icons.innerHTML = STATUS_ICONS;
+  bar.appendChild(icons);
   return bar;
 }
 
