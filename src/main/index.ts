@@ -55,11 +55,9 @@ async function generate(flow: FlowJSON): Promise<void> {
 
   const built: BuiltScreen[] = flow.screens.map((s) => buildScreen(s));
 
-  const section = figma.createSection();
-  section.name = `WhatsApp Flow — ${flow.screens[0].id}`;
-
+  // Place the screens as loose frames on the page, laid out in a row.
   built.forEach((b, i) => {
-    section.appendChild(b.frame);
+    figma.currentPage.appendChild(b.frame);
     b.frame.x = i * (DEVICE.width + GAP);
     b.frame.y = 0;
     // Resolve "fill container" sizing now the frame is on the page/auto-layout tree.
@@ -73,7 +71,7 @@ async function generate(flow: FlowJSON): Promise<void> {
   const entry = built.find((b) => b.id === entryId) ?? built[0];
   figma.currentPage.flowStartingPoints = [{ nodeId: entry.frame.id, name: `Start: ${entry.id}` }];
 
-  figma.currentPage.selection = [section];
+  figma.currentPage.selection = built.map((b) => b.frame);
   figma.viewport.scrollAndZoomIntoView(built.map((b) => b.frame));
   figma.notify(`Generated ${built.length} screen${built.length > 1 ? "s" : ""}.`);
   figma.ui.postMessage({ type: "generated", screenCount: built.length });
