@@ -50,6 +50,8 @@
   }
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 650; font-size: 13px; letter-spacing: -.01em; }
   .brand svg { width: 18px; height: 18px; color: var(--accent); }
+  .ic { display: inline-flex; align-items: center; }
+  svg.lucide { display: block; }
   .spacer { flex: 1; }
   .toolbar { display: flex; align-items: center; gap: 6px; }
 
@@ -227,7 +229,8 @@
   .badge.err { background: rgba(229,72,77,.15); color: var(--danger); }
   #validation { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
   #validation:empty { display: none; }
-  .val-item { display: flex; gap: 6px; font-size: 11px; padding: 6px 8px; border-radius: 6px; cursor: pointer; align-items: baseline; }
+  .val-item { display: flex; gap: 6px; font-size: 11px; padding: 6px 8px; border-radius: 6px; cursor: pointer; align-items: center; }
+  .val-ico { display: inline-flex; align-items: center; }
   .val-item.error { background: rgba(229,72,77,.10); }
   .val-item.warning { background: rgba(183,121,31,.12); }
   .val-item .val-scr { font-weight: 600; opacity: .8; }
@@ -247,10 +250,10 @@
   .pe-sub { border: 1px solid var(--border); border-radius: 6px; padding: 7px; display: flex; flex-direction: column; gap: 6px; background: var(--panel); }
   .pe-sub-head { display: flex; align-items: center; justify-content: space-between; }
   .pe-ds-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
-  .pe-btn { font-size: 11px; padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border); cursor: pointer;
-    background: var(--elev); color: inherit; }
+  .pe-btn { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 8px; border-radius: 5px;
+    border: 1px solid var(--border); cursor: pointer; background: var(--elev); color: inherit; }
   .pe-btn:hover { border-color: var(--accent); }
-  .pe-x { font-size: 11px; padding: 3px 8px; border-radius: 5px; border: none; cursor: pointer; background: transparent; color: var(--dim); }
+  .pe-x { display: inline-flex; align-items: center; padding: 3px 6px; border-radius: 5px; border: none; cursor: pointer; background: transparent; color: var(--dim); }
   .pe-x:hover { color: var(--danger); }
   .pe-note { font-size: 11px; color: var(--dim); font-style: italic; }
 
@@ -260,7 +263,7 @@
 <div class="app">
   <header class="topbar">
     <span class="brand">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.9-.9L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5z"/></svg>
+      <span class="ic" data-icon="message-circle" data-size="18"></span>
       Flows Builder
     </span>
     <span id="val-badge" class="badge"></span>
@@ -268,16 +271,16 @@
     <div class="toolbar">
       <select id="template" class="mini"><option value="">Template...</option></select>
       <button id="import" class="btn ghost" title="Import a Flow JSON file">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        <span class="ic" data-icon="import" data-size="14"></span>
         Import
       </button>
       <button id="copy" class="btn ghost" title="Copy the Flow JSON">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span class="ic" data-icon="copy" data-size="14"></span>
         Copy JSON
       </button>
     </div>
     <button id="generate" class="btn primary" title="Generate the screens in Figma">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l3.5 7L23 12l-6.5 2L13 21l-3.5-7L3 12l6.5-2L13 3z"/></svg>
+      <span class="ic" data-icon="sparkles" data-size="14"></span>
       Generate
     </button>
     <input id="file" type="file" accept="application/json,.json" hidden>

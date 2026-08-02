@@ -8,6 +8,7 @@ import { postToMain } from "../shared/messages";
 import { renderPreview, applyThemeVars } from "./preview";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
+import { iconEl, applyIcons } from "./icons";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -41,14 +42,17 @@ function renderScreens(): void {
     chip.appendChild(label);
     if (flow.screens.length > 1) {
       const x = document.createElement("span");
-      x.className = "x"; x.textContent = "✕";
+      x.className = "x"; x.title = "Delete screen";
+      x.appendChild(iconEl("x", 13));
       x.onclick = (e) => { e.stopPropagation(); flow.screens.splice(i, 1); current = Math.max(0, current - (i <= current ? 1 : 0)); syncAndRender(); };
       chip.appendChild(x);
     }
     host.appendChild(chip);
   });
   const add = document.createElement("button");
-  add.className = "chip add"; add.textContent = "+ Screen";
+  add.className = "chip add"; add.title = "Add screen";
+  add.appendChild(iconEl("plus", 13));
+  add.appendChild(document.createTextNode("Screen"));
   add.onclick = () => {
     const id = uniqueId("SCREEN");
     flow.screens.push({ id, title: "New screen", layout: { type: "SingleColumnLayout", children: [] } });
@@ -130,9 +134,9 @@ function renderComponentList(): void {
     const type = document.createElement("span");
     type.className = "type"; type.textContent = c.type;
     row.appendChild(type);
-    row.appendChild(iconBtn("↑", () => move(i, -1)));
-    row.appendChild(iconBtn("↓", () => move(i, +1)));
-    row.appendChild(iconBtn("✕", () => { kids.splice(i, 1); syncAndRender(); }));
+    row.appendChild(iconBtn("chevron-up", () => move(i, -1), "Move up"));
+    row.appendChild(iconBtn("chevron-down", () => move(i, +1), "Move down"));
+    row.appendChild(iconBtn("trash-2", () => { kids.splice(i, 1); syncAndRender(); }, "Remove"));
     card.appendChild(row);
 
     const ids = flow.screens.map((s) => s.id);
@@ -202,7 +206,8 @@ function issueRow(issue: Issue): HTMLElement {
   const row = document.createElement("div");
   row.className = "val-item " + issue.level;
   const ico = document.createElement("span");
-  ico.className = "val-ico"; ico.textContent = issue.level === "error" ? "✕" : "⚠";
+  ico.className = "val-ico";
+  ico.appendChild(iconEl(issue.level === "error" ? "circle-alert" : "triangle-alert", 13));
   row.appendChild(ico);
   if (issue.screen) {
     const scr = document.createElement("span");
@@ -254,9 +259,10 @@ function textField(value: string, onChange: (v: string) => void, placeholder = "
   inp.oninput = () => onChange(inp.value);
   return inp;
 }
-function iconBtn(glyph: string, onClick: () => void): HTMLButtonElement {
+function iconBtn(name: string, onClick: () => void, title = ""): HTMLButtonElement {
   const b = document.createElement("button");
-  b.className = "icon-btn"; b.textContent = glyph; b.onclick = onClick;
+  b.className = "icon-btn"; b.title = title; b.onclick = onClick;
+  b.appendChild(iconEl(name, 15));
   return b;
 }
 function uniqueId(base: string): string {
@@ -335,5 +341,6 @@ $("#copy").addEventListener("click", () => {
 });
 
 applyThemeVars();
+applyIcons(document);
 syncJson();
 renderAll();
