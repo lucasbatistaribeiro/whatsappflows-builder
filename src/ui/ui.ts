@@ -81,27 +81,34 @@ const PALETTE_GROUPS = ["Text", "Input", "Selection", "Media", "Action"] as cons
 function renderPalette(): void {
   const host = $("#palette");
   host.innerHTML = "";
+  const select = document.createElement("select");
+  select.className = "palette-select";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Add a component...";
+  select.appendChild(placeholder);
+
   for (const group of PALETTE_GROUPS) {
     const entries = PALETTE.filter((e) => e.group === group);
     if (entries.length === 0) continue;
-    const wrap = document.createElement("div");
-    wrap.className = "pal-group";
-    const heading = document.createElement("h4");
-    heading.textContent = group;
-    wrap.appendChild(heading);
-    const grid = document.createElement("div");
-    grid.className = "palette";
+    const og = document.createElement("optgroup");
+    og.label = group;
     for (const entry of entries) {
-      const b = document.createElement("button");
-      b.className = "g-" + entry.group;
-      b.textContent = entry.label;
-      b.title = `Add ${entry.type}`;
-      b.onclick = () => { screen().layout.children.push(entry.make()); syncAndRender(); };
-      grid.appendChild(b);
+      const o = document.createElement("option");
+      o.value = entry.type;
+      o.textContent = entry.label;
+      og.appendChild(o);
     }
-    wrap.appendChild(grid);
-    host.appendChild(wrap);
+    select.appendChild(og);
   }
+
+  // Adding re-renders the palette, which resets the select to the placeholder.
+  select.onchange = () => {
+    const entry = PALETTE.find((e) => e.type === select.value);
+    if (entry) { screen().layout.children.push(entry.make()); syncAndRender(); }
+  };
+  host.appendChild(select);
 }
 
 function renderComponentList(): void {
