@@ -126,23 +126,54 @@ function renderComponentList(): void {
     return;
   }
   kids.forEach((c, i) => {
+    const isCollapsed = COLLAPSED.has(c);
     const card = document.createElement("div");
-    card.className = "comp";
+    card.className = "comp" + (isCollapsed ? " collapsed" : "");
 
     const row = document.createElement("div");
     row.className = "row";
+
+    // Clickable header: collapse chevron + type name + (collapsed) value summary.
+    const head = document.createElement("div");
+    head.className = "comp-head";
+    const chev = document.createElement("span");
+    chev.className = "comp-chev";
+    chev.appendChild(iconEl(isCollapsed ? "chevron-right" : "chevron-down", 15));
     const type = document.createElement("span");
     type.className = "type"; type.textContent = c.type;
-    row.appendChild(type);
+    const sum = document.createElement("span");
+    sum.className = "comp-sum"; sum.textContent = summaryOf(c);
+    head.append(chev, type, sum);
+    head.onclick = () => {
+      const collapse = !card.classList.contains("collapsed");
+      card.classList.toggle("collapsed", collapse);
+      if (collapse) { COLLAPSED.add(c); sum.textContent = summaryOf(c); }
+      else COLLAPSED.delete(c);
+      chev.replaceChildren(iconEl(collapse ? "chevron-right" : "chevron-down", 15));
+    };
+    row.appendChild(head);
+
     row.appendChild(iconBtn("chevron-up", () => move(i, -1), "Move up"));
     row.appendChild(iconBtn("chevron-down", () => move(i, +1), "Move down"));
     row.appendChild(iconBtn("trash-2", () => { kids.splice(i, 1); syncAndRender(); }, "Remove"));
     card.appendChild(row);
 
     const ids = flow.screens.map((s) => s.id);
-    card.appendChild(buildPropEditor(c, ids, { soft: softSync, structural: structuralSync }));
+    const editor = buildPropEditor(c, ids, { soft: softSync, structural: structuralSync });
+    editor.classList.add("comp-body");
+    card.appendChild(editor);
     host.appendChild(card);
   });
+}
+
+// Tracks which components are collapsed, keyed by the component object so the
+// state survives reorders and re-renders (reset only when the flow is replaced).
+const COLLAPSED = new WeakSet<object>();
+
+// Short preview of a component's value, shown in the header when collapsed.
+function summaryOf(c: { text?: unknown; label?: unknown; name?: unknown }): string {
+  const v = c.text ?? c.label ?? c.name ?? "";
+  return typeof v === "string" ? v : "";
 }
 
 function move(i: number, dir: number): void {
