@@ -65,6 +65,65 @@
   .json-status.err { color: #d33; }
   .hint { font-size: 11px; opacity: .6; margin-top: 4px; }
   .empty { opacity: .5; padding: 20px 0; text-align: center; }
+
+  /* ---- Live WhatsApp preview ---- */
+  .pv-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .pv-tab { padding: 4px 10px; border-radius: 12px; background: var(--figma-color-bg-secondary, #f0f0f0); font-size: 11px; }
+  .pv-tab.active { background: var(--wa-primary); color: #fff; }
+
+  .wa-phone {
+    width: 300px; margin: 0 auto; border-radius: 22px; overflow: hidden;
+    border: 8px solid #111; background: var(--wa-bg, #fff);
+    display: flex; flex-direction: column; height: 560px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.18); color: var(--wa-text, #111);
+  }
+  .wa-status { display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 14px; font-size: 10px; background: var(--wa-status, #f7f8fa); color: var(--wa-text); }
+  .wa-header { display: flex; align-items: center; gap: 14px; padding: 12px 14px;
+    border-bottom: 1px solid var(--wa-divider, #e9edef); }
+  .wa-close { font-size: 18px; }
+  .wa-title { font-weight: 600; font-size: 15px; }
+  .wa-sub { font-size: 11px; color: var(--wa-text2, #667781); }
+  .wa-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  .wa-h1 { font-size: 20px; font-weight: 700; line-height: 1.25; }
+  .wa-h2 { font-size: 16px; font-weight: 600; }
+  .wa-body-text { font-size: 14px; line-height: 1.4; }
+  .wa-caption { font-size: 12px; color: var(--wa-text2); }
+  .wa-link { font-size: 14px; color: var(--wa-link, #027eb5); font-weight: 500; }
+  .wa-img { height: 150px; border-radius: 12px; background: var(--wa-divider); }
+
+  .wa-field { display: flex; flex-direction: column; gap: 4px; }
+  .wa-label { font-size: 12px; color: var(--wa-text2); font-weight: 500; }
+  .wa-help { font-size: 11px; color: var(--wa-text2); }
+  .wa-input { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
+    border: 1px solid var(--wa-input-border, #d1d7db); border-radius: 8px; background: var(--wa-surface, #fff); }
+  .wa-input.tall { min-height: 84px; align-items: flex-start; padding-top: 12px; }
+  .wa-ph { flex: 1; color: var(--wa-placeholder, #8696a0); font-size: 14px; }
+  .wa-trail { color: var(--wa-text2); }
+
+  .wa-opt { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+  .wa-opt-title { font-size: 14px; }
+  .wa-opt-desc { font-size: 12px; color: var(--wa-text2); }
+  .wa-mark { width: 20px; height: 20px; flex: 0 0 20px; border: 1.5px solid var(--wa-input-border); box-sizing: border-box; }
+  .wa-mark.radio { border-radius: 50%; }
+  .wa-mark.check { border-radius: 4px; }
+  .wa-mark.on { border-color: var(--wa-primary); }
+  .wa-mark.radio.on { border-width: 6px; }
+  .wa-mark.check.on { background: var(--wa-primary);
+    background-image: linear-gradient(var(--wa-primary), var(--wa-primary)); }
+
+  .wa-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .wa-chip { padding: 7px 14px; border-radius: 16px; background: var(--wa-chip, #f0f2f5); font-size: 13px; }
+  .wa-chip.on { background: var(--wa-chip-sel, #d9fdd3); border: 1px solid var(--wa-chip-sel-border, #008069); }
+
+  .wa-footer { padding: 8px 16px 16px; border-top: 1px solid var(--wa-divider); }
+  .wa-btn { width: 100%; border: none; border-radius: 24px; padding: 13px; font-weight: 600;
+    font-size: 14px; background: var(--wa-primary, #008069); color: var(--wa-on-primary, #fff); cursor: pointer; }
+
+  .wa-sum-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0;
+    border-bottom: 1px solid var(--wa-divider); }
+  .wa-sum-val { color: var(--wa-text2); }
 </style>
 
 <div class="app">
@@ -76,6 +135,7 @@
 
   <div class="tabs">
     <div class="tab active" data-tab="build">Build</div>
+    <div class="tab" data-tab="preview">Preview</div>
     <div class="tab" data-tab="json">Flow JSON</div>
   </div>
 
@@ -90,6 +150,10 @@
 
       <div class="section-label">Components on this screen</div>
       <div class="comp-list" id="comp-list"></div>
+    </div>
+
+    <div class="panel" id="panel-preview">
+      <div id="preview"></div>
     </div>
 
     <div class="panel" id="panel-json">
