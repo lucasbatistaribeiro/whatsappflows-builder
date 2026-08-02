@@ -48,7 +48,7 @@ function renderScreens(): void {
     host.appendChild(chip);
   });
   const add = document.createElement("button");
-  add.className = "sm"; add.textContent = "+ Screen";
+  add.className = "chip add"; add.textContent = "+ Screen";
   add.onclick = () => {
     const id = uniqueId("SCREEN");
     flow.screens.push({ id, title: "New screen", layout: { type: "SingleColumnLayout", children: [] } });
@@ -76,16 +76,31 @@ function renderScreenMeta(): void {
   host.appendChild(cb);
 }
 
+const PALETTE_GROUPS = ["Text", "Input", "Selection", "Media", "Action"] as const;
+
 function renderPalette(): void {
   const host = $("#palette");
   host.innerHTML = "";
-  for (const entry of PALETTE) {
-    const b = document.createElement("button");
-    b.className = "sm";
-    b.textContent = entry.label;
-    b.title = entry.type;
-    b.onclick = () => { screen().layout.children.push(entry.make()); syncAndRender(); };
-    host.appendChild(b);
+  for (const group of PALETTE_GROUPS) {
+    const entries = PALETTE.filter((e) => e.group === group);
+    if (entries.length === 0) continue;
+    const wrap = document.createElement("div");
+    wrap.className = "pal-group";
+    const heading = document.createElement("h4");
+    heading.textContent = group;
+    wrap.appendChild(heading);
+    const grid = document.createElement("div");
+    grid.className = "palette";
+    for (const entry of entries) {
+      const b = document.createElement("button");
+      b.className = "g-" + entry.group;
+      b.textContent = entry.label;
+      b.title = `Add ${entry.type}`;
+      b.onclick = () => { screen().layout.children.push(entry.make()); syncAndRender(); };
+      grid.appendChild(b);
+    }
+    wrap.appendChild(grid);
+    host.appendChild(wrap);
   }
 }
 
@@ -234,7 +249,7 @@ function textField(value: string, onChange: (v: string) => void, placeholder = "
 }
 function iconBtn(glyph: string, onClick: () => void): HTMLButtonElement {
   const b = document.createElement("button");
-  b.className = "sm ghost"; b.textContent = glyph; b.onclick = onClick;
+  b.className = "icon-btn"; b.textContent = glyph; b.onclick = onClick;
   return b;
 }
 function uniqueId(base: string): string {
@@ -294,9 +309,7 @@ document.querySelectorAll(".tab").forEach((t) => {
     t.classList.add("active");
     const name = (t as HTMLElement).dataset.tab;
     $("#panel-build").classList.toggle("active", name === "build");
-    $("#panel-preview").classList.toggle("active", name === "preview");
     $("#panel-json").classList.toggle("active", name === "json");
-    if (name === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
   });
 });
 

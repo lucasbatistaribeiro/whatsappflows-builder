@@ -10,7 +10,7 @@ import { createUIKit } from "./waKit";
 
 const GAP = 56;
 
-figma.showUI(__html__, { width: 460, height: 720, themeColors: true });
+figma.showUI(__html__, { width: 900, height: 640, themeColors: true });
 
 figma.ui.onmessage = async (msg: UIToMain) => {
   try {
