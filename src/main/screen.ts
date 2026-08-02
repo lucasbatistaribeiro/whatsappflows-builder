@@ -3,7 +3,7 @@
 import type { Screen, Component } from "../model/flowTypes";
 import { COLOR, DEVICE, RADIUS, SPACE } from "./theme";
 import { FONT } from "./fonts";
-import { autoFrame, text, divider } from "./nodes";
+import { autoFrame, text, divider, markFill, markFillV } from "./nodes";
 import { statusBar, header } from "./chrome";
 import { renderComponent } from "./components";
 
@@ -38,7 +38,7 @@ function footerButton(c: Component): FrameNode {
     name: "footer-button", axis: "HORIZONTAL", height: 48, radius: RADIUS.button,
     bg: COLOR.primary, align: "CENTER", counterAlign: "CENTER",
   });
-  btn.layoutAlign = "STRETCH";
+  markFill(btn);
   btn.appendChild(text(c.label ?? "Continue", { font: FONT.semibold, size: 15, color: COLOR.onPrimary }));
   return btn;
 }
@@ -51,14 +51,14 @@ export function buildScreen(screen: Screen): BuiltScreen {
     width: DEVICE.width, height: DEVICE.height,
   });
   frame.clipsContent = true;
-  frame.appendChild(statusBar());
-  frame.appendChild(header(screen.title ?? ""));
+  const sb = statusBar(); frame.appendChild(sb); markFill(sb);
+  const hd = header(screen.title ?? ""); frame.appendChild(hd); markFill(hd);
 
+  // Body fills the width and grows to take the remaining height (footer pins bottom).
   const body = autoFrame({ name: "body", gap: SPACE.gap, padding: SPACE.screenPad });
-  body.layoutAlign = "STRETCH";
-  body.layoutGrow = 1;
-  body.primaryAxisSizingMode = "FIXED";
   frame.appendChild(body);
+  markFill(body);
+  markFillV(body);
 
   const children = screen.layout.children ?? [];
   const footer = children.find((c) => c.type === "Footer");
@@ -74,7 +74,7 @@ export function buildScreen(screen: Screen): BuiltScreen {
 
   if (footer) {
     const area = autoFrame({ name: "footer", padding: [8, SPACE.screenPad, 20, SPACE.screenPad], gap: 8, bg: COLOR.bg });
-    area.layoutAlign = "STRETCH";
+    markFill(area);
     area.appendChild(divider());
     const btn = footerButton(footer);
     area.appendChild(btn);
@@ -88,9 +88,9 @@ export function buildScreen(screen: Screen): BuiltScreen {
       const note = action ? ACTION_NOTE[action.name] : undefined;
       if (note) {
         const cap = text(note, { size: 11, color: COLOR.textSecondary });
-        cap.layoutAlign = "STRETCH";
         cap.textAlignHorizontal = "CENTER";
         area.appendChild(cap);
+        markFill(cap);
       }
     }
     frame.appendChild(area);

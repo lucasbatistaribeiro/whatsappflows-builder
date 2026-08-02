@@ -1,7 +1,7 @@
 // WhatsApp screen chrome: status bar and the top app bar shown above the flow body.
 import { COLOR, DEVICE } from "./theme";
 import { FONT } from "./fonts";
-import { autoFrame, text, divider } from "./nodes";
+import { autoFrame, text, divider, markFill } from "./nodes";
 
 export function statusBar(): FrameNode {
   const bar = autoFrame({
@@ -11,7 +11,7 @@ export function statusBar(): FrameNode {
   });
   const time = text("9:41", { font: FONT.semibold, size: 13, color: COLOR.textPrimary });
   const spacer = autoFrame({ axis: "HORIZONTAL" });
-  spacer.layoutGrow = 1;
+  markFill(spacer);
   const icons = text("▂▄▆  Wi-Fi  ▮", { size: 11, color: COLOR.textPrimary });
   bar.appendChild(time);
   bar.appendChild(spacer);
@@ -26,7 +26,7 @@ export function header(title: string): FrameNode {
     axis: "HORIZONTAL", gap: 16, padding: [14, 16, 14, 16],
     align: "MIN", counterAlign: "CENTER",
   });
-  row.layoutAlign = "STRETCH";
+  markFill(row);
 
   const close = text("✕", { size: 20, color: COLOR.textPrimary });
   const titles = autoFrame({ gap: 1 });
