@@ -175,14 +175,17 @@
   .pv-tab.err { box-shadow: inset 0 0 0 1.5px #d33; }
 
   .wa-phone {
-    width: 100%; max-width: 300px; margin: 0 auto; border-radius: 22px; overflow: hidden;
-    border: 8px solid #111; background: var(--wa-bg, #fff);
-    display: flex; flex-direction: column; height: 560px;
+    width: 100%; max-width: 300px; margin: 0 auto; border-radius: 28px; overflow: hidden;
+    border: 9px solid #0b0b0b; background: var(--wa-bg, #fff);
+    display: flex; flex-direction: column; aspect-ratio: 9 / 19; height: auto;
     box-shadow: 0 6px 24px rgba(0,0,0,.18); color: var(--wa-text, #111);
   }
   .wa-phone.has-error { border-color: #d33; }
   .wa-status { display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 14px; font-size: 10px; background: var(--wa-status, #f7f8fa); color: var(--wa-text); }
+    padding: 9px 16px 5px; background: var(--wa-status, #f7f8fa); color: var(--wa-text); }
+  .wa-status-time { font-weight: 600; font-size: 13px; letter-spacing: .2px; }
+  .wa-status-icons { display: flex; align-items: center; gap: 5px; }
+  .wa-status-icons svg { display: block; }
   .wa-header { display: flex; align-items: center; gap: 14px; padding: 12px 14px;
     border-bottom: 1px solid var(--wa-divider, #e9edef); }
   .wa-close { font-size: 18px; }
