@@ -34,6 +34,12 @@ let selected: string | null = null; // screen id, or "__summary__"
 const SUMMARY = "__summary__";
 let errScreens: Set<string> = new Set(); // screen ids with validation errors
 
+// Interactive mode: when off, the in-phone CTA doesn't navigate (static preview),
+// mirroring the Playground toggle. The screen tabs above the phone are a plugin
+// authoring aid and stay active regardless.
+let interactive = true;
+export function setPreviewInteractive(on: boolean): void { interactive = on; }
+
 function el(tag: string, className?: string, text?: string): HTMLElement {
   const n = document.createElement(tag);
   if (className) n.className = className;
@@ -281,17 +287,19 @@ function renderComp(c: Component, _flow: FlowJSON): HTMLElement {
 
 function renderFooter(c: Component, flow: FlowJSON): HTMLElement {
   const area = el("div", "wa-footer");
-  const btn = el("button", "wa-btn", c.label ?? "Continue");
+  const btn = el("button", "wa-btn" + (interactive ? "" : " static"), c.label ?? "Continue");
   const action = c["on-click-action"];
-  btn.onclick = () => {
-    if (action?.name === "navigate" && action.next?.name) {
-      selected = action.next.name;
-      rerender(flow);
-    } else if (action?.name === "complete") {
-      selected = SUMMARY;
-      rerender(flow);
-    }
-  };
+  if (interactive) {
+    btn.onclick = () => {
+      if (action?.name === "navigate" && action.next?.name) {
+        selected = action.next.name;
+        rerender(flow);
+      } else if (action?.name === "complete") {
+        selected = SUMMARY;
+        rerender(flow);
+      }
+    };
+  }
   area.appendChild(btn);
   return area;
 }

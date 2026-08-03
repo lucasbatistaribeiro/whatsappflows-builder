@@ -242,6 +242,7 @@
   .wa-footer { padding: 8px 16px 16px; border-top: 1px solid var(--wa-divider); }
   .wa-btn { width: 100%; border: none; border-radius: 24px; padding: 13px; font-weight: 600;
     font-size: 14px; background: var(--wa-primary, #008069); color: var(--wa-on-primary, #fff); cursor: pointer; }
+  .wa-btn.static { cursor: default; }
 
   .wa-sum-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0;
     border-bottom: 1px solid var(--wa-divider); }
@@ -358,6 +359,9 @@
   .menu-group-title { font-size: 14px; color: var(--dim); font-weight: 600; }
   .menu-seg { width: 100%; }
   .menu-seg .seg-item { flex: 1; text-align: center; }
+  .menu-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 14px; color: var(--text); cursor: pointer; }
+  .menu-toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; margin: 0; }
 
   /* ---- Responsive (narrow Figma plugin windows, ~300px+) ---- */
   .val-item > :last-child { flex: 1; min-width: 0; }
@@ -394,6 +398,14 @@
       <button id="menu-close" class="icon-btn" title="Close" aria-label="Close">
         <span class="ic" data-icon="x" data-size="16"></span>
       </button>
+    </div>
+
+    <div class="menu-group">
+      <div class="menu-group-title" data-i18n="groupPreview">Preview</div>
+      <label class="menu-toggle">
+        <span data-i18n="interactive">Interactive mode</span>
+        <input type="checkbox" id="interactive-toggle" checked>
+      </label>
     </div>
 
     <div class="menu-group">

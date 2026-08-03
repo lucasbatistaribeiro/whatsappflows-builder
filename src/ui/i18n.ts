@@ -14,6 +14,8 @@ const DICT: Record<string, Entry> = {
   generate: { en: "Generate", pt: "Gerar" },
   // menu
   menuTitle: { en: "Menu", pt: "Menu" },
+  groupPreview: { en: "Preview", pt: "Prévia" },
+  interactive: { en: "Interactive mode", pt: "Modo interativo" },
   groupFlow: { en: "Flow", pt: "Fluxo" },
   groupAppearance: { en: "Appearance", pt: "Aparência" },
   groupLanguage: { en: "Language", pt: "Idioma" },

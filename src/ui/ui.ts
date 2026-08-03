@@ -6,13 +6,13 @@ import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
 import { TEMPLATES } from "../model/templates";
 import { postToMain } from "../shared/messages";
-import { renderPreview, applyThemeVars } from "./preview";
+import { renderPreview, applyThemeVars, setPreviewInteractive } from "./preview";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
 import { iconEl, applyIcons } from "./icons";
 import { createDropdown } from "./dropdown";
 import { t, setLang, applyI18n, type Lang } from "./i18n";
-import type { Prefs, ThemePref } from "../shared/messages";
+import type { Prefs, ThemePref, GenOptions } from "../shared/messages";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -382,7 +382,10 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(
 
 // ---- Preferences: theme & language --------------------------------------
 
-let prefs: Prefs = { theme: "system", lang: "en" };
+let prefs: Prefs = { theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true };
+
+// The WhatsApp-mockup options sent with a generate + used by the live preview.
+const genOptions = (): GenOptions => ({ os: prefs.os, theme: prefs.previewTheme, interactive: prefs.interactive });
 
 // System = follow the OS/Figma theme (no data-theme); light/dark force it.
 function applyTheme(theme: ThemePref): void {
@@ -402,10 +405,17 @@ function applyLang(lang: Lang): void {
   renderAll();
 }
 
+function applyInteractive(on: boolean): void {
+  setPreviewInteractive(on);
+  const box = document.querySelector<HTMLInputElement>("#interactive-toggle");
+  if (box) box.checked = on;
+}
+
 function applyPrefs(p: Prefs): void {
-  prefs = p;
-  applyTheme(p.theme);
-  applyLang(p.lang);
+  prefs = { ...prefs, ...p };
+  applyTheme(prefs.theme);
+  applyLang(prefs.lang);
+  applyInteractive(prefs.interactive);
 }
 
 const savePrefs = (): void => postToMain({ type: "savePrefs", prefs });
@@ -422,6 +432,13 @@ document.querySelectorAll<HTMLElement>("#lang-seg .seg-item").forEach((b) =>
     applyLang(prefs.lang);
     savePrefs();
   }));
+
+$("#interactive-toggle").addEventListener("change", (e) => {
+  prefs = { ...prefs, interactive: (e.target as HTMLInputElement).checked };
+  applyInteractive(prefs.interactive);
+  renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
+  savePrefs();
+});
 
 // Saved prefs pushed from the main thread on startup.
 window.addEventListener("message", (e: MessageEvent) => {
@@ -459,7 +476,7 @@ document.querySelectorAll(".tab").forEach((t) => {
 
 $("#json").addEventListener("input", onJsonInput);
 
-$("#generate").addEventListener("click", () => postToMain({ type: "generate", flow }));
+$("#generate").addEventListener("click", () => postToMain({ type: "generate", flow, options: genOptions() }));
 
 $("#copy").addEventListener("click", () => {
   closeMenu();

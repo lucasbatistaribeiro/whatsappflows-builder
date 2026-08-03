@@ -1,7 +1,7 @@
 // Plugin main thread (Figma sandbox). Receives a Flow JSON from the UI and
 // renders navigable WhatsApp-styled screens on the canvas.
 import type { FlowJSON } from "../model/flowTypes";
-import type { UIToMain, Prefs } from "../shared/messages";
+import type { UIToMain, Prefs, GenOptions } from "../shared/messages";
 import { DEVICE } from "./theme";
 import { applyFills } from "./nodes";
 import { loadFonts } from "./fonts";
@@ -11,13 +11,14 @@ import { wireNavigation } from "./routing";
 const GAP = 56;
 
 const PREFS_KEY = "flows-builder-prefs";
-const DEFAULT_PREFS: Prefs = { theme: "system", lang: "en" };
+const DEFAULT_PREFS: Prefs = { theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true };
 
 figma.showUI(__html__, { width: 500, height: 740, themeColors: true });
 
-// Send saved preferences to the UI once it's up.
+// Send saved preferences to the UI once it's up. Merge over defaults so prefs
+// saved before newer fields existed still load with sensible values.
 figma.clientStorage.getAsync(PREFS_KEY).then((saved: unknown) => {
-  const prefs = (saved && typeof saved === "object" ? saved : DEFAULT_PREFS) as Prefs;
+  const prefs = { ...DEFAULT_PREFS, ...(saved && typeof saved === "object" ? saved : {}) } as Prefs;
   figma.ui.postMessage({ type: "prefs", prefs });
 });
 
@@ -36,7 +37,7 @@ figma.ui.onmessage = async (msg: UIToMain) => {
       return;
     }
     if (msg.type === "generate") {
-      await generate(msg.flow);
+      await generate(msg.flow, msg.options);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -45,7 +46,9 @@ figma.ui.onmessage = async (msg: UIToMain) => {
   }
 };
 
-async function generate(flow: FlowJSON): Promise<void> {
+const DEFAULT_OPTIONS: GenOptions = { os: "ios", theme: "light", interactive: true };
+
+async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): Promise<void> {
   if (!flow || !Array.isArray(flow.screens) || flow.screens.length === 0) {
     throw new Error("Flow has no screens.");
   }
@@ -64,12 +67,13 @@ async function generate(flow: FlowJSON): Promise<void> {
     applyFills(b.frame);
   });
 
-  await wireNavigation(built);
-
-  // Entry screen = the prototype starting point.
-  const entryId = entryScreen(flow);
-  const entry = built.find((b) => b.id === entryId) ?? built[0];
-  figma.currentPage.flowStartingPoints = [{ nodeId: entry.frame.id, name: `Start: ${entry.id}` }];
+  // Interactive = wire the clickable prototype; otherwise leave plain frames.
+  if (options.interactive) {
+    await wireNavigation(built);
+    const entryId = entryScreen(flow);
+    const entry = built.find((b) => b.id === entryId) ?? built[0];
+    figma.currentPage.flowStartingPoints = [{ nodeId: entry.frame.id, name: `Start: ${entry.id}` }];
+  }
 
   figma.currentPage.selection = built.map((b) => b.frame);
   figma.viewport.scrollAndZoomIntoView(built.map((b) => b.frame));
