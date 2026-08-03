@@ -5,6 +5,33 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Validator missed several static-validation errors Meta rejects on publish
+
+**Symptom.** The builder reported a flow as valid, but the WhatsApp Flows
+Playground rejected it on publish/preview with a static-validation error.
+
+**Root cause.** Audited `validate.ts` against Meta's
+[error-codes reference](https://developers.facebook.com/docs/whatsapp/flows/reference/error-codes)
+(static-validation family). Five cases were reachable from the UI but unchecked:
+- a `complete` action on a non-terminal screen (`INVALID_COMPLETE_ACTION`);
+- a `complete` action on an `EmbeddedLink` — `complete` is Footer-only
+  (`INVALID_ENUM_VALUE`); the action dropdown even offered it;
+- a `navigate` targeting its own screen (`INVALID_NAVIGATE_ACTION_NEXT_SCREEN_NAME`,
+  loop);
+- a stale `success` on a non-terminal screen (`NOT_KEYWORD_...`) — unchecking
+  **Terminal** left `success: true` behind;
+- a Footer `right-caption` without a `left-caption` (`INVALID_DEPENDENCIES`).
+
+The routing-model and data-binding error families were deliberately left out —
+they only apply to Data Endpoint flows, which this builder doesn't produce.
+
+**Fix.** Added the five rules to `validate.ts` (with i18n keys). Restricted the
+`EmbeddedLink` action editor to actions that exclude `complete`, and kept
+`success` in lockstep with `terminal` in the screen-meta toggle so it can't go
+stale.
+
+---
+
 ## Exported Flow JSON could fail to import into the Playground
 
 **Symptom.** A flow that the builder reported as "valid" (or at least

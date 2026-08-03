@@ -59,13 +59,22 @@ function validateScreen(s: Screen, ids: Set<string>, push: Push): void {
   if (footers.length > 1) push("error", "vOneFooter", undefined, s.id);
   if (s.terminal && footers.length === 0) push("error", "vTerminalNoFooter", undefined, s.id);
 
-  // Navigation targets must exist.
+  // `success` is a terminal-only property (defaults true on terminal screens).
+  if (s.success && !s.terminal) push("error", "vSuccessNonTerminal", undefined, s.id);
+
+  // Component-level actions: navigate targets must exist and not self-loop;
+  // `complete` is Footer-only and terminal-only.
   for (const c of kids) {
     const a = c["on-click-action"];
     if (a?.name === "navigate") {
       const target = a.next?.name;
       if (!target) push("error", "vNavNoTarget", [c.type], s.id);
       else if (!ids.has(target)) push("error", "vNavTargetMissing", [target], s.id);
+      else if (target === s.id) push("error", "vNavSelfLoop", [s.id], s.id);
+    }
+    if (a?.name === "complete") {
+      if (c.type === "EmbeddedLink") push("error", "vLinkComplete", undefined, s.id);
+      else if (!s.terminal) push("error", "vCompleteNonTerminal", undefined, s.id);
     }
   }
 
@@ -96,6 +105,7 @@ function validateScreen(s: Screen, ids: Set<string>, push: Push): void {
         const target = ia.next?.name;
         if (!target) push("error", "vNavNoTarget", ["NavigationList"], s.id);
         else if (!ids.has(target)) push("error", "vNavTargetMissing", [target], s.id);
+        else if (target === s.id) push("error", "vNavSelfLoop", [s.id], s.id);
       }
     }
     if (!hasAction) push("error", "vNavListNoAction", undefined, s.id);
@@ -130,6 +140,11 @@ function validateComponent(c: Component, screenId: string, push: Push): void {
     if (!Array.isArray(imgs) || imgs.length === 0 || imgs.some((im) => blank(im?.src))) {
       push("warning", "vCarouselNoSrc", undefined, screenId);
     }
+  }
+
+  // Footer captions: a right-caption requires a left-caption (spec dependency).
+  if (c.type === "Footer" && !blank(c["right-caption"]) && blank(c["left-caption"])) {
+    push("error", "vCaptionDep", undefined, screenId);
   }
 
   if (c.type === "Footer" && len(c.label) > FOOTER_LABEL_MAX) {

@@ -12,7 +12,9 @@ export interface EditorCallbacks {
 }
 
 const INPUT_TYPES = ["text", "number", "email", "password", "passcode", "phone"];
-const ACTION_NAMES: ActionName[] = ["navigate", "complete", "data_exchange"];
+// `complete` is Footer-only in the Flow JSON spec; EmbeddedLink can't use it.
+const FOOTER_ACTIONS: ActionName[] = ["navigate", "complete", "data_exchange"];
+const LINK_ACTIONS: ActionName[] = ["navigate", "data_exchange"];
 
 export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCallbacks): HTMLElement {
   const form = div("pe-form");
@@ -83,7 +85,7 @@ export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCal
 
     case "EmbeddedLink":
       form.appendChild(text("Text", str(c.text), (v) => { set("text", v); cb.soft(); }));
-      form.appendChild(actionEditor(c, screenIds, cb));
+      form.appendChild(actionEditor(c, screenIds, cb, LINK_ACTIONS));
       break;
 
     case "Image":
@@ -92,7 +94,7 @@ export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCal
 
     case "Footer":
       form.appendChild(text("Label", str(c.label), (v) => { set("label", v); cb.soft(); }));
-      form.appendChild(actionEditor(c, screenIds, cb));
+      form.appendChild(actionEditor(c, screenIds, cb, FOOTER_ACTIONS));
       form.appendChild(text("Left caption", str(c["left-caption"]), (v) => { set("left-caption", v || undefined); cb.soft(); }));
       form.appendChild(text("Right caption", str(c["right-caption"]), (v) => { set("right-caption", v || undefined); cb.soft(); }));
       break;
@@ -102,13 +104,13 @@ export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCal
 
 // ---- Action sub-editor --------------------------------------------------
 
-function actionEditor(c: Component, screenIds: string[], cb: EditorCallbacks): HTMLElement {
+function actionEditor(c: Component, screenIds: string[], cb: EditorCallbacks, actions: ActionName[] = FOOTER_ACTIONS): HTMLElement {
   const wrap = div("pe-sub");
   let action = c["on-click-action"];
   if (!action) { action = { name: "navigate", next: { type: "screen", name: "" }, payload: {} }; c["on-click-action"] = action; }
   const a = action;
 
-  wrap.appendChild(select("Action", a.name, ACTION_NAMES, (v) => {
+  wrap.appendChild(select("Action", a.name, actions, (v) => {
     a.name = v as ActionName;
     if (a.name === "navigate") { if (!a.next) a.next = { type: "screen", name: "" }; }
     else delete a.next; // keep JSON clean: only navigate carries a target

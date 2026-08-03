@@ -79,7 +79,13 @@ function renderScreenMeta(): void {
   host.appendChild(fieldLabel(t("terminal")));
   const cb = document.createElement("input");
   cb.type = "checkbox"; cb.checked = !!s.terminal;
-  cb.onchange = () => { s.terminal = cb.checked || undefined; renderScreens(); syncJson(); };
+  // Keep `success` in lockstep with `terminal` — it's a terminal-only property,
+  // so a stale `success` on a non-terminal screen would be rejected on import.
+  cb.onchange = () => {
+    s.terminal = cb.checked || undefined;
+    s.success = cb.checked ? true : undefined;
+    renderScreens(); syncJson();
+  };
   host.appendChild(cb);
 }
 
