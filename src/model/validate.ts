@@ -1,7 +1,7 @@
 // Lints a Flow against the WhatsApp Flows constraints most likely to break a
 // publish or a runtime. Pure and dependency-free (no i18n) — each issue carries
 // a message key + params, and the UI translates it. Keys/text live in i18n.ts.
-import type { FlowJSON, Screen, Component } from "./flowTypes";
+import type { FlowJSON, Screen, Component, Action } from "./flowTypes";
 
 export interface Issue {
   level: "error" | "warning";
@@ -82,7 +82,23 @@ function validateScreen(s: Screen, ids: Set<string>, push: Push): void {
   if (navs.length > 0 && s.terminal) push("error", "vNavListTerminal", undefined, s.id);
   for (const nav of navs) {
     const li = nav["list-items"];
-    if (!Array.isArray(li) || li.length === 0) push("error", "vNavListItems", undefined, s.id);
+    if (!Array.isArray(li) || li.length === 0) { push("error", "vNavListItems", undefined, s.id); continue; }
+    // A NavigationList must navigate somewhere — via a component-level action or
+    // a per-item action. Without one the list does nothing and the flow won't
+    // import. Item-level navigate targets are checked here (component-level ones
+    // are covered by the generic on-click-action loop above).
+    let hasAction = !!nav["on-click-action"];
+    for (const item of li as Array<Record<string, unknown>>) {
+      const ia = item["on-click-action"] as Action | undefined;
+      if (!ia) continue;
+      hasAction = true;
+      if (ia.name === "navigate") {
+        const target = ia.next?.name;
+        if (!target) push("error", "vNavNoTarget", ["NavigationList"], s.id);
+        else if (!ids.has(target)) push("error", "vNavTargetMissing", [target], s.id);
+      }
+    }
+    if (!hasAction) push("error", "vNavListNoAction", undefined, s.id);
   }
 
   // Upload pickers.
@@ -104,6 +120,17 @@ function validateScreen(s: Screen, ids: Set<string>, push: Push): void {
 
 function validateComponent(c: Component, screenId: string, push: Push): void {
   const len = (v: unknown) => (typeof v === "string" ? v.length : 0);
+  const blank = (v: unknown) => typeof v !== "string" || v.trim() === "";
+
+  // Media needs real base64 in `src`. Empty src renders a placeholder in the
+  // Figma mockup but is rejected on import — warn so it surfaces either way.
+  if (c.type === "Image" && blank(c.src)) push("warning", "vImageNoSrc", undefined, screenId);
+  if (c.type === "ImageCarousel") {
+    const imgs = c.images as Array<Record<string, unknown>> | undefined;
+    if (!Array.isArray(imgs) || imgs.length === 0 || imgs.some((im) => blank(im?.src))) {
+      push("warning", "vCarouselNoSrc", undefined, screenId);
+    }
+  }
 
   if (c.type === "Footer" && len(c.label) > FOOTER_LABEL_MAX) {
     push("warning", "vFooterLen", [FOOTER_LABEL_MAX], screenId);

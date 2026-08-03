@@ -57,9 +57,9 @@ export const PALETTE: PaletteEntry[] = [
   { type: "ImageCarousel", label: "Carousel", group: "Media", make: () => ({ type: "ImageCarousel", images: [{ src: "", "alt-text": "Image 1" }, { src: "", "alt-text": "Image 2" }] }) },
   {
     type: "NavigationList", label: "Nav list", group: "Selection",
-    make: () => ({ type: "NavigationList", name: "nav", "list-items": [
-      { id: "0", "main-content": { title: "First item", description: "Description" } },
-      { id: "1", "main-content": { title: "Second item", description: "Description" } },
+    make: () => ({ type: "NavigationList", "list-items": [
+      { id: "0", "main-content": { title: "First item", description: "Description" }, "on-click-action": { name: "navigate", next: { type: "screen", name: "" }, payload: {} } },
+      { id: "1", "main-content": { title: "Second item", description: "Description" }, "on-click-action": { name: "navigate", next: { type: "screen", name: "" }, payload: {} } },
     ] }),
   },
   { type: "EmbeddedLink", label: "Link", group: "Media", make: () => ({ type: "EmbeddedLink", text: "Learn more", "on-click-action": { name: "navigate", next: { type: "screen", name: "" }, payload: {} } }) },

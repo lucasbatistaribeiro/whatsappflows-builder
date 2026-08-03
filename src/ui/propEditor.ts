@@ -1,6 +1,6 @@
 // Per-component property editor shown inside each Build-tab card. Returns a
 // form whose controls mutate the component in place, then call back to sync.
-import type { Component, DataSourceItem, ActionName } from "../model/flowTypes";
+import type { Component, DataSourceItem, ActionName, Action } from "../model/flowTypes";
 import { iconEl } from "./icons";
 import { createDropdown } from "./dropdown";
 
@@ -64,8 +64,7 @@ export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCal
       break;
 
     case "NavigationList":
-      form.appendChild(text("Name", str(c.name), (v) => { set("name", v); cb.soft(); }));
-      form.appendChild(navItemsEditor(c, cb));
+      form.appendChild(navItemsEditor(c, screenIds, cb));
       break;
 
     case "RadioButtonsGroup":
@@ -155,15 +154,17 @@ function dataSourceEditor(c: Component, cb: EditorCallbacks): HTMLElement {
 
 // ---- NavigationList items sub-editor ------------------------------------
 
-interface NavItem { id?: string; "main-content"?: { title?: string; description?: string } }
+interface NavItem { id?: string; "main-content"?: { title?: string; description?: string }; "on-click-action"?: Action }
 
-function navItemsEditor(c: Component, cb: EditorCallbacks): HTMLElement {
+const navAction = (): Action => ({ name: "navigate", next: { type: "screen", name: "" }, payload: {} });
+
+function navItemsEditor(c: Component, screenIds: string[], cb: EditorCallbacks): HTMLElement {
   const wrap = div("pe-sub");
   const head = div("pe-sub-head");
   head.appendChild(spanText("Items"));
   head.appendChild(addButton(() => {
     const items = ((c["list-items"] as NavItem[]) ??= []);
-    items.push({ id: String(items.length), "main-content": { title: `Item ${items.length + 1}`, description: "Description" } });
+    items.push({ id: String(items.length), "main-content": { title: `Item ${items.length + 1}`, description: "Description" }, "on-click-action": navAction() });
     cb.structural();
   }));
   wrap.appendChild(head);
@@ -178,6 +179,15 @@ function navItemsEditor(c: Component, cb: EditorCallbacks): HTMLElement {
     row.appendChild(title);
     row.appendChild(removeButton(() => { items.splice(i, 1); cb.structural(); }));
     wrap.appendChild(row);
+
+    // Each item navigates on tap — let the user pick the target screen.
+    const action = (it["on-click-action"] ??= navAction());
+    const target = action.next?.name ?? "";
+    wrap.appendChild(select("Go to", target, ["", ...screenIds], (v) => {
+      action.name = "navigate";
+      action.next = { type: "screen", name: v };
+      cb.soft();
+    }, "(choose screen)"));
   });
   return wrap;
 }

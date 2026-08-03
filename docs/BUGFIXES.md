@@ -5,6 +5,30 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Exported Flow JSON could fail to import into the Playground
+
+**Symptom.** A flow that the builder reported as "valid" (or at least
+generatable/copyable) could be rejected by the WhatsApp Flows Playground on
+import.
+
+**Root cause.** Three conformance gaps the validator didn't catch:
+- A `NavigationList` added from the palette carried a spurious `name` and **no
+  `on-click-action`** on the component or its items — so it navigated nowhere,
+  which the Playground rejects (the field isn't part of the spec either).
+- `Image` / `ImageCarousel` were added with an empty `src`; empty base64 renders
+  a placeholder in the Figma mockup but is invalid on import.
+- **Copy JSON** was ungated — only `Generate` was blocked on errors — so a flow
+  with an empty `navigate` target (`next.name: ""`) could be copied out broken.
+
+**Fix.** In `validate.ts`: require a navigate action on every `NavigationList`
+(component- or item-level) and validate item-level navigate targets; warn on
+empty `Image`/`ImageCarousel` `src`. Dropped `name` from the `NavigationList`
+palette default and gave each item a `navigate` action; the prop editor now
+exposes a per-item **Go to** screen picker (and no longer shows `name`). Gated
+**Copy JSON** on errors, mirroring `Generate`.
+
+---
+
 ## Menu drawer shadow/border showed when closed — [#41](https://github.com/lucasbatistaribeiro/whatsappflows-builder/pull/41)
 
 **Symptom.** With the hamburger menu closed, a shadow strip lingered on the left

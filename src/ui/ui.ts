@@ -450,6 +450,13 @@ $("#generate").addEventListener("click", () => postToMain({ type: "generate", fl
 
 $("#copy").addEventListener("click", () => {
   closeMenu();
+  // Don't hand out JSON that won't import — the copied flow is always meant to be
+  // pasted into the Playground. Warnings are advisory and still allowed.
+  const errors = validateFlow(flow).filter((i) => i.level === "error").length;
+  if (errors > 0) {
+    postToMain({ type: "notify", message: `Fix ${errors} error${errors > 1 ? "s" : ""} before copying — the JSON won't import.` });
+    return;
+  }
   const text = JSON.stringify(flow, null, 2);
   navigator.clipboard?.writeText(text).then(
     () => postToMain({ type: "notify", message: "Flow JSON copied to clipboard." }),
