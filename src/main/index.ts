@@ -2,7 +2,7 @@
 // renders navigable WhatsApp-styled screens on the canvas.
 import type { FlowJSON } from "../model/flowTypes";
 import type { UIToMain, Prefs, GenOptions } from "../shared/messages";
-import { DEVICE } from "./theme";
+import { DEVICE, SCREEN_HEIGHTS } from "./theme";
 import { applyFills } from "./nodes";
 import { loadFonts } from "./fonts";
 import { buildScreen, type BuiltScreen } from "./screen";
@@ -11,7 +11,7 @@ import { wireNavigation } from "./routing";
 const GAP = 56;
 
 const PREFS_KEY = "flows-builder-prefs";
-const DEFAULT_PREFS: Prefs = { theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true };
+const DEFAULT_PREFS: Prefs = { theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md" };
 
 figma.showUI(__html__, { width: 500, height: 740, themeColors: true });
 
@@ -46,7 +46,18 @@ figma.ui.onmessage = async (msg: UIToMain) => {
   }
 };
 
-const DEFAULT_OPTIONS: GenOptions = { os: "ios", theme: "light", interactive: true };
+const DEFAULT_OPTIONS: GenOptions = { os: "ios", theme: "light", interactive: true, size: "md" };
+
+// Give a short screen a standard phone height: fix the frame height and let the
+// body absorb the slack so the footer stays pinned to the bottom. Taller content
+// is left alone (the frame already grew past the minimum).
+function enforceMinHeight(frame: FrameNode, minH: number): void {
+  if (frame.height >= minH) return;
+  const body = frame.findChild((n) => n.name === "body") as FrameNode | null;
+  frame.primaryAxisSizingMode = "FIXED";
+  frame.resize(frame.width, minH);
+  if (body) { try { (body as SceneNode & { layoutSizingVertical?: string }).layoutSizingVertical = "FILL"; } catch { /* not fillable */ } }
+}
 
 async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): Promise<void> {
   if (!flow || !Array.isArray(flow.screens) || flow.screens.length === 0) {
@@ -59,12 +70,14 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
   const built: BuiltScreen[] = flow.screens.map((s, i) => buildScreen(s, i, flow.screens.length));
 
   // Place the screens as loose frames on the page, laid out in a row.
+  const minH = SCREEN_HEIGHTS[options.size] ?? SCREEN_HEIGHTS.md;
   built.forEach((b, i) => {
     figma.currentPage.appendChild(b.frame);
     b.frame.x = i * (DEVICE.width + GAP);
     b.frame.y = 0;
     // Resolve "fill container" sizing now the frame is on the page/auto-layout tree.
     applyFills(b.frame);
+    enforceMinHeight(b.frame, minH); // standard phone height for short screens
   });
 
   // Interactive = wire the clickable prototype; otherwise leave plain frames.

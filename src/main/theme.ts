@@ -2,6 +2,11 @@
 
 export const DEVICE = { width: 360, height: 780 };
 
+// Standard Android phone heights (dp, at the 360dp width) used as the *minimum*
+// height of a generated screen so short flows don't collapse to a tiny frame.
+// Content taller than this still grows the frame.
+export const SCREEN_HEIGHTS: Record<"sm" | "md" | "lg", number> = { sm: 640, md: 800, lg: 915 };
+
 export const COLOR = {
   bg: "#FFFFFF",
   surface: "#FFFFFF",

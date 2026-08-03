@@ -3,7 +3,7 @@
 // so the preview and the generated frames stay in sync.
 import type { FlowJSON, Screen, Component } from "../model/flowTypes";
 import { screenChildren, dataSourceOf, isBinding } from "../model/flowTypes";
-import { COLOR } from "../main/theme";
+import { COLOR, SCREEN_HEIGHTS } from "../main/theme";
 import { t } from "./i18n";
 
 // Push theme tokens into CSS custom properties once, so the stylesheet in
@@ -40,6 +40,10 @@ let errScreens: Set<string> = new Set(); // screen ids with validation errors
 let interactive = true;
 export function setPreviewInteractive(on: boolean): void { interactive = on; }
 
+// Preview phone height mirrors the chosen generated-frame size (sm/md/lg).
+let previewSize: "sm" | "md" | "lg" = "md";
+export function setPreviewSize(size: "sm" | "md" | "lg"): void { previewSize = size; }
+
 function el(tag: string, className?: string, text?: string): HTMLElement {
   const n = document.createElement(tag);
   if (className) n.className = className;
@@ -59,6 +63,7 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
 
   const invalid = selected !== SUMMARY && selected !== null && errScreens.has(selected);
   const phone = el("div", "wa-phone" + (invalid ? " has-error" : ""));
+  phone.style.aspectRatio = String(360 / SCREEN_HEIGHTS[previewSize]); // reflect the chosen size
   phone.appendChild(statusBar());
   if (selected === SUMMARY) {
     phone.appendChild(header("Review and submit"));

@@ -8,10 +8,12 @@ export type LangPref = "en" | "pt";
 // the live preview AND the generated Figma frames (via the `generate` message).
 export type OS = "android" | "ios";
 export type PreviewTheme = "light" | "dark";
+export type ScreenSize = "sm" | "md" | "lg"; // standard phone height for generated frames
 export interface GenOptions {
   os: OS;              // phone chrome to imitate (consumed from Phase 3)
   theme: PreviewTheme; // WhatsApp light/dark palette (consumed from Phase 2)
   interactive: boolean; // preview navigation + Figma prototype wiring
+  size: ScreenSize;    // minimum height of the generated screen frame
 }
 
 export interface Prefs {
@@ -20,6 +22,7 @@ export interface Prefs {
   os: OS;
   previewTheme: PreviewTheme; // WhatsApp mockup theme
   interactive: boolean;
+  size: ScreenSize;
 }
 
 // UI -> main

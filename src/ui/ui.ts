@@ -6,13 +6,13 @@ import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
 import { TEMPLATES } from "../model/templates";
 import { postToMain } from "../shared/messages";
-import { renderPreview, applyThemeVars, setPreviewInteractive } from "./preview";
+import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize } from "./preview";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
 import { iconEl, applyIcons } from "./icons";
 import { createDropdown } from "./dropdown";
 import { t, setLang, applyI18n, type Lang } from "./i18n";
-import type { Prefs, ThemePref, GenOptions } from "../shared/messages";
+import type { Prefs, ThemePref, GenOptions, ScreenSize } from "../shared/messages";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -382,10 +382,10 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(
 
 // ---- Preferences: theme & language --------------------------------------
 
-let prefs: Prefs = { theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true };
+let prefs: Prefs = { theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md" };
 
 // The WhatsApp-mockup options sent with a generate + used by the live preview.
-const genOptions = (): GenOptions => ({ os: prefs.os, theme: prefs.previewTheme, interactive: prefs.interactive });
+const genOptions = (): GenOptions => ({ os: prefs.os, theme: prefs.previewTheme, interactive: prefs.interactive, size: prefs.size });
 
 // System = follow the OS/Figma theme (no data-theme); light/dark force it.
 function applyTheme(theme: ThemePref): void {
@@ -411,11 +411,18 @@ function applyInteractive(on: boolean): void {
   if (box) box.checked = on;
 }
 
+function applySize(size: ScreenSize): void {
+  setPreviewSize(size);
+  document.querySelectorAll<HTMLElement>("#size-seg .seg-item").forEach((b) =>
+    b.classList.toggle("active", b.dataset.sizeOpt === size));
+}
+
 function applyPrefs(p: Prefs): void {
   prefs = { ...prefs, ...p };
   applyTheme(prefs.theme);
   applyLang(prefs.lang);
   applyInteractive(prefs.interactive);
+  applySize(prefs.size);
 }
 
 const savePrefs = (): void => postToMain({ type: "savePrefs", prefs });
@@ -439,6 +446,14 @@ $("#interactive-toggle").addEventListener("change", (e) => {
   renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
   savePrefs();
 });
+
+document.querySelectorAll<HTMLElement>("#size-seg .seg-item").forEach((b) =>
+  b.addEventListener("click", () => {
+    prefs = { ...prefs, size: b.dataset.sizeOpt as ScreenSize };
+    applySize(prefs.size);
+    renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
+    savePrefs();
+  }));
 
 // Saved prefs pushed from the main thread on startup.
 window.addEventListener("message", (e: MessageEvent) => {
