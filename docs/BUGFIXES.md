@@ -5,6 +5,55 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Flows that wrap components in a `Form` weren't recognized
+
+**Symptom.** Importing a real Meta Flow JSON (e.g. a data-endpoint RSVP flow)
+showed every screen as a single unrecognized `[Form]` component — none of the
+actual TextInputs / Images / selectors appeared in Build, Preview, or Generate.
+
+**Root cause.** The builder's model is flat: it read `screen.layout.children`
+directly as the component list. Data-endpoint flows (and any Flow JSON <4.0)
+wrap all components in a single `Form` container:
+`layout.children = [ { type: "Form", children: [ ...real components... ] } ]`.
+`Form` wasn't in the model, so the plugin saw one unknown node per screen and
+never descended into `Form.children`. Secondary crash risk: those flows use
+dynamic bindings (`"data-source": "${data.sessions}"`, `"visible": "${…}"`),
+and code that iterated `data-source` as an array would throw on a string.
+
+**Fix.** Introduced three shared, pure helpers in `flowTypes.ts` so the UI and
+the Figma generator agree on how to read flows:
+- `screenChildren(screen)` — returns the effective component list, descending
+  into a single `Form` container when present (returns the **live** array, so
+  edits write back into the Form and the `Form` is preserved on export). Flat
+  flows are returned unchanged — a no-op.
+- `dataSourceOf(c)` — returns `data-source` as an array, or `[]` when it's a
+  binding string (never iterates a string).
+- `isBinding(v)` — detects `"${…}"` values.
+
+All the flat-iteration sites now go through `screenChildren`
+(`validate.ts`, `preview.ts`, `screen.ts`, and the Build list/add/move in
+`ui.ts`) and all `data-source` reads through `dataSourceOf`. `vNeedsDataSource`
+no longer fires on a dynamic binding. The Build prop editor shows a read-only
+"Dynamic options · ${…}" note for binding data-sources; the preview shows the
+binding expression. `normalizeFlow` also sanitises `Form.children`.
+
+**Design / how to revert.** `Form` is treated as a *transparent read/passthrough
+container* — it is deliberately **not** added to the palette, so the builder's
+authoring model stays flat while it can now read/generate Form-wrapped flows.
+Every new branch is gated on a `Form` actually being present, so flat flows are
+untouched (covered by the sample/template regression tests). To revert: this
+change is self-contained in the three helpers plus their call sites — reverting
+the commit restores the flat-only behaviour with no data migration needed.
+
+**Known limitations (out of scope here).** (1) Only a single `Form` per screen
+is unwrapped; a screen mixing a `Form` with loose top-level components would show
+only the Form's children. (2) Dynamic bindings render as placeholders — the
+builder can't resolve `${data.*}` / `${form.*}`. (3) The 50-component limit now
+counts the components *inside* the Form, so large generated forms (e.g. the RSVP
+flow's 19-companion screen ≈ 100 components) correctly report `vMaxComponents`.
+
+---
+
 ## Validator missed several static-validation errors Meta rejects on publish
 
 **Symptom.** The builder reported a flow as valid, but the WhatsApp Flows

@@ -1,6 +1,7 @@
 // Renders a single Flow JSON component into a WhatsApp-styled Figma node.
 // Footer is handled by the screen assembler, not here.
-import type { Component, DataSourceItem } from "../model/flowTypes";
+import type { Component } from "../model/flowTypes";
+import { dataSourceOf } from "../model/flowTypes";
 import { COLOR, RADIUS, SPACE, fill } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, text, strokedBox, markFill } from "./nodes";
@@ -85,7 +86,7 @@ function optionRow(mark: SceneNode, title: string, description?: string): FrameN
 }
 
 function selectionGroup(c: Component, kind: "radio" | "check"): FrameNode {
-  const items = (c["data-source"] as DataSourceItem[]) ?? [];
+  const items = dataSourceOf(c);
   const wrap = autoFrame({ gap: SPACE.gapXs });
   stretch(wrap);
   if (c.label) wrap.appendChild(label(c.label));
@@ -97,7 +98,7 @@ function selectionGroup(c: Component, kind: "radio" | "check"): FrameNode {
 }
 
 function chips(c: Component): FrameNode {
-  const items = (c["data-source"] as DataSourceItem[]) ?? [];
+  const items = dataSourceOf(c);
   const wrap = autoFrame({ gap: SPACE.gapXs });
   stretch(wrap);
   if (c.label) wrap.appendChild(label(c.label));
@@ -272,8 +273,8 @@ function labelText(c: Component): string | undefined {
 }
 
 function firstTitle(c: Component): string | undefined {
-  const items = c["data-source"] as DataSourceItem[] | undefined;
-  return items && items.length ? items[0].title : undefined;
+  const items = dataSourceOf(c);
+  return items.length ? items[0].title : undefined;
 }
 
 function placeholderFor(c: Component): string {

@@ -1,6 +1,7 @@
 // Per-component property editor shown inside each Build-tab card. Returns a
 // form whose controls mutate the component in place, then call back to sync.
 import type { Component, DataSourceItem, ActionName, Action } from "../model/flowTypes";
+import { dataSourceOf, isBinding } from "../model/flowTypes";
 import { iconEl } from "./icons";
 import { createDropdown } from "./dropdown";
 
@@ -132,16 +133,24 @@ function actionEditor(c: Component, screenIds: string[], cb: EditorCallbacks, ac
 
 function dataSourceEditor(c: Component, cb: EditorCallbacks): HTMLElement {
   const wrap = div("pe-sub");
+
+  // Dynamic data-source (a binding like "${data.sessions}") — the options come
+  // from the endpoint at runtime, so there's no static list to edit here.
+  if (isBinding(c["data-source"])) {
+    wrap.appendChild(note(`Dynamic options · ${String(c["data-source"])}`));
+    return wrap;
+  }
+
   const head = div("pe-sub-head");
   head.appendChild(spanText("Options"));
   head.appendChild(addButton(() => {
-    const items = ((c["data-source"] as DataSourceItem[]) ??= []);
+    const items = (Array.isArray(c["data-source"]) ? c["data-source"] : (c["data-source"] = [])) as DataSourceItem[];
     items.push({ id: String(items.length), title: `Option ${items.length + 1}` });
     cb.structural();
   }));
   wrap.appendChild(head);
 
-  const items = (c["data-source"] as DataSourceItem[]) ?? [];
+  const items = dataSourceOf(c);
   items.forEach((it, i) => {
     const row = div("pe-ds-row");
     const title = document.createElement("input");

@@ -1,6 +1,7 @@
 // Assembles one Flow screen into a phone-sized Figma frame and reports which
 // nodes should navigate where (wired into prototype reactions afterwards).
 import type { Screen, Component } from "../model/flowTypes";
+import { screenChildren } from "../model/flowTypes";
 import { COLOR, DEVICE, RADIUS, SPACE } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, text, divider, markFill } from "./nodes";
@@ -60,7 +61,7 @@ export function buildScreen(screen: Screen): BuiltScreen {
   frame.appendChild(body);
   markFill(body);
 
-  const children = screen.layout.children ?? [];
+  const children = screenChildren(screen); // descends into a Form container if present
   const footer = children.find((c) => c.type === "Footer");
 
   for (const c of children) {

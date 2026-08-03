@@ -1,6 +1,7 @@
 // Plugin UI: a lightweight WhatsApp Flows "playground" — compose screens with a
 // palette, edit the Flow JSON live (two-way), export it, and generate in Figma.
-import type { FlowJSON, Screen } from "../model/flowTypes";
+import type { FlowJSON, Screen, Component } from "../model/flowTypes";
+import { screenChildren } from "../model/flowTypes";
 import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
 import { TEMPLATES } from "../model/templates";
@@ -107,14 +108,14 @@ function renderPalette(): void {
     resetAfterSelect: true,
     onChange: (type) => {
       const entry = PALETTE.find((e) => e.type === type);
-      if (entry) { screen().layout.children.push(entry.make()); syncAndRender(); }
+      if (entry) { screenChildren(screen()).push(entry.make()); syncAndRender(); }
     },
   }));
 }
 
 function renderComponentList(): void {
   const host = $("#comp-list");
-  const kids = screen().layout.children;
+  const kids = screenChildren(screen()); // descends into a Form container if present
   host.innerHTML = "";
   if (kids.length === 0) {
     const e = document.createElement("div");
@@ -174,7 +175,7 @@ function summaryOf(c: { text?: unknown; label?: unknown; name?: unknown }): stri
 }
 
 function move(i: number, dir: number): void {
-  const kids = screen().layout.children;
+  const kids = screenChildren(screen());
   const j = i + dir;
   if (j < 0 || j >= kids.length) return;
   [kids[i], kids[j]] = [kids[j], kids[i]];
@@ -195,13 +196,19 @@ function normalizeFlow(parsed: unknown): FlowJSON | null {
   if (!parsed || typeof parsed !== "object") return null;
   const f = parsed as FlowJSON;
   if (!Array.isArray(f.screens) || f.screens.length === 0) return null;
+  const cleanKids = (arr: unknown): Component[] =>
+    (Array.isArray(arr) ? arr : []).filter(
+      (c) => !!c && typeof c === "object" && typeof (c as { type?: unknown }).type === "string",
+    ) as Component[];
   for (const s of f.screens) {
     if (!s || typeof s !== "object") return null;
     if (!s.layout || typeof s.layout !== "object") s.layout = { type: "SingleColumnLayout", children: [] };
-    if (!Array.isArray(s.layout.children)) s.layout.children = [];
-    s.layout.children = s.layout.children.filter(
-      (c) => !!c && typeof c === "object" && typeof (c as { type?: unknown }).type === "string",
-    );
+    s.layout.children = cleanKids(s.layout.children);
+    // A Form container holds the real components — sanitise its children too so a
+    // null/invalid entry inside a Form can't crash the render pipeline.
+    for (const c of s.layout.children) {
+      if (c.type === "Form" && "children" in c) c.children = cleanKids(c.children);
+    }
   }
   return f;
 }

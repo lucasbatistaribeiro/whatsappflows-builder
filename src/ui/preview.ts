@@ -1,7 +1,8 @@
 // Live WhatsApp phone-mockup preview inside the plugin UI. Mirrors the Figma
 // generator's component visuals, driven by the same theme tokens (theme.ts),
 // so the preview and the generated frames stay in sync.
-import type { FlowJSON, Screen, Component, DataSourceItem } from "../model/flowTypes";
+import type { FlowJSON, Screen, Component } from "../model/flowTypes";
+import { screenChildren, dataSourceOf, isBinding } from "../model/flowTypes";
 import { COLOR } from "../main/theme";
 import { t } from "./i18n";
 
@@ -120,7 +121,7 @@ function header(title: string): HTMLElement {
 function screenBody(flow: FlowJSON, screen: Screen, host: HTMLElement): HTMLElement {
   lastHost = host;
   const body = el("div", "wa-body");
-  const kids = screen.layout.children ?? [];
+  const kids = screenChildren(screen); // descends into a Form container if present
   const footer = kids.find((c) => c.type === "Footer");
   for (const c of kids) {
     if (c.type === "Footer") continue;
@@ -133,7 +134,7 @@ function screenBody(flow: FlowJSON, screen: Screen, host: HTMLElement): HTMLElem
 function summaryBody(flow: FlowJSON): HTMLElement {
   const body = el("div", "wa-body");
   body.appendChild(comp("wa-h1", "Review and submit"));
-  const inputs = flow.screens.flatMap((s) => s.layout.children).filter((c) => !!c.name && c.type !== "Footer");
+  const inputs = flow.screens.flatMap(screenChildren).filter((c) => !!c.name && c.type !== "Footer");
   if (inputs.length === 0) body.appendChild(comp("wa-body-text", "No input fields in this flow."));
   inputs.forEach((c) => {
     const row = el("div", "wa-sum-row");
@@ -166,7 +167,8 @@ function field(labelText: string, control: HTMLElement, help?: string): HTMLElem
 function optionRows(c: Component, kind: "radio" | "check"): HTMLElement {
   const wrap = el("div", "wa-field");
   if (c.label) wrap.appendChild(el("div", "wa-label", c.label));
-  const items = (c["data-source"] as DataSourceItem[]) ?? [];
+  const items = dataSourceOf(c);
+  if (items.length === 0 && isBinding(c["data-source"])) wrap.appendChild(el("div", "wa-help", String(c["data-source"])));
   items.forEach((it, i) => {
     const row = el("div", "wa-opt");
     row.appendChild(el("span", `wa-mark ${kind}${i === 0 ? " on" : ""}`));
@@ -183,7 +185,8 @@ function chips(c: Component): HTMLElement {
   const wrap = el("div", "wa-field");
   if (c.label) wrap.appendChild(el("div", "wa-label", c.label));
   const row = el("div", "wa-chips");
-  const items = (c["data-source"] as DataSourceItem[]) ?? [];
+  const items = dataSourceOf(c);
+  if (items.length === 0 && isBinding(c["data-source"])) wrap.appendChild(el("div", "wa-help", String(c["data-source"])));
   items.forEach((it, i) => row.appendChild(el("span", "wa-chip" + (i === 0 ? " on" : ""), it.title)));
   wrap.appendChild(row);
   return wrap;
@@ -225,8 +228,8 @@ function navListHtml(c: Component): HTMLElement {
 }
 
 function firstTitle(c: Component): string {
-  const items = c["data-source"] as DataSourceItem[] | undefined;
-  return items && items.length ? items[0].title : "Choose";
+  const items = dataSourceOf(c);
+  return items.length ? items[0].title : "Choose";
 }
 
 function placeholderFor(c: Component): string {

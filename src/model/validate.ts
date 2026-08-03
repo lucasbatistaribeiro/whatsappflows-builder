@@ -2,6 +2,7 @@
 // publish or a runtime. Pure and dependency-free (no i18n) — each issue carries
 // a message key + params, and the UI translates it. Keys/text live in i18n.ts.
 import type { FlowJSON, Screen, Component, Action } from "./flowTypes";
+import { screenChildren, isBinding } from "./flowTypes";
 
 export interface Issue {
   level: "error" | "warning";
@@ -49,7 +50,7 @@ function validateScreen(s: Screen, ids: Set<string>, push: Push): void {
     push("error", "vLayoutType", undefined, s.id);
     return;
   }
-  const kids = s.layout.children ?? [];
+  const kids = screenChildren(s); // descends into a Form container if present
 
   if (kids.length > MAX_COMPONENTS) {
     push("error", "vMaxComponents", [kids.length, MAX_COMPONENTS], s.id);
@@ -160,7 +161,11 @@ function validateComponent(c: Component, screenId: string, push: Push): void {
   const needsData = ["RadioButtonsGroup", "CheckboxGroup", "Dropdown", "ChipsSelector"];
   if (needsData.includes(c.type)) {
     const ds = c["data-source"];
-    if (!Array.isArray(ds) || ds.length === 0) push("error", "vNeedsDataSource", [c.type], screenId);
+    // A dynamic binding ("${data.x}") is a valid data-source — options come from
+    // the endpoint at runtime, so don't flag it as empty.
+    if (!isBinding(ds) && (!Array.isArray(ds) || ds.length === 0)) {
+      push("error", "vNeedsDataSource", [c.type], screenId);
+    }
   }
 
   const needsName = ["TextInput", "TextArea", "DatePicker", "CalendarPicker", "PhotoPicker", "DocumentPicker", "RadioButtonsGroup", "CheckboxGroup", "ChipsSelector", "OptIn"];
