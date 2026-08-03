@@ -15,6 +15,9 @@ const DICT: Record<string, Entry> = {
   // menu
   menuTitle: { en: "Menu", pt: "Menu" },
   groupPreview: { en: "Preview", pt: "Prévia" },
+  groupFigma: { en: "Figma", pt: "Figma" },
+  groupSystem: { en: "System", pt: "Sistema" },
+  language: { en: "Language", pt: "Idioma" },
   interactive: { en: "Interactive mode", pt: "Modo interativo" },
   screenSize: { en: "Screen size", pt: "Tamanho da tela" },
   sizeSm: { en: "Small", pt: "Pequeno" },
@@ -25,7 +28,7 @@ const DICT: Record<string, Entry> = {
   groupLanguage: { en: "Language", pt: "Idioma" },
   theme: { en: "Theme", pt: "Tema" },
   waTheme: { en: "WhatsApp theme", pt: "Tema do WhatsApp" },
-  appTheme: { en: "App theme", pt: "Tema do app" },
+  appTheme: { en: "Plugin theme", pt: "Tema do plugin" },
   themeSystem: { en: "System", pt: "Sistema" },
   themeLight: { en: "Light", pt: "Claro" },
   themeDark: { en: "Dark", pt: "Escuro" },

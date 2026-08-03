@@ -422,28 +422,26 @@
     </div>
 
     <div class="menu-group">
-      <div class="menu-group-title" data-i18n="groupPreview">Preview</div>
+      <div class="menu-group-title" data-i18n="groupFlow">Flow</div>
+      <span id="template"></span>
       <label class="menu-toggle">
         <span data-i18n="interactive">Interactive mode</span>
         <input type="checkbox" class="menu-switch" id="interactive-toggle" checked>
       </label>
-      <label class="menu-label" data-i18n="screenSize">Screen size</label>
-      <div class="seg menu-seg" id="size-seg" role="radiogroup">
-        <button class="seg-item" role="radio" data-size-opt="sm" data-i18n="sizeSm">Small</button>
-        <button class="seg-item" role="radio" data-size-opt="md" data-i18n="sizeMd">Medium</button>
-        <button class="seg-item" role="radio" data-size-opt="lg" data-i18n="sizeLg">Large</button>
-      </div>
-      <label class="menu-label" data-i18n="waTheme">WhatsApp theme</label>
-      <div class="seg menu-seg" id="wa-theme-seg" role="radiogroup">
-        <button class="seg-item" role="radio" data-wa-theme-opt="light" data-i18n="themeLight">Light</button>
-        <button class="seg-item" role="radio" data-wa-theme-opt="dark" data-i18n="themeDark">Dark</button>
-      </div>
     </div>
 
     <div class="menu-group">
-      <div class="menu-group-title" data-i18n="groupFlow">Flow</div>
-      <label class="menu-label" data-i18n="templateLabel">Start from a template</label>
-      <span id="template"></span>
+      <div class="menu-group-title" data-i18n="groupFigma">Figma</div>
+      <label class="menu-label" data-i18n="screenSize">Screen size</label>
+      <span id="size-dd"></span>
+      <label class="menu-label" data-i18n="waTheme">WhatsApp theme</label>
+      <span id="wa-theme-dd"></span>
+    </div>
+
+    <div class="menu-group">
+      <div class="menu-group-title" data-i18n="groupSystem">System</div>
+      <label class="menu-label" data-i18n="appTheme">Plugin theme</label>
+      <span id="app-theme-dd"></span>
       <button id="import" class="btn ghost menu-item" title="Import a Flow JSON file">
         <span class="ic" data-icon="import" data-size="15"></span>
         <span data-i18n="import">Import JSON</span>
@@ -452,24 +450,8 @@
         <span class="ic" data-icon="copy" data-size="15"></span>
         <span data-i18n="copy">Copy JSON</span>
       </button>
-    </div>
-
-    <div class="menu-group">
-      <div class="menu-group-title" data-i18n="groupAppearance">Appearance</div>
-      <label class="menu-label" data-i18n="appTheme">App theme</label>
-      <div class="seg menu-seg" id="theme-seg" role="radiogroup">
-        <button class="seg-item" role="radio" data-theme-opt="system" data-i18n="themeSystem">System</button>
-        <button class="seg-item" role="radio" data-theme-opt="light" data-i18n="themeLight">Light</button>
-        <button class="seg-item" role="radio" data-theme-opt="dark" data-i18n="themeDark">Dark</button>
-      </div>
-    </div>
-
-    <div class="menu-group">
-      <div class="menu-group-title" data-i18n="groupLanguage">Language</div>
-      <div class="seg menu-seg" id="lang-seg" role="radiogroup">
-        <button class="seg-item" role="radio" data-lang-opt="en" data-i18n="langEn">English</button>
-        <button class="seg-item" role="radio" data-lang-opt="pt" data-i18n="langPt">Português</button>
-      </div>
+      <label class="menu-label" data-i18n="language">Language</label>
+      <span id="lang-dd"></span>
     </div>
   </aside>
 

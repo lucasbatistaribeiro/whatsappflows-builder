@@ -405,16 +405,13 @@ function applyTheme(theme: ThemePref): void {
   const root = document.documentElement;
   if (theme === "system") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", theme);
-  document.querySelectorAll<HTMLElement>("#theme-seg .seg-item").forEach((b) =>
-    markRadio(b, b.dataset.themeOpt === theme));
 }
 
 function applyLang(lang: Lang): void {
   setLang(lang);
   applyI18n(document);
-  document.querySelectorAll<HTMLElement>("#lang-seg .seg-item").forEach((b) =>
-    markRadio(b, b.dataset.langOpt === lang));
   buildTemplateDropdown();
+  buildMenuDropdowns(); // rebuild the combo boxes with translated labels + current values
   renderAll();
 }
 
@@ -424,28 +421,41 @@ function applyInteractive(on: boolean): void {
   if (box) box.checked = on;
 }
 
-// Reflect a radiogroup selection in both the visual state and a11y semantics.
-function markRadio(b: HTMLElement, on: boolean): void {
-  b.classList.toggle("active", on);
-  b.setAttribute("aria-checked", String(on));
+function applySize(size: ScreenSize): void { setPreviewSize(size); }
+function applyWaTheme(theme: PreviewTheme): void { setPreviewTheme(theme); }
+
+function refreshPreview(): void { renderPreview(flow, $("#preview"), screen().id, errorScreenIds()); }
+
+// Build a menu combo box into its placeholder span. Rebuilt on language change
+// so option labels retranslate and the shown value stays in sync with prefs.
+function fillDropdown(sel: string, value: string, options: { value: string; label: string }[], onChange: (v: string) => void): void {
+  const host = $(sel);
+  host.innerHTML = "";
+  host.appendChild(createDropdown({ value, options, size: "sm", onChange }));
 }
 
-function applySize(size: ScreenSize): void {
-  setPreviewSize(size);
-  document.querySelectorAll<HTMLElement>("#size-seg .seg-item").forEach((b) =>
-    markRadio(b, b.dataset.sizeOpt === size));
-}
+function buildMenuDropdowns(): void {
+  fillDropdown("#size-dd", prefs.size,
+    [{ value: "sm", label: t("sizeSm") }, { value: "md", label: t("sizeMd") }, { value: "lg", label: t("sizeLg") }],
+    (v) => { prefs = { ...prefs, size: v as ScreenSize }; applySize(prefs.size); refreshPreview(); savePrefs(); });
 
-function applyWaTheme(theme: PreviewTheme): void {
-  setPreviewTheme(theme);
-  document.querySelectorAll<HTMLElement>("#wa-theme-seg .seg-item").forEach((b) =>
-    markRadio(b, b.dataset.waThemeOpt === theme));
+  fillDropdown("#wa-theme-dd", prefs.previewTheme,
+    [{ value: "light", label: t("themeLight") }, { value: "dark", label: t("themeDark") }],
+    (v) => { prefs = { ...prefs, previewTheme: v as PreviewTheme }; applyWaTheme(prefs.previewTheme); refreshPreview(); savePrefs(); });
+
+  fillDropdown("#app-theme-dd", prefs.theme,
+    [{ value: "system", label: t("themeSystem") }, { value: "light", label: t("themeLight") }, { value: "dark", label: t("themeDark") }],
+    (v) => { prefs = { ...prefs, theme: v as ThemePref }; applyTheme(prefs.theme); savePrefs(); });
+
+  fillDropdown("#lang-dd", prefs.lang,
+    [{ value: "en", label: t("langEn") }, { value: "pt", label: t("langPt") }],
+    (v) => { if (v !== prefs.lang) { prefs = { ...prefs, lang: v as Lang }; applyLang(prefs.lang); savePrefs(); } });
 }
 
 function applyPrefs(p: Prefs): void {
   prefs = { ...prefs, ...p };
   applyTheme(prefs.theme);
-  applyLang(prefs.lang);
+  applyLang(prefs.lang); // also (re)builds the menu combo boxes from prefs
   applyInteractive(prefs.interactive);
   applySize(prefs.size);
   applyWaTheme(prefs.previewTheme);
@@ -453,41 +463,12 @@ function applyPrefs(p: Prefs): void {
 
 const savePrefs = (): void => postToMain({ type: "savePrefs", prefs });
 
-document.querySelectorAll<HTMLElement>("#theme-seg .seg-item").forEach((b) =>
-  b.addEventListener("click", () => {
-    prefs = { ...prefs, theme: b.dataset.themeOpt as ThemePref };
-    applyTheme(prefs.theme);
-    savePrefs();
-  }));
-document.querySelectorAll<HTMLElement>("#lang-seg .seg-item").forEach((b) =>
-  b.addEventListener("click", () => {
-    prefs = { ...prefs, lang: b.dataset.langOpt as Lang };
-    applyLang(prefs.lang);
-    savePrefs();
-  }));
-
 $("#interactive-toggle").addEventListener("change", (e) => {
   prefs = { ...prefs, interactive: (e.target as HTMLInputElement).checked };
   applyInteractive(prefs.interactive);
-  renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
+  refreshPreview();
   savePrefs();
 });
-
-document.querySelectorAll<HTMLElement>("#size-seg .seg-item").forEach((b) =>
-  b.addEventListener("click", () => {
-    prefs = { ...prefs, size: b.dataset.sizeOpt as ScreenSize };
-    applySize(prefs.size);
-    renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
-    savePrefs();
-  }));
-
-document.querySelectorAll<HTMLElement>("#wa-theme-seg .seg-item").forEach((b) =>
-  b.addEventListener("click", () => {
-    prefs = { ...prefs, previewTheme: b.dataset.waThemeOpt as PreviewTheme };
-    applyWaTheme(prefs.previewTheme);
-    renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
-    savePrefs();
-  }));
 
 // Saved prefs pushed from the main thread on startup.
 window.addEventListener("message", (e: MessageEvent) => {
