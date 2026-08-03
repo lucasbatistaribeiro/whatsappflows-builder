@@ -182,12 +182,16 @@ function position(list: HTMLElement, trigger: HTMLElement): void {
   if (left < margin) left = margin;
   list.style.left = left + "px";
 
-  // Vertical: flip up when there's no room below.
+  // Vertical: flip up when there's no room below. Reset the edge we're NOT using
+  // (the stylesheet pins `top: 0`, so leaving it set while anchoring `bottom`
+  // would stretch the list from the top of the viewport).
   const below = vh - r.bottom;
   if (below < 180 && r.top > below) {
+    list.style.top = "auto";
     list.style.bottom = vh - r.top + gap + "px";
     list.style.maxHeight = Math.min(cap, r.top - gap - margin) + "px";
   } else {
+    list.style.bottom = "auto";
     list.style.top = r.bottom + gap + "px";
     list.style.maxHeight = Math.min(cap, below - gap - margin) + "px";
   }
