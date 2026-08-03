@@ -49,10 +49,10 @@
     padding: 16px 14px; border-bottom: 1px solid var(--border);
     background: var(--elev); flex: none;
   }
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 24px; letter-spacing: -.01em; min-width: 0; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 650; font-size: 18px; letter-spacing: -.01em; min-width: 0; }
   .brand-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #generate .ic + * , #generate { white-space: nowrap; }
-  .brand svg { width: 32px; height: 32px; color: var(--accent); stroke-width: 2; }
+  .brand svg { width: 24px; height: 24px; color: var(--accent); stroke-width: 2; }
   .ic { display: inline-flex; align-items: center; }
   svg.lucide { display: block; }
   .spacer { flex: 1; }
@@ -356,9 +356,10 @@
   #menu-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); opacity: 0;
     pointer-events: none; transition: opacity .22s ease; z-index: 999; }
   #menu-backdrop.open { opacity: 1; pointer-events: auto; }
-  #menu { position: fixed; top: 0; left: 0; height: 100%; width: 70%; max-width: none;
+  #menu { position: fixed; top: 0; left: 0; height: 100%; width: 100%; max-width: 560px;
     background: var(--elev); transform: translateX(-100%); transition: transform .22s ease; z-index: 1000;
-    display: flex; flex-direction: column; gap: 20px; padding: 14px; box-sizing: border-box; }
+    display: flex; flex-direction: column; gap: 20px; padding: 14px; box-sizing: border-box;
+    overflow-y: auto; overscroll-behavior: contain; }
   #menu.open { transform: translateX(0); border-right: 1px solid var(--border);
     box-shadow: 10px 0 30px rgba(0,0,0,.22); }
   .menu-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
@@ -374,7 +375,14 @@
   .menu-seg .seg-item { flex: 1; text-align: center; }
   .menu-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px;
     font-size: 14px; color: var(--text); cursor: pointer; }
-  .menu-toggle input { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; margin: 0; }
+  .menu-switch { appearance: none; -webkit-appearance: none; flex: none; position: relative;
+    width: 38px; height: 22px; border-radius: 11px; background: var(--border); cursor: pointer;
+    transition: background .15s; margin: 0; }
+  .menu-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+    border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.3); }
+  .menu-switch:checked { background: var(--accent); }
+  .menu-switch:checked::after { transform: translateX(16px); }
+  .menu-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* ---- Responsive (narrow Figma plugin windows, ~300px+) ---- */
   .val-item > :last-child { flex: 1; min-width: 0; }
@@ -417,18 +425,18 @@
       <div class="menu-group-title" data-i18n="groupPreview">Preview</div>
       <label class="menu-toggle">
         <span data-i18n="interactive">Interactive mode</span>
-        <input type="checkbox" id="interactive-toggle" checked>
+        <input type="checkbox" class="menu-switch" id="interactive-toggle" checked>
       </label>
       <label class="menu-label" data-i18n="screenSize">Screen size</label>
-      <div class="seg menu-seg" id="size-seg" role="tablist">
-        <button class="seg-item" data-size-opt="sm" data-i18n="sizeSm">Small</button>
-        <button class="seg-item" data-size-opt="md" data-i18n="sizeMd">Medium</button>
-        <button class="seg-item" data-size-opt="lg" data-i18n="sizeLg">Large</button>
+      <div class="seg menu-seg" id="size-seg" role="radiogroup">
+        <button class="seg-item" role="radio" data-size-opt="sm" data-i18n="sizeSm">Small</button>
+        <button class="seg-item" role="radio" data-size-opt="md" data-i18n="sizeMd">Medium</button>
+        <button class="seg-item" role="radio" data-size-opt="lg" data-i18n="sizeLg">Large</button>
       </div>
-      <label class="menu-label" data-i18n="theme">Theme</label>
-      <div class="seg menu-seg" id="wa-theme-seg" role="tablist">
-        <button class="seg-item" data-wa-theme-opt="light" data-i18n="themeLight">Light</button>
-        <button class="seg-item" data-wa-theme-opt="dark" data-i18n="themeDark">Dark</button>
+      <label class="menu-label" data-i18n="waTheme">WhatsApp theme</label>
+      <div class="seg menu-seg" id="wa-theme-seg" role="radiogroup">
+        <button class="seg-item" role="radio" data-wa-theme-opt="light" data-i18n="themeLight">Light</button>
+        <button class="seg-item" role="radio" data-wa-theme-opt="dark" data-i18n="themeDark">Dark</button>
       </div>
     </div>
 
@@ -448,19 +456,19 @@
 
     <div class="menu-group">
       <div class="menu-group-title" data-i18n="groupAppearance">Appearance</div>
-      <label class="menu-label" data-i18n="theme">Theme</label>
-      <div class="seg menu-seg" id="theme-seg" role="tablist">
-        <button class="seg-item" data-theme-opt="system" data-i18n="themeSystem">System</button>
-        <button class="seg-item" data-theme-opt="light" data-i18n="themeLight">Light</button>
-        <button class="seg-item" data-theme-opt="dark" data-i18n="themeDark">Dark</button>
+      <label class="menu-label" data-i18n="appTheme">App theme</label>
+      <div class="seg menu-seg" id="theme-seg" role="radiogroup">
+        <button class="seg-item" role="radio" data-theme-opt="system" data-i18n="themeSystem">System</button>
+        <button class="seg-item" role="radio" data-theme-opt="light" data-i18n="themeLight">Light</button>
+        <button class="seg-item" role="radio" data-theme-opt="dark" data-i18n="themeDark">Dark</button>
       </div>
     </div>
 
     <div class="menu-group">
       <div class="menu-group-title" data-i18n="groupLanguage">Language</div>
-      <div class="seg menu-seg" id="lang-seg" role="tablist">
-        <button class="seg-item" data-lang-opt="en" data-i18n="langEn">English</button>
-        <button class="seg-item" data-lang-opt="pt" data-i18n="langPt">Português</button>
+      <div class="seg menu-seg" id="lang-seg" role="radiogroup">
+        <button class="seg-item" role="radio" data-lang-opt="en" data-i18n="langEn">English</button>
+        <button class="seg-item" role="radio" data-lang-opt="pt" data-i18n="langPt">Português</button>
       </div>
     </div>
   </aside>

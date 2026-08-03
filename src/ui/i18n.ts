@@ -24,6 +24,8 @@ const DICT: Record<string, Entry> = {
   groupAppearance: { en: "Appearance", pt: "Aparência" },
   groupLanguage: { en: "Language", pt: "Idioma" },
   theme: { en: "Theme", pt: "Tema" },
+  waTheme: { en: "WhatsApp theme", pt: "Tema do WhatsApp" },
+  appTheme: { en: "App theme", pt: "Tema do app" },
   themeSystem: { en: "System", pt: "Sistema" },
   themeLight: { en: "Light", pt: "Claro" },
   themeDark: { en: "Dark", pt: "Escuro" },

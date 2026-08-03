@@ -367,13 +367,26 @@ function buildTemplateDropdown(): void {
 
 // ---- Actions drawer (right-side hamburger menu) -------------------------
 
+// Mark everything but the drawer inert while it's open, so keyboard/AT focus
+// stays trapped in the menu; move focus in on open and back to the trigger on close.
+function setBackgroundInert(on: boolean): void {
+  document.querySelectorAll<HTMLElement>(".topbar, .workspace").forEach((el) => {
+    if (on) el.setAttribute("inert", "");
+    else el.removeAttribute("inert");
+  });
+}
 function openMenu(): void {
   $("#menu").classList.add("open");
   $("#menu-backdrop").classList.add("open");
+  setBackgroundInert(true);
+  $("#menu-close").focus();
 }
 function closeMenu(): void {
+  if (!$("#menu").classList.contains("open")) return;
   $("#menu").classList.remove("open");
   $("#menu-backdrop").classList.remove("open");
+  setBackgroundInert(false);
+  $("#menu-btn").focus();
 }
 $("#menu-btn").addEventListener("click", openMenu);
 $("#menu-close").addEventListener("click", closeMenu);
@@ -393,14 +406,14 @@ function applyTheme(theme: ThemePref): void {
   if (theme === "system") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", theme);
   document.querySelectorAll<HTMLElement>("#theme-seg .seg-item").forEach((b) =>
-    b.classList.toggle("active", b.dataset.themeOpt === theme));
+    markRadio(b, b.dataset.themeOpt === theme));
 }
 
 function applyLang(lang: Lang): void {
   setLang(lang);
   applyI18n(document);
   document.querySelectorAll<HTMLElement>("#lang-seg .seg-item").forEach((b) =>
-    b.classList.toggle("active", b.dataset.langOpt === lang));
+    markRadio(b, b.dataset.langOpt === lang));
   buildTemplateDropdown();
   renderAll();
 }
@@ -411,16 +424,22 @@ function applyInteractive(on: boolean): void {
   if (box) box.checked = on;
 }
 
+// Reflect a radiogroup selection in both the visual state and a11y semantics.
+function markRadio(b: HTMLElement, on: boolean): void {
+  b.classList.toggle("active", on);
+  b.setAttribute("aria-checked", String(on));
+}
+
 function applySize(size: ScreenSize): void {
   setPreviewSize(size);
   document.querySelectorAll<HTMLElement>("#size-seg .seg-item").forEach((b) =>
-    b.classList.toggle("active", b.dataset.sizeOpt === size));
+    markRadio(b, b.dataset.sizeOpt === size));
 }
 
 function applyWaTheme(theme: PreviewTheme): void {
   setPreviewTheme(theme);
   document.querySelectorAll<HTMLElement>("#wa-theme-seg .seg-item").forEach((b) =>
-    b.classList.toggle("active", b.dataset.waThemeOpt === theme));
+    markRadio(b, b.dataset.waThemeOpt === theme));
 }
 
 function applyPrefs(p: Prefs): void {
