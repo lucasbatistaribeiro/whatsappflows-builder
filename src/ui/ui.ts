@@ -117,6 +117,7 @@ function renderComponentList(): void {
   const host = $("#comp-list");
   const kids = screenChildren(screen()); // descends into a Form container if present
   host.innerHTML = "";
+  updateCollapseAll();
   if (kids.length === 0) {
     const e = document.createElement("div");
     e.className = "empty"; e.textContent = t("noComponents");
@@ -167,6 +168,26 @@ function renderComponentList(): void {
 // Tracks which components are collapsed, keyed by the component object so the
 // state survives reorders and re-renders (reset only when the flow is replaced).
 const COLLAPSED = new WeakSet<object>();
+
+// "Collapse all" toggle in the component-list header: collapse every card while
+// any is open, otherwise expand them all.
+function anyExpanded(): boolean {
+  return screenChildren(screen()).some((c) => !COLLAPSED.has(c));
+}
+function updateCollapseAll(): void {
+  const btn = document.querySelector<HTMLElement>("#collapse-all");
+  if (!btn) return;
+  const kids = screenChildren(screen());
+  btn.style.display = kids.length ? "" : "none";
+  btn.textContent = t(anyExpanded() ? "collapseAll" : "expandAll");
+}
+$("#collapse-all").addEventListener("click", () => {
+  const collapse = anyExpanded();
+  for (const c of screenChildren(screen())) {
+    if (collapse) COLLAPSED.add(c); else COLLAPSED.delete(c);
+  }
+  renderComponentList();
+});
 
 // Short preview of a component's value, shown in the header when collapsed.
 function summaryOf(c: { text?: unknown; label?: unknown; name?: unknown }): string {

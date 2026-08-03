@@ -40,6 +40,8 @@ const DICT: Record<string, Entry> = {
   // build panel
   addComponent: { en: "Add component", pt: "Adicionar componente" },
   componentsOnScreen: { en: "Components on this screen", pt: "Componentes desta tela" },
+  collapseAll: { en: "Collapse all", pt: "Fechar todos" },
+  expandAll: { en: "Expand all", pt: "Abrir todos" },
   screenId: { en: "Screen id", pt: "ID da tela" },
   title: { en: "Title", pt: "Título" },
   terminal: { en: "Terminal", pt: "Terminal" },

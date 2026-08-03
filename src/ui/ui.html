@@ -122,6 +122,10 @@
 
   .section-label { font-size: 14px; text-transform: uppercase; letter-spacing: .07em; color: var(--dim);
     font-weight: 600; margin: 14px 0 7px; }
+  .section-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .collapse-all { font-size: 12px; font-weight: 500; text-transform: none; letter-spacing: 0;
+    color: var(--accent); background: transparent; padding: 2px 6px; border-radius: 6px; }
+  .collapse-all:hover { background: var(--panel); }
 
   /* Screen meta */
   .screen-meta { display: grid; grid-template-columns: auto 1fr; gap: 7px 10px; align-items: center;
@@ -483,7 +487,10 @@
           <div class="section-label" data-i18n="addComponent">Add component</div>
           <div id="palette"></div>
 
-          <div class="section-label" data-i18n="componentsOnScreen">Components on this screen</div>
+          <div class="section-label section-row">
+            <span data-i18n="componentsOnScreen">Components on this screen</span>
+            <button id="collapse-all" class="collapse-all" type="button"></button>
+          </div>
           <div class="comp-list" id="comp-list"></div>
         </div>
 
