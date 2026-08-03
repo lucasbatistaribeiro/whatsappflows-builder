@@ -1,7 +1,8 @@
 // WhatsApp screen chrome: status bar and the top app bar shown above the flow body.
-import { COLOR, DEVICE } from "./theme";
+import { COLOR, DEVICE, SPACE } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, text, divider, markFill } from "./nodes";
+import { fill } from "./theme";
 
 // iOS-style status bar icons (same shapes as the plugin's live preview), with
 // the theme's dark ink baked in so they import cleanly as Figma vectors.
@@ -45,6 +46,26 @@ export function statusBar(): FrameNode {
   bar.primaryAxisAlignItems = "SPACE_BETWEEN"; // time left, icons right (no filler frame)
   bar.appendChild(text("9:41", { font: FONT.semibold, size: 13, color: COLOR.textPrimary }));
   bar.appendChild(statusIcons());
+  return bar;
+}
+
+// Segmented step-progress bar (one segment per screen, filled up to the current
+// one) — mirrors WhatsApp's multi-screen flow header. `done` = 1-based position.
+export function progressBar(done: number, total: number): FrameNode {
+  const bar = autoFrame({
+    name: "progress", axis: "HORIZONTAL", gap: 3,
+    padding: [2, SPACE.screenPad, 8, SPACE.screenPad],
+    bg: COLOR.surface, width: DEVICE.width, counterAlign: "CENTER",
+  });
+  for (let i = 0; i < total; i++) {
+    const seg = figma.createRectangle();
+    seg.name = "step";
+    seg.resize(1, 3);
+    seg.cornerRadius = 2;
+    seg.fills = [fill(i < done ? COLOR.primary : COLOR.divider)];
+    markFill(seg); // segments share the width equally (FILL resolved in applyFills)
+    bar.appendChild(seg);
+  }
   return bar;
 }
 

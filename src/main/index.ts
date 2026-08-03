@@ -56,7 +56,7 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
   await loadFonts();
   await figma.loadAllPagesAsync();
 
-  const built: BuiltScreen[] = flow.screens.map((s) => buildScreen(s));
+  const built: BuiltScreen[] = flow.screens.map((s, i) => buildScreen(s, i, flow.screens.length));
 
   // Place the screens as loose frames on the page, laid out in a row.
   built.forEach((b, i) => {

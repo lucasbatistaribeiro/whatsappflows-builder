@@ -5,7 +5,7 @@ import { screenChildren } from "../model/flowTypes";
 import { COLOR, DEVICE, RADIUS, SPACE } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, text, divider, markFill } from "./nodes";
-import { statusBar, header } from "./chrome";
+import { statusBar, header, progressBar } from "./chrome";
 import { renderComponent } from "./components";
 
 // Captions for footer actions that a Figma prototype can't execute.
@@ -44,7 +44,7 @@ function footerButton(c: Component): FrameNode {
   return btn;
 }
 
-export function buildScreen(screen: Screen): BuiltScreen {
+export function buildScreen(screen: Screen, index = 0, total = 1): BuiltScreen {
   const navTargets: NavTarget[] = [];
 
   // Fixed phone width; height hugs the content so the screen grows with it.
@@ -55,6 +55,11 @@ export function buildScreen(screen: Screen): BuiltScreen {
   frame.clipsContent = true;
   const sb = statusBar(); frame.appendChild(sb); markFill(sb);
   const hd = header(screen.title ?? ""); frame.appendChild(hd); markFill(hd);
+
+  // Segmented step-progress bar, matching the live preview (multi-screen only).
+  if (total > 1) {
+    const pb = progressBar(index + 1, total); frame.appendChild(pb); markFill(pb);
+  }
 
   // Body fills the width and hugs its height (the screen grows with the content).
   const body = autoFrame({ name: "body", gap: SPACE.gap, padding: SPACE.screenPad });

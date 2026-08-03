@@ -62,15 +62,28 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
   phone.appendChild(statusBar());
   if (selected === SUMMARY) {
     phone.appendChild(header("Review and submit"));
+    appendProgress(phone, flow, flow.screens.length); // all steps done at the summary
     phone.appendChild(summaryBody(flow));
   } else {
     const screen = flow.screens.find((s) => s.id === selected);
     if (screen) {
       phone.appendChild(header(screen.title ?? screen.id));
+      appendProgress(phone, flow, flow.screens.findIndex((s) => s.id === selected) + 1);
       phone.appendChild(screenBody(flow, screen, host));
     }
   }
   host.appendChild(phone);
+}
+
+// WhatsApp shows a segmented step-progress bar in the flow header for multi-screen
+// flows (one segment per screen, filled up to the current one). Position is the
+// screen's index in authoring order — an approximation for branching flows.
+function appendProgress(phone: HTMLElement, flow: FlowJSON, done: number): void {
+  const total = flow.screens.length;
+  if (total < 2) return;
+  const bar = el("div", "wa-progress");
+  for (let i = 0; i < total; i++) bar.appendChild(el("span", "wa-step" + (i < done ? " on" : "")));
+  phone.appendChild(bar);
 }
 
 function previewTabs(flow: FlowJSON): HTMLElement {
