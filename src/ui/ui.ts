@@ -501,6 +501,9 @@ document.querySelectorAll(".tab").forEach((t) => {
     $("#panel-build").classList.toggle("active", name === "build");
     $("#panel-preview").classList.toggle("active", name === "preview");
     $("#panel-json").classList.toggle("active", name === "json");
+    // The screen rail only belongs to Build: Preview has its own screen tabs and
+    // Flow JSON just shows code.
+    $("#screens").style.display = name === "build" ? "" : "none";
     if (name === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
   });
 });
