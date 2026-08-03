@@ -159,8 +159,9 @@ These are deliberate; changing them is a product decision, not a spec-sync fix:
   `routing_model`, data-model, and payload-binding error families
   (`INVALID_ROUTING_MODEL`, `INVALID_*_ACTION_PAYLOAD`) are **not** validated —
   they only apply to endpoint flows this builder doesn't produce.
-- **The 50-component limit counts real components** (descending into a `Form`);
-  it is an **error** (blocks Generate) by design, faithful to the Components ref.
+- **The 50-component limit counts real components** (descending into a `Form`),
+  but is a **warning** (advisory) — it does not block Generate or Copy, matching
+  WhatsApp's own "don't use too many components" guidance.
 
 ---
 

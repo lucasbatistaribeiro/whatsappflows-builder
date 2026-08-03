@@ -52,8 +52,10 @@ function validateScreen(s: Screen, ids: Set<string>, push: Push): void {
   }
   const kids = screenChildren(s); // descends into a Form container if present
 
+  // Advisory only (WhatsApp's own guidance): warn, but don't block generating or
+  // exporting — a large screen is still usable in the Figma mockup.
   if (kids.length > MAX_COMPONENTS) {
-    push("error", "vMaxComponents", [kids.length, MAX_COMPONENTS], s.id);
+    push("warning", "vMaxComponents", [kids.length, MAX_COMPONENTS], s.id);
   }
 
   const footers = kids.filter((c) => c.type === "Footer");
