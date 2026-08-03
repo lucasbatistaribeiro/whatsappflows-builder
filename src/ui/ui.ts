@@ -494,8 +494,9 @@ $("#file").addEventListener("change", (e) => {
 
 document.querySelectorAll(".tab").forEach((t) => {
   t.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
+    document.querySelectorAll(".tab").forEach((x) => { x.classList.remove("active"); x.setAttribute("aria-selected", "false"); });
     t.classList.add("active");
+    t.setAttribute("aria-selected", "true");
     const name = (t as HTMLElement).dataset.tab;
     $("#panel-build").classList.toggle("active", name === "build");
     $("#panel-preview").classList.toggle("active", name === "preview");

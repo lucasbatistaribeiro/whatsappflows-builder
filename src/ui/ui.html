@@ -74,7 +74,7 @@
   #menu-btn { width: 34px; height: 34px; }
   #generate { padding: 9px 16px; font-size: 15px; }
   #generate svg { width: 15px; height: 15px; }
-  .btn:focus-visible, .seg-item:focus-visible, .dd:focus-visible, input:focus-visible, textarea:focus-visible {
+  .btn:focus-visible, .seg-item:focus-visible, .tab:focus-visible, .dd:focus-visible, input:focus-visible, textarea:focus-visible {
     outline: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring);
   }
   select.mini {
@@ -93,6 +93,14 @@
   .seg-item { padding: 5px 12px; border-radius: 6px; font-size: 14px; font-weight: 500; color: var(--dim);
     background: transparent; transition: background .12s, color .12s; }
   .seg-item.active { background: var(--elev); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+
+  /* Tabs (Build / Preview / Flow JSON) */
+  .tabs { display: flex; gap: 4px; align-self: stretch; border-bottom: 1px solid var(--border); }
+  .tab { padding: 8px 14px; font-size: 14px; font-weight: 500; color: var(--dim); background: transparent;
+    border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    transition: color .12s, border-color .12s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 
   /* Screens rail */
   .screens { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
@@ -459,10 +467,10 @@
   <div class="workspace">
     <section class="builder">
       <div class="builder-head">
-        <div class="seg" role="tablist">
-          <button class="seg-item tab active" data-tab="build" data-i18n="build">Build</button>
-          <button class="seg-item tab" data-tab="preview" data-i18n="preview">Preview</button>
-          <button class="seg-item tab" data-tab="json" data-i18n="flowJson">Flow JSON</button>
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" aria-selected="true" data-tab="build" data-i18n="build">Build</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="preview" data-i18n="preview">Preview</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="json" data-i18n="flowJson">Flow JSON</button>
         </div>
         <div class="screens" id="screens"></div>
       </div>
