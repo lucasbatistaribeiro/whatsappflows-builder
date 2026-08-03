@@ -175,22 +175,87 @@ function inputBox(placeholder: string, tall = false, trailing?: string): HTMLEle
   return box;
 }
 
-function field(labelText: string, control: HTMLElement, help?: string): HTMLElement {
+// A field whose label carries an "(optional)" marker when the input isn't required.
+function fieldC(c: Component, control: HTMLElement, help?: unknown): HTMLElement {
   const wrap = el("div", "wa-field");
-  if (labelText) wrap.appendChild(el("div", "wa-label", labelText));
+  wrap.appendChild(labelWithOptional(c));
   wrap.appendChild(control);
-  if (help) wrap.appendChild(el("div", "wa-help", help));
+  if (typeof help === "string" && help) wrap.appendChild(el("div", "wa-help", help));
+  return wrap;
+}
+
+// WhatsApp marks optional inputs "(optional)". Only when `required` is explicitly
+// falsy — a dynamic binding (unknown at author time) gets no marker.
+function isOptional(c: Component): boolean {
+  return !!c.name && (c.required === undefined || c.required === false);
+}
+function labelWithOptional(c: Component): HTMLElement {
+  const div = el("div", "wa-label", labelStr(c.label));
+  if (isOptional(c)) div.appendChild(el("span", "wa-optional", " " + t("optional")));
+  return div;
+}
+
+function asNum(v: unknown, def: number | undefined): number | undefined {
+  if (typeof v === "number") return v;
+  if (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v))) return Number(v);
+  return def;
+}
+function htmlInputType(c: Component): string {
+  switch (c["input-type"]) {
+    case "email": return "email";
+    case "phone": return "tel";
+    case "number": return "number";
+    case "password":
+    case "passcode": return "password";
+    default: return "text";
+  }
+}
+
+// TextInput / TextArea. Interactive mode renders a real, typeable field with a
+// live "n / max" counter (TextArea defaults to 600, like WhatsApp); otherwise a
+// static placeholder box — mirroring the Playground's interactive toggle.
+function inputField(c: Component, tall: boolean): HTMLElement {
+  const wrap = el("div", "wa-field");
+  wrap.appendChild(labelWithOptional(c));
+  const max = tall ? asNum(c["max-length"], 600) : asNum(c["max-chars"], undefined);
+  if (interactive) {
+    const inp = tall ? document.createElement("textarea") : document.createElement("input");
+    inp.className = "wa-inp" + (tall ? " tall" : "");
+    inp.placeholder = placeholderFor(c);
+    if (!tall) (inp as HTMLInputElement).type = htmlInputType(c);
+    if (max !== undefined) inp.maxLength = max;
+    wrap.appendChild(inp);
+    if (max !== undefined) {
+      const cnt = el("div", "wa-count", `0 / ${max}`);
+      inp.addEventListener("input", () => { cnt.textContent = `${inp.value.length} / ${max}`; });
+      wrap.appendChild(cnt);
+    }
+  } else {
+    wrap.appendChild(inputBox(placeholderFor(c), tall));
+  }
+  const help = c["helper-text"];
+  if (typeof help === "string" && help) wrap.appendChild(el("div", "wa-help", help));
   return wrap;
 }
 
 function optionRows(c: Component, kind: "radio" | "check"): HTMLElement {
   const wrap = el("div", "wa-field");
-  if (c.label) wrap.appendChild(el("div", "wa-label", c.label));
+  wrap.appendChild(labelWithOptional(c));
   const items = dataSourceOf(c);
   if (items.length === 0 && isBinding(c["data-source"])) wrap.appendChild(el("div", "wa-help", String(c["data-source"])));
+  const group = c.name || "opt";
   items.forEach((it, i) => {
-    const row = el("div", "wa-opt");
-    row.appendChild(el("span", `wa-mark ${kind}${i === 0 ? " on" : ""}`));
+    // Interactive: a real radio/checkbox you can select; static: the WhatsApp mark.
+    const row = el(interactive ? "label" : "div", "wa-opt");
+    if (interactive) {
+      const inp = document.createElement("input");
+      inp.type = kind === "radio" ? "radio" : "checkbox";
+      inp.name = group;
+      inp.className = "wa-real-mark";
+      row.appendChild(inp);
+    } else {
+      row.appendChild(el("span", `wa-mark ${kind}${i === 0 ? " on" : ""}`));
+    }
     const texts = el("div");
     texts.appendChild(el("div", "wa-opt-title", it.title));
     if (it.description) texts.appendChild(el("div", "wa-opt-desc", it.description));
@@ -202,7 +267,7 @@ function optionRows(c: Component, kind: "radio" | "check"): HTMLElement {
 
 function chips(c: Component): HTMLElement {
   const wrap = el("div", "wa-field");
-  if (c.label) wrap.appendChild(el("div", "wa-label", c.label));
+  wrap.appendChild(labelWithOptional(c));
   const row = el("div", "wa-chips");
   const items = dataSourceOf(c);
   if (items.length === 0 && isBinding(c["data-source"])) wrap.appendChild(el("div", "wa-help", String(c["data-source"])));
@@ -269,17 +334,23 @@ function renderComp(c: Component, _flow: FlowJSON): HTMLElement {
     case "TextBody": return comp("wa-body-text", c.text ?? "");
     case "RichText": return comp("wa-body-text", (c.text ?? "").replace(/\*\*/g, "").replace(/[*_~#]/g, ""));
     case "TextCaption": return comp("wa-caption", c.text ?? "");
-    case "TextInput": return field(c.label ?? "", inputBox(placeholderFor(c)), c["helper-text"]);
-    case "TextArea": return field(c.label ?? "", inputBox("Type here...", true), c["helper-text"]);
-    case "DatePicker": return field(c.label ?? "", inputBox("Select date", false, "📅"));
-    case "CalendarPicker": return field(labelStr(c.label), inputBox(c.mode === "range" ? "Select date range" : "Select date", false, "📅"));
-    case "Dropdown": return field(c.label ?? "", inputBox(firstTitle(c), false, "▾"));
+    case "TextInput": return inputField(c, false);
+    case "TextArea": return inputField(c, true);
+    case "DatePicker": return fieldC(c, inputBox("Select date", false, "📅"));
+    case "CalendarPicker": return fieldC(c, inputBox(c.mode === "range" ? "Select date range" : "Select date", false, "📅"));
+    case "Dropdown": return fieldC(c, inputBox(firstTitle(c), false, "▾"));
     case "RadioButtonsGroup": return optionRows(c, "radio");
     case "CheckboxGroup": return optionRows(c, "check");
     case "ChipsSelector": return chips(c);
     case "OptIn": {
-      const row = el("div", "wa-opt");
-      row.appendChild(el("span", "wa-mark check"));
+      const row = el("label", "wa-opt");
+      if (interactive) {
+        const box = document.createElement("input");
+        box.type = "checkbox"; box.className = "wa-real-mark";
+        row.appendChild(box);
+      } else {
+        row.appendChild(el("span", "wa-mark check"));
+      }
       row.appendChild(el("div", "wa-opt-title", c.label ?? ""));
       return row;
     }
@@ -314,5 +385,13 @@ function renderFooter(c: Component, flow: FlowJSON): HTMLElement {
     };
   }
   area.appendChild(btn);
+  area.appendChild(managedNote());
   return area;
+}
+
+// WhatsApp shows this disclaimer under the flow CTA on every screen.
+function managedNote(): HTMLElement {
+  const n = el("div", "wa-managed", t("managedByBusiness") + " ");
+  n.appendChild(el("span", "wa-managed-link", t("learnMore")));
+  return n;
 }

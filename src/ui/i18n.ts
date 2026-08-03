@@ -40,6 +40,9 @@ const DICT: Record<string, Entry> = {
   templatePlaceholder: { en: "Template...", pt: "Modelo..." },
   noComponents: { en: "No components yet. Add one above.", pt: "Nenhum componente ainda. Adicione um acima." },
   // preview / json
+  optional: { en: "(optional)", pt: "(opcional)" },
+  managedByBusiness: { en: "Managed by the business.", pt: "Gerenciada pela empresa." },
+  learnMore: { en: "Learn more", pt: "Saiba mais" },
   livePreview: { en: "Live preview", pt: "Prévia ao vivo" },
   summary: { en: "Summary", pt: "Resumo" },
   valid: { en: "Valid", pt: "Válido" },

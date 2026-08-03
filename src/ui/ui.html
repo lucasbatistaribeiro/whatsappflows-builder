@@ -208,7 +208,17 @@
 
   .wa-field { display: flex; flex-direction: column; gap: 4px; }
   .wa-label { font-size: 12px; color: var(--wa-text2); font-weight: 500; }
+  .wa-optional { color: var(--wa-text2); font-weight: 400; }
   .wa-help { font-size: 11px; color: var(--wa-text2); }
+  .wa-inp { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px;
+    padding: 10px 12px; border: 1px solid var(--wa-input-border, #d1d7db); border-radius: 8px;
+    background: var(--wa-surface, #fff); color: var(--wa-text, #111); }
+  .wa-inp.tall { min-height: 72px; resize: vertical; }
+  .wa-inp:focus { outline: none; border-color: var(--wa-primary, #008069); }
+  .wa-count { font-size: 11px; color: var(--wa-text2); text-align: right; margin-top: 4px; }
+  .wa-real-mark { width: 20px; height: 20px; flex: 0 0 20px; margin: 0; accent-color: var(--wa-primary); cursor: pointer; }
+  .wa-managed { margin-top: 10px; text-align: center; font-size: 11px; color: var(--wa-text2); }
+  .wa-managed-link { color: var(--wa-link, #027eb5); cursor: pointer; }
   .wa-input { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px;
     border: 1px solid var(--wa-input-border, #d1d7db); border-radius: 8px; background: var(--wa-surface, #fff); }
   .wa-input.tall { min-height: 84px; align-items: flex-start; padding-top: 12px; }
