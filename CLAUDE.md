@@ -4,7 +4,10 @@ A Figma plugin that turns the WhatsApp Flows Playground into a visual builder:
 compose flow screens, edit the Flow JSON live, preview a WhatsApp phone mockup,
 and **Generate** navigable, WhatsApp-styled frames in Figma. See `README.md` for
 the user-facing overview and `docs/BUGFIXES.md` for a log of past bugs + fixes
-(read it — several are non-obvious Figma/auto-layout traps).
+(read it — several are non-obvious Figma/auto-layout traps). To reconcile the
+project with changes to Meta's WhatsApp Flows spec (new components, limits,
+versions, validation rules), follow `docs/META_SYNC.md` — it maps each Meta doc
+to the exact code and gives a step-by-step routine.
 
 ## Commands
 
