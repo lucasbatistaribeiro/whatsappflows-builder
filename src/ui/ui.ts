@@ -6,13 +6,13 @@ import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
 import { TEMPLATES } from "../model/templates";
 import { postToMain } from "../shared/messages";
-import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize } from "./preview";
+import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme } from "./preview";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
 import { iconEl, applyIcons } from "./icons";
 import { createDropdown } from "./dropdown";
 import { t, setLang, applyI18n, type Lang } from "./i18n";
-import type { Prefs, ThemePref, GenOptions, ScreenSize } from "../shared/messages";
+import type { Prefs, ThemePref, GenOptions, ScreenSize, PreviewTheme } from "../shared/messages";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -417,12 +417,19 @@ function applySize(size: ScreenSize): void {
     b.classList.toggle("active", b.dataset.sizeOpt === size));
 }
 
+function applyWaTheme(theme: PreviewTheme): void {
+  setPreviewTheme(theme);
+  document.querySelectorAll<HTMLElement>("#wa-theme-seg .seg-item").forEach((b) =>
+    b.classList.toggle("active", b.dataset.waThemeOpt === theme));
+}
+
 function applyPrefs(p: Prefs): void {
   prefs = { ...prefs, ...p };
   applyTheme(prefs.theme);
   applyLang(prefs.lang);
   applyInteractive(prefs.interactive);
   applySize(prefs.size);
+  applyWaTheme(prefs.previewTheme);
 }
 
 const savePrefs = (): void => postToMain({ type: "savePrefs", prefs });
@@ -451,6 +458,14 @@ document.querySelectorAll<HTMLElement>("#size-seg .seg-item").forEach((b) =>
   b.addEventListener("click", () => {
     prefs = { ...prefs, size: b.dataset.sizeOpt as ScreenSize };
     applySize(prefs.size);
+    renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
+    savePrefs();
+  }));
+
+document.querySelectorAll<HTMLElement>("#wa-theme-seg .seg-item").forEach((b) =>
+  b.addEventListener("click", () => {
+    prefs = { ...prefs, previewTheme: b.dataset.waThemeOpt as PreviewTheme };
+    applyWaTheme(prefs.previewTheme);
     renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
     savePrefs();
   }));

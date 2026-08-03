@@ -2,7 +2,7 @@
 // renders navigable WhatsApp-styled screens on the canvas.
 import type { FlowJSON } from "../model/flowTypes";
 import type { UIToMain, Prefs, GenOptions } from "../shared/messages";
-import { DEVICE, SCREEN_HEIGHTS } from "./theme";
+import { DEVICE, SCREEN_HEIGHTS, setPalette } from "./theme";
 import { applyFills } from "./nodes";
 import { loadFonts } from "./fonts";
 import { buildScreen, type BuiltScreen } from "./screen";
@@ -66,6 +66,8 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
 
   await loadFonts();
   await figma.loadAllPagesAsync();
+
+  setPalette(options.theme); // switch the active palette before building any node
 
   const built: BuiltScreen[] = flow.screens.map((s, i) => buildScreen(s, i, flow.screens.length));
 

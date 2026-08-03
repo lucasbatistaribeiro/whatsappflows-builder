@@ -3,7 +3,7 @@
 // so the preview and the generated frames stay in sync.
 import type { FlowJSON, Screen, Component } from "../model/flowTypes";
 import { screenChildren, dataSourceOf, isBinding } from "../model/flowTypes";
-import { COLOR, SCREEN_HEIGHTS } from "../main/theme";
+import { COLOR, SCREEN_HEIGHTS, setPalette } from "../main/theme";
 import { t } from "./i18n";
 
 // Push theme tokens into CSS custom properties once, so the stylesheet in
@@ -27,6 +27,13 @@ export function applyThemeVars(): void {
     "--wa-placeholder": COLOR.placeholder,
   };
   for (const k in map) root.setProperty(k, map[k]);
+}
+
+// Switch the WhatsApp mockup between light/dark: pick the palette, then push its
+// tokens into the --wa-* CSS vars the preview stylesheet reads.
+export function setPreviewTheme(theme: "light" | "dark"): void {
+  setPalette(theme);
+  applyThemeVars();
 }
 
 // Preview keeps its own selected tab, independent of the Build tab.
