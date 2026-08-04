@@ -116,8 +116,13 @@
   .chip .x:hover { opacity: 1; }
   .chip.add { background: transparent; border: 1px dashed var(--border); color: var(--dim); }
 
+  /* Panels toggle via `display`, which can't transition — so the entering panel
+     plays a short fade/rise instead. The popups that must stay position:fixed
+     (dropdown lists) are appended to <body>, so this transform never becomes
+     their containing block. */
   .panel { display: none; }
-  .panel.active { display: block; }
+  .panel.active { display: block; animation: panel-in .18s ease-out; }
+  @keyframes panel-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
   #panel-preview.active { display: block; }
 
   .section-label { font-size: 14px; text-transform: uppercase; letter-spacing: .07em; color: var(--dim);
@@ -420,7 +425,7 @@
   .offer-body { font-size: 12px; color: var(--dim); margin-top: 1px; }
   .offer-actions { display: flex; gap: 6px; flex: none; }
 
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
 <div class="app">
