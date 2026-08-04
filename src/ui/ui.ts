@@ -345,8 +345,29 @@ function renderValidation(): void {
 
   // Block generation while errors exist (warnings still allowed).
   const gen = $("#generate") as HTMLButtonElement;
-  gen.disabled = errors > 0;
+  gen.disabled = errors > 0 || gen.classList.contains("busy");
   gen.title = errors > 0 ? `Fix ${errors} error${errors > 1 ? "s" : ""} before generating` : "";
+}
+
+// ---- Generate button feedback -------------------------------------------
+// The main thread answers a generate with `generated` (or `error`), so the button
+// can show progress and then confirm the screens landed on the canvas.
+
+let genResetTimer = 0;
+
+function setGenState(state: "idle" | "busy" | "done"): void {
+  clearTimeout(genResetTimer);
+  const btn = $("#generate") as HTMLButtonElement;
+  const icon = btn.querySelector<HTMLElement>(".ic");
+  const label = btn.querySelector<HTMLElement>("[data-i18n='generate']");
+  btn.classList.toggle("busy", state === "busy");
+  btn.classList.toggle("done", state === "done");
+  // Don't clobber the validation gate when returning to idle.
+  const errors = validateFlow(flow).filter((i) => i.level === "error").length;
+  btn.disabled = state === "busy" || errors > 0;
+  if (icon) icon.replaceChildren(iconEl(state === "busy" ? "loader-circle" : state === "done" ? "check" : "sparkles", 15));
+  if (label) label.textContent = t(state === "busy" ? "generating" : state === "done" ? "genDone" : "generate");
+  if (state === "done") genResetTimer = window.setTimeout(() => setGenState("idle"), 2200);
 }
 
 function issueRow(issue: Issue): HTMLElement {
@@ -590,6 +611,8 @@ window.addEventListener("message", (e: MessageEvent) => {
   if (msg.type === "prefs" && msg.prefs) applyPrefs(msg.prefs);
   else if (msg.type === "importOffer" && msg.flow) showOffer(msg.name ?? "Figma", msg.flow);
   else if (msg.type === "importOfferEnd") hideOffer(); // selection left the section
+  else if (msg.type === "generated") setGenState("done");
+  else if (msg.type === "error") setGenState("idle"); // generation failed — don't hang on "busy"
 });
 
 $("#import").addEventListener("click", () => { closeMenu(); ($("#file") as HTMLInputElement).click(); });
@@ -626,7 +649,10 @@ document.querySelectorAll(".tab").forEach((t) => {
 
 $("#json").addEventListener("input", onJsonInput);
 
-$("#generate").addEventListener("click", () => postToMain({ type: "generate", flow, options: genOptions() }));
+$("#generate").addEventListener("click", () => {
+  setGenState("busy");
+  postToMain({ type: "generate", flow, options: genOptions() });
+});
 
 $("#copy").addEventListener("click", () => {
   closeMenu();

@@ -12,6 +12,8 @@ const DICT: Record<string, Entry> = {
   flowJson: { en: "Flow JSON", pt: "Flow JSON" },
   // top bar
   generate: { en: "Generate", pt: "Gerar" },
+  generating: { en: "Generating…", pt: "Gerando…" },
+  genDone: { en: "Generated!", pt: "Gerado!" },
   // menu
   menuTitle: { en: "Menu", pt: "Menu" },
   groupPreview: { en: "Preview", pt: "Prévia" },

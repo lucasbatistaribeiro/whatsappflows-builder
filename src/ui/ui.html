@@ -74,6 +74,15 @@
   #menu-btn { width: 34px; height: 34px; }
   #generate { padding: 9px 16px; font-size: 15px; }
   #generate svg { width: 15px; height: 15px; }
+  /* Generate feedback: spinner while the main thread builds, then a check that
+     pops to confirm the screens landed on the canvas. */
+  #generate.busy:disabled { opacity: .85; cursor: progress; }
+  #generate.busy svg { animation: gen-spin .9s linear infinite; }
+  #generate.done { animation: gen-pop .34s ease; }
+  #generate.done svg { animation: gen-check .34s ease; }
+  @keyframes gen-spin { to { transform: rotate(360deg); } }
+  @keyframes gen-pop { 0%, 100% { transform: scale(1); } 35% { transform: scale(1.07); } }
+  @keyframes gen-check { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .btn:focus-visible, .seg-item:focus-visible, .tab:focus-visible, .dd:focus-visible, input:focus-visible, textarea:focus-visible {
     outline: none; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring);
   }
