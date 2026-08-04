@@ -169,7 +169,12 @@
   .comp.collapsed { gap: 0; }
   .comp .row { display: flex; align-items: center; gap: 6px; }
   .comp-head { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; cursor: pointer; }
-  .comp-chev { display: inline-flex; color: var(--dim); flex: none; }
+  .comp-chev { display: inline-flex; color: var(--dim); flex: none; cursor: pointer; }
+  /* touch-action: none so a drag never turns into a scroll gesture */
+  .comp-grip { display: inline-flex; color: var(--dim); flex: none; cursor: grab; touch-action: none; }
+  .comp-grip:active { cursor: grabbing; }
+  .comp.dragging { opacity: .55; }
+  .comp-actions { display: flex; justify-content: flex-end; }
   .comp .type { font-weight: 400; font-size: 16px; color: var(--dim); flex: none; }
   /* Collapse animates a real auto height: the wrapper is a 1-row grid whose row
      goes 1fr -> 0fr (interpolatable in Chromium; degrades to an instant snap

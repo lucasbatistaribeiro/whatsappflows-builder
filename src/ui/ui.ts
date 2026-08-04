@@ -133,34 +133,44 @@ function renderComponentList(): void {
     const row = document.createElement("div");
     row.className = "row";
 
-    // Clickable header: collapse chevron + the component name, nothing else.
+    // Header: drag grip · component name · accordion chevron.
+    const grip = document.createElement("span");
+    grip.className = "comp-grip"; grip.title = t("dragToReorder");
+    grip.appendChild(iconEl("grip-vertical", 16));
+    grip.addEventListener("pointerdown", (e) => startDrag(e, card));
+
     const head = document.createElement("div");
     head.className = "comp-head";
-    const chev = document.createElement("span");
-    chev.className = "comp-chev";
-    chev.appendChild(iconEl(isCollapsed ? "chevron-right" : "chevron-down", 16));
     const type = document.createElement("span");
     type.className = "type"; type.textContent = c.type;
-    head.append(chev, type);
+    head.appendChild(type);
+
+    const chev = document.createElement("span");
+    chev.className = "comp-chev";
+    chev.appendChild(iconEl(isCollapsed ? "chevron-down" : "chevron-up", 16));
+
     // Toggle in place (class only) so the body animates instead of re-rendering.
     const setCollapsed = (collapse: boolean): void => {
       card.classList.toggle("collapsed", collapse);
       if (collapse) COLLAPSED.add(c);
       else COLLAPSED.delete(c);
-      chev.replaceChildren(iconEl(collapse ? "chevron-right" : "chevron-down", 16));
+      chev.replaceChildren(iconEl(collapse ? "chevron-down" : "chevron-up", 16));
     };
     cardToggles.push(setCollapsed); // reused by the collapse/expand-all button
-    head.onclick = () => setCollapsed(!card.classList.contains("collapsed"));
-    row.appendChild(head);
-
-    row.appendChild(iconBtn("chevron-up", () => move(i, -1), "Move up"));
-    row.appendChild(iconBtn("chevron-down", () => move(i, +1), "Move down"));
-    row.appendChild(iconBtn("trash-2", () => { kids.splice(i, 1); syncAndRender(); }, "Remove"));
+    const toggle = (): void => setCollapsed(!card.classList.contains("collapsed"));
+    head.onclick = toggle;
+    chev.onclick = toggle;
+    row.append(grip, head, chev);
     card.appendChild(row);
 
     const ids = flow.screens.map((s) => s.id);
     const editor = buildPropEditor(c, ids, { soft: softSync, structural: structuralSync });
     editor.classList.add("comp-body");
+    // Delete lives at the end of the card's own content, so it collapses with it.
+    const actions = document.createElement("div");
+    actions.className = "comp-actions";
+    actions.appendChild(iconBtn("trash-2", () => { kids.splice(i, 1); syncAndRender(); }, "Remove"));
+    editor.appendChild(actions);
     // Grid wrapper so the collapse can animate to the body's natural height.
     const bodyWrap = document.createElement("div");
     bodyWrap.className = "comp-body-wrap";
@@ -198,12 +208,42 @@ $("#collapse-all").addEventListener("click", () => {
 });
 
 
-function move(i: number, dir: number): void {
-  const kids = screenChildren(screen());
-  const j = i + dir;
-  if (j < 0 || j >= kids.length) return;
-  [kids[i], kids[j]] = [kids[j], kids[i]];
-  syncAndRender();
+// Drag-to-reorder from the grip: cards are reordered in the DOM as the pointer
+// moves (so the animation/edit state of the dragged card survives), and the model
+// is spliced once on release — a re-render only happens if the order changed.
+function startDrag(e: PointerEvent, card: HTMLElement): void {
+  e.preventDefault();
+  const host = $("#comp-list");
+  const from = Array.prototype.indexOf.call(host.children, card);
+  if (from < 0) return;
+  card.classList.add("dragging");
+
+  const onMove = (ev: PointerEvent): void => {
+    for (const other of Array.from(host.children) as HTMLElement[]) {
+      if (other === card) continue;
+      const box = other.getBoundingClientRect();
+      const mid = box.top + box.height / 2;
+      const rel = other.compareDocumentPosition(card); // where `card` sits vs `other`
+      if (ev.clientY < mid && rel & Node.DOCUMENT_POSITION_FOLLOWING) {
+        host.insertBefore(card, other); break;         // dragged up past `other`
+      }
+      if (ev.clientY > mid && rel & Node.DOCUMENT_POSITION_PRECEDING) {
+        host.insertBefore(card, other.nextSibling); break; // dragged down past `other`
+      }
+    }
+  };
+  const onUp = (): void => {
+    document.removeEventListener("pointermove", onMove);
+    document.removeEventListener("pointerup", onUp);
+    card.classList.remove("dragging");
+    const to = Array.prototype.indexOf.call(host.children, card);
+    if (to < 0 || to === from) return;
+    const kids = screenChildren(screen());
+    kids.splice(to, 0, ...kids.splice(from, 1));
+    syncAndRender();
+  };
+  document.addEventListener("pointermove", onMove);
+  document.addEventListener("pointerup", onUp);
 }
 
 // ---- JSON two-way sync --------------------------------------------------

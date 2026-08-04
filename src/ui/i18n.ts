@@ -44,6 +44,7 @@ const DICT: Record<string, Entry> = {
   // build panel
   addComponent: { en: "Add component", pt: "Adicionar componente" },
   componentsOnScreen: { en: "Components on this screen", pt: "Componentes desta tela" },
+  dragToReorder: { en: "Drag to reorder", pt: "Arraste para reordenar" },
   collapseAll: { en: "Collapse all", pt: "Fechar todos" },
   expandAll: { en: "Expand all", pt: "Abrir todos" },
   screenId: { en: "Screen id", pt: "ID da tela" },
