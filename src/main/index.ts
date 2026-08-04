@@ -2,7 +2,7 @@
 // renders navigable WhatsApp-styled screens on the canvas.
 import type { FlowJSON } from "../model/flowTypes";
 import type { UIToMain, Prefs, GenOptions } from "../shared/messages";
-import { SCREEN_HEIGHTS, setPalette } from "./theme";
+import { SCREEN_HEIGHTS, setPalette, fill } from "./theme";
 import { applyFills } from "./nodes";
 import { loadFonts } from "./fonts";
 import { buildScreen, type BuiltScreen } from "./screen";
@@ -54,6 +54,7 @@ const DEFAULT_OPTIONS: GenOptions = { os: "ios", theme: "light", interactive: tr
 // later lets the plugin offer to load the flow back into the builder.
 
 const SECTION_PAD = 100;
+const SECTION_BG = "#353535"; // canvas backdrop behind a generated run
 const JSON_MARKER = "flow.json";
 const JSON_NODE_NAME = "flow.json - do not delete";
 
@@ -147,6 +148,7 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
   const sectionY = nextSectionY(); // measure the page before adding the section
   const section = figma.createSection();
   section.name = todayLabel();
+  section.fills = [fill(SECTION_BG)];
   section.strokes = [];        // no border around the generated group
   section.cornerRadius = 24;
   figma.currentPage.appendChild(section);
