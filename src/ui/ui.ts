@@ -138,7 +138,7 @@ function renderComponentList(): void {
     head.className = "comp-head";
     const chev = document.createElement("span");
     chev.className = "comp-chev";
-    chev.appendChild(iconEl(isCollapsed ? "chevron-right" : "chevron-down", 15));
+    chev.appendChild(iconEl(isCollapsed ? "chevron-right" : "chevron-down", 16));
     const type = document.createElement("span");
     type.className = "type"; type.textContent = c.type;
     head.append(chev, type);
@@ -147,7 +147,7 @@ function renderComponentList(): void {
       card.classList.toggle("collapsed", collapse);
       if (collapse) COLLAPSED.add(c);
       else COLLAPSED.delete(c);
-      chev.replaceChildren(iconEl(collapse ? "chevron-right" : "chevron-down", 15));
+      chev.replaceChildren(iconEl(collapse ? "chevron-right" : "chevron-down", 16));
     };
     cardToggles.push(setCollapsed); // reused by the collapse/expand-all button
     head.onclick = () => setCollapsed(!card.classList.contains("collapsed"));
@@ -345,7 +345,7 @@ function textField(value: string, onChange: (v: string) => void, placeholder = "
 function iconBtn(name: string, onClick: () => void, title = ""): HTMLButtonElement {
   const b = document.createElement("button");
   b.className = "icon-btn"; b.title = title; b.onclick = onClick;
-  b.appendChild(iconEl(name, 15));
+  b.appendChild(iconEl(name, 16));
   return b;
 }
 function uniqueId(base: string): string {
