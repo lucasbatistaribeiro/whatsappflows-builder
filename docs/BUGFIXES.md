@@ -5,6 +5,35 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Figma fails to import the plugin on a fresh clone
+
+**Symptom.** **Plugins → Development → Import plugin from manifest…** errors out
+on a freshly cloned repo, before the plugin ever runs.
+
+**Root cause.** Not a code bug — a missing build. `manifest.json` points at
+`dist/code.js` and `dist/ui.html`, but `.gitignore` excludes `dist/` (and
+`node_modules/`), so a clone contains only `src/`. Figma resolves the manifest's
+`main`/`ui` paths at import time and fails when the files don't exist.
+
+**Fix.** Run the build before importing:
+
+```bash
+npm install
+npm run build      # generates dist/code.js + dist/ui.html
+```
+
+Then import `manifest.json` again. Remember that `dist/` is generated: after any
+`src/` edit you must rebuild and reload the plugin, and `npm run watch` only
+rebuilds the main bundle — **UI changes need a manual `npm run build`**.
+
+**If the error persists,** it's a different failure with a different shape:
+- *"Editor type not supported"* — the manifest declares `"editorType": ["figma"]`,
+  so the plugin only opens in a Design file (not FigJam or Slides).
+- *A blank/grey panel or a runtime stack* — that's a real bug, not the import;
+  check **Plugins → Development → Open console**.
+
+---
+
 ## Flows that wrap components in a `Form` weren't recognized
 
 **Symptom.** Importing a real Meta Flow JSON (e.g. a data-endpoint RSVP flow)
