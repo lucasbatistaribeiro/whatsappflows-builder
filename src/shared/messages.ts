@@ -39,7 +39,9 @@ export type MainToUI =
   | { type: "prefs"; prefs: Prefs }
   // The user clicked a generated section that carries an embedded Flow JSON —
   // offer to load it back into the builder.
-  | { type: "importOffer"; name: string; flow: FlowJSON };
+  | { type: "importOffer"; name: string; flow: FlowJSON }
+  // Selection moved off that section (or onto nothing) — withdraw the offer.
+  | { type: "importOfferEnd" };
 
 export function postToMain(msg: UIToMain): void {
   parent.postMessage({ pluginMessage: msg }, "*");

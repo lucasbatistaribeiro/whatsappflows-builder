@@ -102,16 +102,20 @@ function readEmbeddedFlow(section: SectionNode): FlowJSON | null {
   return null;
 }
 
-// Offer an import when the user selects a single generated section. Tracked so
-// re-selecting the same section after dismissing doesn't nag on every event.
+// Offer an import when the user selects a single generated section, and withdraw
+// it as soon as the selection moves elsewhere (another node, or nothing).
 let lastOfferedSectionId: string | null = null;
+function endOffer(): void {
+  lastOfferedSectionId = null;
+  figma.ui.postMessage({ type: "importOfferEnd" });
+}
 figma.on("selectionchange", () => {
   const sel = figma.currentPage.selection;
-  if (sel.length !== 1 || sel[0].type !== "SECTION") { lastOfferedSectionId = null; return; }
+  if (sel.length !== 1 || sel[0].type !== "SECTION") { endOffer(); return; }
   const section = sel[0];
-  if (section.id === lastOfferedSectionId) return;
+  if (section.id === lastOfferedSectionId) return; // already offered for this one
   const flow = readEmbeddedFlow(section);
-  if (!flow) { lastOfferedSectionId = null; return; }
+  if (!flow) { endOffer(); return; }
   lastOfferedSectionId = section.id;
   figma.ui.postMessage({ type: "importOffer", name: section.name, flow });
 });

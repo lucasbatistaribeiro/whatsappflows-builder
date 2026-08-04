@@ -522,6 +522,7 @@ window.addEventListener("message", (e: MessageEvent) => {
   if (!msg) return;
   if (msg.type === "prefs" && msg.prefs) applyPrefs(msg.prefs);
   else if (msg.type === "importOffer" && msg.flow) showOffer(msg.name ?? "Figma", msg.flow);
+  else if (msg.type === "importOfferEnd") hideOffer(); // selection left the section
 });
 
 $("#import").addEventListener("click", () => { closeMenu(); ($("#file") as HTMLInputElement).click(); });
