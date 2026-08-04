@@ -22,6 +22,17 @@ const batterySvg = (ink: string): string =>
   `<rect x="3" y="3" width="16" height="6" rx="1.5" fill="${ink}"/>` +
   `<path d="M25 4.2a2 2 0 0 1 0 3.6z" fill="${ink}" fill-opacity="0.4"/></svg>`;
 
+// Flow-sheet header icons. The leading control is a close "✕" on the entry
+// screen (there is nowhere to go back to) and a back arrow on every screen after.
+const strokeSvg = (ink: string, paths: string): string =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" ` +
+  `stroke="${ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+const backSvg = (ink: string): string => strokeSvg(ink, `<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>`);
+const closeSvg = (ink: string): string => strokeSvg(ink, `<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`);
+const moreSvg = (ink: string): string =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${ink}">` +
+  `<circle cx="12" cy="5" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="12" cy="19" r="1.75"/></svg>`;
+
 // Import an SVG and rescale it to a fixed height, whatever size Figma gives it.
 function iconNode(svg: string, targetH = 11): FrameNode {
   const n = figma.createNodeFromSvg(svg);
@@ -70,22 +81,64 @@ export function progressBar(done: number, total: number): FrameNode {
   return bar;
 }
 
-export function header(title: string): FrameNode {
+// Business name shown under the flow title. Toggled + edited from the plugin
+// menu and sent with `generate`; set it before building any node (like the
+// palette) so every screen in a run agrees.
+let business = { show: true, name: "Business name" };
+export function setBusiness(show: boolean, name: string): void {
+  business = { show, name };
+}
+
+// WhatsApp's flow modal is a bottom sheet — it opens with a drag handle on top.
+function dragHandle(): FrameNode {
+  const row = autoFrame({
+    name: "handle", axis: "HORIZONTAL", padding: [8, 0, 4, 0],
+    align: "CENTER", counterAlign: "CENTER",
+  });
+  const pill = figma.createRectangle();
+  pill.name = "grabber";
+  pill.resize(36, 4);
+  pill.cornerRadius = 2;
+  pill.fills = [fill(COLOR.inputBorder)];
+  row.appendChild(pill);
+  return row;
+}
+
+// A centered text line that fills its parent's width (so "centered" means
+// centered on the sheet, not inside the text's own hugging box).
+function centered(node: TextNode): TextNode {
+  node.textAlignHorizontal = "CENTER";
+  node.textAutoResize = "HEIGHT"; // required before a FILL width sticks
+  return markFill(node);
+}
+
+// `first` = the flow's entry screen, which closes the sheet instead of going back.
+export function header(title: string, first = false): FrameNode {
   const wrap = autoFrame({ name: "header", bg: COLOR.surface, width: DEVICE.width });
 
+  const handle = dragHandle();
+  wrap.appendChild(handle);
+  markFill(handle);
+
+  // close/back | titles | overflow. Both icons are the same width, so a filling
+  // titles column puts the title in the true center of the sheet.
   const row = autoFrame({
-    axis: "HORIZONTAL", gap: 16, padding: [14, 16, 14, 16],
+    axis: "HORIZONTAL", gap: 8, padding: [6, 12, 14, 12],
     align: "MIN", counterAlign: "CENTER",
   });
   markFill(row);
+  const lead = first ? closeSvg(COLOR.textPrimary) : backSvg(COLOR.textPrimary);
+  row.appendChild(iconNode(lead, 24));
 
-  const close = text("✕", { size: 20, color: COLOR.textPrimary });
-  const titles = autoFrame({ gap: 1 });
-  titles.appendChild(text(title || "Flow", { font: FONT.semibold, size: 16 }));
-  titles.appendChild(text("Business name", { size: 12, color: COLOR.textSecondary }));
-
-  row.appendChild(close);
+  const titles = autoFrame({ gap: 1, counterAlign: "CENTER" });
+  markFill(titles);
+  titles.appendChild(centered(text(title || "Flow", { font: FONT.semibold, size: 16 })));
+  const name = business.show ? business.name.trim() : "";
+  if (name) titles.appendChild(centered(text(name, { size: 12, color: COLOR.textSecondary })));
   row.appendChild(titles);
+
+  row.appendChild(iconNode(moreSvg(COLOR.textPrimary), 24));
+
   wrap.appendChild(row);
   wrap.appendChild(divider());
   return wrap;

@@ -243,10 +243,18 @@
   /* Header/progress sit on `surface`, matching the status bar above them and the
      generator (in dark, `surface` != `bg`, so a transparent header showed as a
      dark band between two lighter ones). */
-  .wa-header { display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+  /* Flow modal = a bottom sheet: drag handle, then back / centered title /
+     overflow menu. Mirrors chrome.ts so preview and generated frames match. */
+  .wa-header { display: flex; flex-direction: column;
     background: var(--wa-surface, #fff);
     border-bottom: 1px solid var(--wa-divider, #e9edef); }
-  .wa-close { font-size: 18px; }
+  .wa-handle { flex: none; width: 36px; height: 4px; border-radius: 2px; margin: 8px auto 4px;
+    background: var(--wa-input-border, #d1d7db); }
+  .wa-hrow { display: flex; align-items: center; gap: 8px; padding: 6px 12px 14px; }
+  .wa-hicon { flex: none; display: flex; color: var(--wa-text, #111); }
+  .wa-hicon svg { display: block; }
+  /* Fills the row so the title centers on the sheet, not inside its own box. */
+  .wa-titles { flex: 1; min-width: 0; text-align: center; }
   .wa-title { font-weight: 600; font-size: 15px; }
   .wa-sub { font-size: 11px; color: var(--wa-text2, #667781); }
   .wa-progress { display: flex; gap: 3px; padding: 2px 16px 8px; background: var(--wa-surface, #fff); }
@@ -535,6 +543,12 @@
         <span data-i18n="interactive">Interactive mode</span>
         <input type="checkbox" class="menu-switch" id="interactive-toggle" checked>
       </label>
+      <label class="menu-toggle">
+        <span data-i18n="businessName">Business name</span>
+        <input type="checkbox" class="menu-switch" id="biz-toggle" checked>
+      </label>
+      <input type="text" id="biz-name" maxlength="40"
+             data-i18n-ph="businessNamePh" placeholder="Business name">
     </div>
 
     <div class="menu-group">
