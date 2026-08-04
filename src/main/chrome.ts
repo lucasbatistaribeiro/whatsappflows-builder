@@ -84,7 +84,7 @@ export function progressBar(done: number, total: number): FrameNode {
 // Business name shown under the flow title. Toggled + edited from the plugin
 // menu and sent with `generate`; set it before building any node (like the
 // palette) so every screen in a run agrees.
-let business = { show: true, name: "Business name" };
+let business = { show: false, name: "Business name" };
 export function setBusiness(show: boolean, name: string): void {
   business = { show, name };
 }

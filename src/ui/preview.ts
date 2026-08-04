@@ -54,7 +54,7 @@ let previewSize: "sm" | "md" | "lg" = "md";
 export function setPreviewSize(size: "sm" | "md" | "lg"): void { previewSize = size; }
 
 // Business name under the flow title, mirroring the generator (chrome.ts).
-let business = { show: true, name: "Business name" };
+let business = { show: false, name: "Business name" };
 export function setPreviewBusiness(show: boolean, name: string): void {
   business = { show, name };
 }

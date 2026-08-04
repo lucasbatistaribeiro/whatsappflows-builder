@@ -543,11 +543,13 @@
         <span data-i18n="interactive">Interactive mode</span>
         <input type="checkbox" class="menu-switch" id="interactive-toggle" checked>
       </label>
+      <!-- Off by default: the name field starts hidden so it can't flash before
+           applyPrefs() runs. -->
       <label class="menu-toggle">
         <span data-i18n="businessName">Business name</span>
-        <input type="checkbox" class="menu-switch" id="biz-toggle" checked>
+        <input type="checkbox" class="menu-switch" id="biz-toggle">
       </label>
-      <input type="text" id="biz-name" maxlength="40"
+      <input type="text" id="biz-name" maxlength="40" hidden
              data-i18n-ph="businessNamePh" placeholder="Business name">
     </div>
 
