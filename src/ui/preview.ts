@@ -31,7 +31,9 @@ export function applyThemeVars(): void {
 
 // Switch the WhatsApp mockup between light/dark: pick the palette, then push its
 // tokens into the --wa-* CSS vars the preview stylesheet reads.
+let previewTheme: "light" | "dark" = "light";
 export function setPreviewTheme(theme: "light" | "dark"): void {
+  previewTheme = theme;
   setPalette(theme);
   applyThemeVars();
 }
@@ -71,6 +73,9 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
   const invalid = selected !== SUMMARY && selected !== null && errScreens.has(selected);
   const phone = el("div", "wa-phone" + (invalid ? " has-error" : ""));
   phone.style.aspectRatio = String(360 / SCREEN_HEIGHTS[previewSize]); // reflect the chosen size
+  // Native controls (interactive radios/checkboxes) follow the mockup's theme,
+  // not the plugin window's.
+  phone.style.colorScheme = previewTheme;
   phone.appendChild(statusBar());
   if (selected === SUMMARY) {
     phone.appendChild(header("Review and submit"));
