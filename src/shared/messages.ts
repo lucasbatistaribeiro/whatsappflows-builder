@@ -36,7 +36,10 @@ export type UIToMain =
 export type MainToUI =
   | { type: "generated"; screenCount: number }
   | { type: "error"; message: string }
-  | { type: "prefs"; prefs: Prefs };
+  | { type: "prefs"; prefs: Prefs }
+  // The user clicked a generated section that carries an embedded Flow JSON —
+  // offer to load it back into the builder.
+  | { type: "importOffer"; name: string; flow: FlowJSON };
 
 export function postToMain(msg: UIToMain): void {
   parent.postMessage({ pluginMessage: msg }, "*");

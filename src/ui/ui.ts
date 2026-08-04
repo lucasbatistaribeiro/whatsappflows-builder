@@ -433,6 +433,7 @@ function applyLang(lang: Lang): void {
   applyI18n(document);
   buildTemplateDropdown();
   buildMenuDropdowns(); // rebuild the combo boxes with translated labels + current values
+  if (offered) $("#offer-title").textContent = t("offerTitle", [offeredName]); // JS-built text
   renderAll();
 }
 
@@ -491,10 +492,36 @@ $("#interactive-toggle").addEventListener("change", (e) => {
   savePrefs();
 });
 
-// Saved prefs pushed from the main thread on startup.
+// ---- Import offer (user clicked a generated section in Figma) -------------
+
+let offered: FlowJSON | null = null;
+let offeredName = "";
+
+function showOffer(name: string, f: FlowJSON): void {
+  offered = f;
+  offeredName = name;
+  $("#offer-title").textContent = t("offerTitle", [name]);
+  $("#offer").classList.add("open");
+}
+function hideOffer(): void {
+  offered = null;
+  $("#offer").classList.remove("open");
+}
+$("#offer-cancel").addEventListener("click", hideOffer);
+$("#offer-import").addEventListener("click", () => {
+  const f = offered;
+  const name = offeredName;
+  hideOffer();
+  if (f) loadFlow(f, name); // replaces the current flow, same path as file import
+});
+
+// Messages from the main thread: saved prefs on startup, import offers on click.
 window.addEventListener("message", (e: MessageEvent) => {
-  const msg = (e.data && (e.data as { pluginMessage?: unknown }).pluginMessage) as { type?: string; prefs?: Prefs } | undefined;
-  if (msg && msg.type === "prefs" && msg.prefs) applyPrefs(msg.prefs);
+  const msg = (e.data && (e.data as { pluginMessage?: unknown }).pluginMessage) as
+    { type?: string; prefs?: Prefs; name?: string; flow?: FlowJSON } | undefined;
+  if (!msg) return;
+  if (msg.type === "prefs" && msg.prefs) applyPrefs(msg.prefs);
+  else if (msg.type === "importOffer" && msg.flow) showOffer(msg.name ?? "Figma", msg.flow);
 });
 
 $("#import").addEventListener("click", () => { closeMenu(); ($("#file") as HTMLInputElement).click(); });

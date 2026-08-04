@@ -36,6 +36,10 @@ const DICT: Record<string, Entry> = {
   langPt: { en: "Português", pt: "Português" },
   templateLabel: { en: "Start from a template", pt: "Começar de um modelo" },
   import: { en: "Import JSON", pt: "Importar JSON" },
+  offerTitle: { en: 'Import the flow from "{0}"?', pt: 'Importar o fluxo de "{0}"?' },
+  offerBody: { en: "This replaces the flow you are editing.", pt: "Isso substitui o fluxo que você está editando." },
+  offerImport: { en: "Import", pt: "Importar" },
+  offerCancel: { en: "Cancel", pt: "Cancelar" },
   copy: { en: "Copy JSON", pt: "Copiar JSON" },
   // build panel
   addComponent: { en: "Add component", pt: "Adicionar componente" },

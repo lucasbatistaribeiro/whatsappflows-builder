@@ -24,7 +24,10 @@ render navigable, WhatsApp-styled mockups on the canvas.
 - **Generate in Figma** — draws one phone-sized frame per screen (status bar,
   header, body, footer) with WhatsApp visual tokens and wires `navigate` actions
   into **prototype reactions** (clickable prototype, entry screen = starting
-  point).
+  point). Each run is grouped in a **section named with the date**.
+- **Round-trip from the canvas** — every generated section carries its Flow JSON
+  in an invisible, locked text layer. With the plugin open, click that section in
+  Figma and it offers to load the flow back into the builder.
 
 ## Component coverage
 

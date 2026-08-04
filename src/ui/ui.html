@@ -405,6 +405,15 @@
     .builder-head { padding: 10px 10px 0; }
   }
 
+  /* Import offer banner (clicking a generated section in Figma) */
+  #offer { display: none; align-items: flex-start; gap: 10px; padding: 10px 14px;
+    background: var(--accent-weak); border-bottom: 1px solid var(--border); }
+  #offer.open { display: flex; }
+  .offer-text { flex: 1; min-width: 0; }
+  .offer-title { font-size: 14px; font-weight: 600; }
+  .offer-body { font-size: 12px; color: var(--dim); margin-top: 1px; }
+  .offer-actions { display: flex; gap: 6px; flex: none; }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -421,6 +430,17 @@
     </button>
     <input id="file" type="file" accept="application/json,.json" hidden>
   </header>
+
+  <div id="offer" role="alert">
+    <div class="offer-text">
+      <div class="offer-title" id="offer-title"></div>
+      <div class="offer-body" data-i18n="offerBody">This replaces the flow you are editing.</div>
+    </div>
+    <div class="offer-actions">
+      <button id="offer-cancel" class="btn ghost" data-i18n="offerCancel">Cancel</button>
+      <button id="offer-import" class="btn primary" data-i18n="offerImport">Import</button>
+    </div>
+  </div>
 
   <div id="menu-backdrop"></div>
   <aside id="menu" aria-label="Menu">
