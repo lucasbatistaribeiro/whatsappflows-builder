@@ -362,6 +362,8 @@ function setGenState(state: "idle" | "busy" | "done"): void {
   const label = btn.querySelector<HTMLElement>("[data-i18n='generate']");
   btn.classList.toggle("busy", state === "busy");
   btn.classList.toggle("done", state === "done");
+  // Drives the loading bar under the top bar and the skeletoned workspace.
+  document.body.classList.toggle("generating", state === "busy");
   // Don't clobber the validation gate when returning to idle.
   const errors = validateFlow(flow).filter((i) => i.level === "error").length;
   btn.disabled = state === "busy" || errors > 0;
