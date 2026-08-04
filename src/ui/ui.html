@@ -161,11 +161,11 @@
   .palette-select:hover { border-color: var(--accent); }
 
   /* Component cards */
-  .comp-list { display: flex; flex-direction: column; gap: 7px; }
+  .comp-list { display: flex; flex-direction: column; gap: 7px; position: relative; }
   .comp { border: 1px solid var(--border); border-radius: var(--radius); background: var(--elev);
     padding: 12px; display: flex; flex-direction: column; gap: 8px;
-    transition: border-color .12s, background .12s, gap .2s ease, padding .2s ease; }
-  .comp:hover { border-color: var(--dim); background: var(--panel); }
+    transition: background .12s, opacity .15s ease, box-shadow .15s ease, gap .2s ease, padding .2s ease; }
+  .comp:hover { background: var(--panel); }
   .comp.collapsed { gap: 0; }
   .comp .row { display: flex; align-items: center; gap: 6px; }
   .comp-head { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; cursor: pointer; }
@@ -173,8 +173,16 @@
   /* touch-action: none so a drag never turns into a scroll gesture */
   .comp-grip { display: inline-flex; color: var(--dim); flex: none; cursor: grab; touch-action: none; }
   .comp-grip:active { cursor: grabbing; }
-  .comp.dragging { opacity: .55; }
   .comp-actions { display: flex; justify-content: flex-end; }
+
+  /* Dragging: spotlight the card being moved, fade the rest, and mark the slot
+     it will drop into with an accent line that slides between positions. */
+  .comp-list.dragging .comp:not(.dragging) { opacity: .4; }
+  .comp.dragging { opacity: 1; position: relative; z-index: 2; cursor: grabbing;
+    background: var(--elev); box-shadow: 0 8px 20px rgba(0,0,0,.28); }
+  .comp.dragging .type { font-weight: 600; color: var(--text); }
+  .drop-line { position: absolute; left: 0; right: 0; height: 2px; border-radius: 2px;
+    background: var(--accent); pointer-events: none; z-index: 3; transition: top .12s ease; }
   .comp .type { font-weight: 400; font-size: 16px; color: var(--dim); flex: none; }
   /* Collapse animates a real auto height: the wrapper is a 1-row grid whose row
      goes 1fr -> 0fr (interpolatable in Chromium; degrades to an instant snap
