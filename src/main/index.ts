@@ -147,6 +147,8 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
   const sectionY = nextSectionY(); // measure the page before adding the section
   const section = figma.createSection();
   section.name = todayLabel();
+  section.strokes = [];        // no border around the generated group
+  section.cornerRadius = 24;
   figma.currentPage.appendChild(section);
 
   // Lay the screens out in a row inside the section.
