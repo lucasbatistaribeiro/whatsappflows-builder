@@ -355,7 +355,7 @@ function renderValidation(): void {
 
 // Generating often finishes in well under a second, which made the bar/skeleton
 // flash. Hold the busy state for at least this long so it reads as progress.
-const MIN_BUSY_MS = 4000;
+const MIN_BUSY_MS = 3000;
 
 let genResetTimer = 0;
 let genFinishTimer = 0;
