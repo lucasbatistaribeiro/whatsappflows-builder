@@ -6,7 +6,7 @@ import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
 import { TEMPLATES } from "../model/templates";
 import { postToMain } from "../shared/messages";
-import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme } from "./preview";
+import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme, setPreviewBusiness } from "./preview";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
 import { iconEl, applyIcons } from "./icons";
@@ -521,10 +521,16 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(
 
 // ---- Preferences: theme & language --------------------------------------
 
-let prefs: Prefs = { theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md" };
+let prefs: Prefs = {
+  theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
+  showBusinessName: true, businessName: "Business name",
+};
 
 // The WhatsApp-mockup options sent with a generate + used by the live preview.
-const genOptions = (): GenOptions => ({ os: prefs.os, theme: prefs.previewTheme, interactive: prefs.interactive, size: prefs.size });
+const genOptions = (): GenOptions => ({
+  os: prefs.os, theme: prefs.previewTheme, interactive: prefs.interactive, size: prefs.size,
+  showBusinessName: prefs.showBusinessName, businessName: prefs.businessName,
+});
 
 // System = follow the OS/Figma theme (no data-theme); light/dark force it.
 function applyTheme(theme: ThemePref): void {
@@ -546,6 +552,16 @@ function applyInteractive(on: boolean): void {
   setPreviewInteractive(on);
   const box = document.querySelector<HTMLInputElement>("#interactive-toggle");
   if (box) box.checked = on;
+}
+
+// Sync the switch + its name field with prefs, and hide the field when off.
+// Never called while typing (it would rewrite the value under the caret).
+function applyBusiness(show: boolean, name: string): void {
+  setPreviewBusiness(show, name);
+  const box = document.querySelector<HTMLInputElement>("#biz-toggle");
+  if (box) box.checked = show;
+  const input = document.querySelector<HTMLInputElement>("#biz-name");
+  if (input) { input.value = name; input.hidden = !show; }
 }
 
 function applySize(size: ScreenSize): void { setPreviewSize(size); }
@@ -584,6 +600,7 @@ function applyPrefs(p: Prefs): void {
   applyTheme(prefs.theme);
   applyLang(prefs.lang); // also (re)builds the menu combo boxes from prefs
   applyInteractive(prefs.interactive);
+  applyBusiness(prefs.showBusinessName, prefs.businessName);
   applySize(prefs.size);
   applyWaTheme(prefs.previewTheme);
 }
@@ -596,6 +613,22 @@ $("#interactive-toggle").addEventListener("change", (e) => {
   refreshPreview();
   savePrefs();
 });
+
+$("#biz-toggle").addEventListener("change", (e) => {
+  prefs = { ...prefs, showBusinessName: (e.target as HTMLInputElement).checked };
+  applyBusiness(prefs.showBusinessName, prefs.businessName);
+  refreshPreview();
+  savePrefs();
+});
+
+// Live-update the preview on every keystroke, but only persist on commit
+// (blur/Enter) so typing a name isn't one clientStorage write per character.
+$("#biz-name").addEventListener("input", (e) => {
+  prefs = { ...prefs, businessName: (e.target as HTMLInputElement).value };
+  setPreviewBusiness(prefs.showBusinessName, prefs.businessName);
+  refreshPreview();
+});
+$("#biz-name").addEventListener("change", () => savePrefs());
 
 // ---- Import offer (user clicked a generated section in Figma) -------------
 

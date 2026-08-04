@@ -53,6 +53,12 @@ export function setPreviewInteractive(on: boolean): void { interactive = on; }
 let previewSize: "sm" | "md" | "lg" = "md";
 export function setPreviewSize(size: "sm" | "md" | "lg"): void { previewSize = size; }
 
+// Business name under the flow title, mirroring the generator (chrome.ts).
+let business = { show: true, name: "Business name" };
+export function setPreviewBusiness(show: boolean, name: string): void {
+  business = { show, name };
+}
+
 function el(tag: string, className?: string, text?: string): HTMLElement {
   const n = document.createElement(tag);
   if (className) n.className = className;
@@ -84,7 +90,8 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
   } else {
     const screen = flow.screens.find((s) => s.id === selected);
     if (screen) {
-      phone.appendChild(header(screen.title ?? screen.id));
+      // First screen in authoring order = entry: close "✕" instead of back.
+      phone.appendChild(header(screen.title ?? screen.id, flow.screens[0]?.id === screen.id));
       appendProgress(phone, flow, flow.screens.findIndex((s) => s.id === selected) + 1);
       phone.appendChild(screenBody(flow, screen, host));
       // Footer is a sibling of the body, as in the generator: measured from the
@@ -149,13 +156,38 @@ function statusBar(): HTMLElement {
   return bar;
 }
 
-function header(title: string): HTMLElement {
+// Flow-sheet header icons, matching the generator's (chrome.ts). The entry screen
+// closes the sheet ("✕"); every screen after it goes back.
+const strokeIcon = (paths: string): string =>
+  '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" ' +
+  'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
+const BACK_ICON = strokeIcon('<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>');
+const CLOSE_ICON = strokeIcon('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>');
+const MORE_ICON =
+  '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">' +
+  '<circle cx="12" cy="5" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="12" cy="19" r="1.75"/></svg>';
+
+function hIcon(svg: string): HTMLElement {
+  const s = el("span", "wa-hicon");
+  s.innerHTML = svg;
+  return s;
+}
+
+// Bottom-sheet chrome: drag handle, then close/back / centered title / overflow.
+function header(title: string, first = false): HTMLElement {
   const h = el("div", "wa-header");
-  h.appendChild(el("span", "wa-close", "✕"));
+  h.appendChild(el("div", "wa-handle"));
+
+  const row = el("div", "wa-hrow");
+  row.appendChild(hIcon(first ? CLOSE_ICON : BACK_ICON));
   const titles = el("div", "wa-titles");
   titles.appendChild(el("div", "wa-title", title));
-  titles.appendChild(el("div", "wa-sub", "Business name"));
-  h.appendChild(titles);
+  const name = business.show ? business.name.trim() : "";
+  if (name) titles.appendChild(el("div", "wa-sub", name));
+  row.appendChild(titles);
+  row.appendChild(hIcon(MORE_ICON));
+
+  h.appendChild(row);
   return h;
 }
 

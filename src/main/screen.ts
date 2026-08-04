@@ -54,7 +54,8 @@ export function buildScreen(screen: Screen, index = 0, total = 1): BuiltScreen {
   });
   frame.clipsContent = true;
   const sb = statusBar(); frame.appendChild(sb); markFill(sb);
-  const hd = header(screen.title ?? ""); frame.appendChild(hd); markFill(hd);
+  // First screen in authoring order = entry: it gets a close "✕", not a back arrow.
+  const hd = header(screen.title ?? "", index === 0); frame.appendChild(hd); markFill(hd);
 
   // Segmented step-progress bar, matching the live preview (multi-screen only).
   if (total > 1) {

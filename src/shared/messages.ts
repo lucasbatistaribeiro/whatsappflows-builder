@@ -14,6 +14,8 @@ export interface GenOptions {
   theme: PreviewTheme; // WhatsApp light/dark palette (consumed from Phase 2)
   interactive: boolean; // preview navigation + Figma prototype wiring
   size: ScreenSize;    // minimum height of the generated screen frame
+  showBusinessName: boolean; // business name under the flow title in the modal header
+  businessName: string;      // the name itself (empty = nothing rendered)
 }
 
 export interface Prefs {
@@ -23,6 +25,8 @@ export interface Prefs {
   previewTheme: PreviewTheme; // WhatsApp mockup theme
   interactive: boolean;
   size: ScreenSize;
+  showBusinessName: boolean;
+  businessName: string;
 }
 
 // UI -> main

@@ -5,13 +5,17 @@ import type { UIToMain, Prefs, GenOptions } from "../shared/messages";
 import { SCREEN_HEIGHTS, setPalette, fill } from "./theme";
 import { applyFills } from "./nodes";
 import { loadFonts } from "./fonts";
+import { setBusiness } from "./chrome";
 import { buildScreen, type BuiltScreen } from "./screen";
 import { wireNavigation } from "./routing";
 
 const GAP = 56;
 
 const PREFS_KEY = "flows-builder-prefs";
-const DEFAULT_PREFS: Prefs = { theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md" };
+const DEFAULT_PREFS: Prefs = {
+  theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
+  showBusinessName: true, businessName: "Business name",
+};
 
 figma.showUI(__html__, { width: 500, height: 740, themeColors: true });
 
@@ -46,7 +50,10 @@ figma.ui.onmessage = async (msg: UIToMain) => {
   }
 };
 
-const DEFAULT_OPTIONS: GenOptions = { os: "ios", theme: "light", interactive: true, size: "md" };
+const DEFAULT_OPTIONS: GenOptions = {
+  os: "ios", theme: "light", interactive: true, size: "md",
+  showBusinessName: true, businessName: "Business name",
+};
 
 // ---- Generated section + embedded Flow JSON ------------------------------
 // Each Generate wraps its screens in a Section named with today's date, holding
@@ -141,6 +148,7 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
   await figma.loadAllPagesAsync();
 
   setPalette(options.theme); // switch the active palette before building any node
+  setBusiness(options.showBusinessName, options.businessName);
 
   const built: BuiltScreen[] = flow.screens.map((s, i) => buildScreen(s, i, flow.screens.length));
 

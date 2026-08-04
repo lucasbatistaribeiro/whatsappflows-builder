@@ -21,6 +21,8 @@ const DICT: Record<string, Entry> = {
   groupSystem: { en: "System", pt: "Sistema" },
   language: { en: "Language", pt: "Idioma" },
   interactive: { en: "Interactive mode", pt: "Modo interativo" },
+  businessName: { en: "Business name", pt: "Nome da empresa" },
+  businessNamePh: { en: "Business name", pt: "Nome da empresa" },
   screenSize: { en: "Screen size", pt: "Tamanho da tela" },
   sizeSm: { en: "Small", pt: "Pequeno" },
   sizeMd: { en: "Medium", pt: "Médio" },
