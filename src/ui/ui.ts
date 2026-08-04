@@ -353,10 +353,25 @@ function renderValidation(): void {
 // The main thread answers a generate with `generated` (or `error`), so the button
 // can show progress and then confirm the screens landed on the canvas.
 
+// Generating often finishes in well under a second, which made the bar/skeleton
+// flash. Hold the busy state for at least this long so it reads as progress.
+const MIN_BUSY_MS = 6000;
+
 let genResetTimer = 0;
+let genFinishTimer = 0;
+let busyStartedAt = 0;
+
+// Success arrived: switch to "done" once the minimum busy time has elapsed.
+function finishGenerate(): void {
+  clearTimeout(genFinishTimer);
+  const remaining = Math.max(0, MIN_BUSY_MS - (performance.now() - busyStartedAt));
+  genFinishTimer = window.setTimeout(() => setGenState("done"), remaining);
+}
 
 function setGenState(state: "idle" | "busy" | "done"): void {
   clearTimeout(genResetTimer);
+  if (state !== "done") clearTimeout(genFinishTimer); // drop a pending finish
+  if (state === "busy") busyStartedAt = performance.now();
   const btn = $("#generate") as HTMLButtonElement;
   const icon = btn.querySelector<HTMLElement>(".ic");
   const label = btn.querySelector<HTMLElement>("[data-i18n='generate']");
@@ -613,8 +628,8 @@ window.addEventListener("message", (e: MessageEvent) => {
   if (msg.type === "prefs" && msg.prefs) applyPrefs(msg.prefs);
   else if (msg.type === "importOffer" && msg.flow) showOffer(msg.name ?? "Figma", msg.flow);
   else if (msg.type === "importOfferEnd") hideOffer(); // selection left the section
-  else if (msg.type === "generated") setGenState("done");
-  else if (msg.type === "error") setGenState("idle"); // generation failed — don't hang on "busy"
+  else if (msg.type === "generated") finishGenerate(); // honours the minimum busy time
+  else if (msg.type === "error") setGenState("idle");  // failures surface right away
 });
 
 $("#import").addEventListener("click", () => { closeMenu(); ($("#file") as HTMLInputElement).click(); });
