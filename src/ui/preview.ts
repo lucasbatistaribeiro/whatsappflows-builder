@@ -87,6 +87,11 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
       phone.appendChild(header(screen.title ?? screen.id));
       appendProgress(phone, flow, flow.screens.findIndex((s) => s.id === selected) + 1);
       phone.appendChild(screenBody(flow, screen, host));
+      // Footer is a sibling of the body, as in the generator: measured from the
+      // phone edge (not nested inside the body's padding) and pinned while the
+      // body scrolls.
+      const footer = screenChildren(screen).find((c) => c.type === "Footer");
+      if (footer) phone.appendChild(renderFooter(footer, flow));
     }
   }
   host.appendChild(phone);
@@ -158,12 +163,10 @@ function screenBody(flow: FlowJSON, screen: Screen, host: HTMLElement): HTMLElem
   lastHost = host;
   const body = el("div", "wa-body");
   const kids = screenChildren(screen); // descends into a Form container if present
-  const footer = kids.find((c) => c.type === "Footer");
   for (const c of kids) {
-    if (c.type === "Footer") continue;
+    if (c.type === "Footer") continue; // rendered by the caller, outside the body
     body.appendChild(renderComp(c, flow));
   }
-  if (footer) body.appendChild(renderFooter(footer, flow));
   return body;
 }
 
