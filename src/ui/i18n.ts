@@ -51,6 +51,8 @@ const DICT: Record<string, Entry> = {
   dragToReorder: { en: "Drag to reorder", pt: "Arraste para reordenar" },
   collapseAll: { en: "Collapse all", pt: "Fechar todos" },
   expandAll: { en: "Expand all", pt: "Abrir todos" },
+  duplicate: { en: "Duplicate", pt: "Duplicar" },
+  remove: { en: "Remove", pt: "Remover" },
   screenId: { en: "Screen id", pt: "ID da tela" },
   title: { en: "Title", pt: "Título" },
   terminal: { en: "Terminal", pt: "Terminal" },

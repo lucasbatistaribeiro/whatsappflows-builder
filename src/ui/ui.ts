@@ -166,10 +166,18 @@ function renderComponentList(): void {
     const ids = flow.screens.map((s) => s.id);
     const editor = buildPropEditor(c, ids, { soft: softSync, structural: structuralSync });
     editor.classList.add("comp-body");
-    // Delete lives at the end of the card's own content, so it collapses with it.
+    // Duplicate + delete live at the end of the card's own content, so they
+    // collapse with it.
     const actions = document.createElement("div");
     actions.className = "comp-actions";
-    actions.appendChild(iconBtn("trash-2", () => { kids.splice(i, 1); syncAndRender(); }, "Remove"));
+    actions.appendChild(iconBtn("copy", () => {
+      const copy = clone(c); // deep copy: the duplicate keeps every filled value
+      if (copy.name) copy.name = uniqueComponentName(copy.name, kids);
+      if (COLLAPSED.has(c)) COLLAPSED.add(copy); // open/closed like the card it came from
+      kids.splice(i + 1, 0, copy); // right below the original
+      syncAndRender();
+    }, t("duplicate")));
+    actions.appendChild(iconBtn("trash-2", () => { kids.splice(i, 1); syncAndRender(); }, t("remove")));
     editor.appendChild(actions);
     // Grid wrapper so the collapse can animate to the body's natural height.
     const bodyWrap = document.createElement("div");
@@ -183,6 +191,23 @@ function renderComponentList(): void {
 // Tracks which components are collapsed, keyed by the component object so the
 // state survives reorders and re-renders (reset only when the flow is replaced).
 const COLLAPSED = new WeakSet<object>();
+
+// Cards start closed — on first load and on every import — so a flow with many
+// components doesn't open as a wall of expanded editors. Covers every screen,
+// not just the current one, so switching screens stays collapsed too.
+function collapseAllCards(f: FlowJSON): void {
+  for (const s of f.screens) for (const c of screenChildren(s)) COLLAPSED.add(c);
+}
+
+// A duplicate can't reuse the source's `name`: names must be unique per screen
+// (validate.ts vDupName), so a verbatim copy would always land as an error.
+function uniqueComponentName(base: string, kids: Component[]): string {
+  const taken = new Set(kids.map((k) => k.name).filter((n): n is string => !!n));
+  const stem = base.replace(/_\d+$/, "");
+  let n = 2;
+  while (taken.has(`${stem}_${n}`)) n++;
+  return `${stem}_${n}`;
+}
 
 // One in-place collapse setter per rendered card, so "collapse all" can animate
 // the existing cards instead of re-rendering them.
@@ -469,6 +494,7 @@ function loadFlow(parsed: unknown, sourceName: string): void {
   }
   flow = normalized;
   current = 0;
+  collapseAllCards(flow);
   syncAndRender();
   const errors = validateFlow(flow).filter((i) => i.level === "error").length;
   postToMain({ type: "notify", message: errors ? `Loaded ${sourceName} — ${errors} validation error(s).` : `Loaded ${sourceName}.` });
@@ -722,5 +748,6 @@ $("#copy").addEventListener("click", () => {
 
 applyThemeVars();
 applyIcons(document);
+collapseAllCards(flow); // the sample flow opens collapsed, like an imported one
 applyPrefs(prefs); // default en / system; overwritten when the main thread sends saved prefs
 syncJson();
