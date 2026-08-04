@@ -332,10 +332,12 @@ function renderValidation(): void {
   const errors = issues.filter((i) => i.level === "error").length;
   const warnings = issues.length - errors;
 
+  // Nothing to report = no badge at all; it only speaks up when something's off.
   const badge = $("#val-badge");
-  if (issues.length === 0) { badge.className = "badge ok"; badge.textContent = "✓ " + t("valid"); }
-  else if (errors > 0) { badge.className = "badge err"; badge.textContent = `${errors} ${t(errors > 1 ? "errors" : "error")}${warnings ? ` · ${warnings}⚠` : ""}`; }
-  else { badge.className = "badge warn"; badge.textContent = `${warnings} ${t(warnings > 1 ? "warnings" : "warning")}`; }
+  badge.style.display = issues.length === 0 ? "none" : "";
+  if (errors > 0) { badge.className = "badge err"; badge.textContent = `${errors} ${t(errors > 1 ? "errors" : "error")}${warnings ? ` · ${warnings}⚠` : ""}`; }
+  else if (warnings > 0) { badge.className = "badge warn"; badge.textContent = `${warnings} ${t(warnings > 1 ? "warnings" : "warning")}`; }
+  else badge.textContent = "";
 
   const host = $("#validation");
   host.innerHTML = "";
