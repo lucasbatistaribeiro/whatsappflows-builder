@@ -172,8 +172,6 @@
   .comp-head { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; cursor: pointer; }
   .comp-chev { display: inline-flex; color: var(--dim); flex: none; }
   .comp .type { font-weight: 600; font-size: 14px; flex: none; }
-  .comp-sum { color: var(--dim); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .comp:not(.collapsed) .comp-sum { display: none; }
   /* Collapse animates a real auto height: the wrapper is a 1-row grid whose row
      goes 1fr -> 0fr (interpolatable in Chromium; degrades to an instant snap
      elsewhere, i.e. the previous behaviour). */

@@ -133,7 +133,7 @@ function renderComponentList(): void {
     const row = document.createElement("div");
     row.className = "row";
 
-    // Clickable header: collapse chevron + type name + (collapsed) value summary.
+    // Clickable header: collapse chevron + the component name, nothing else.
     const head = document.createElement("div");
     head.className = "comp-head";
     const chev = document.createElement("span");
@@ -141,13 +141,11 @@ function renderComponentList(): void {
     chev.appendChild(iconEl(isCollapsed ? "chevron-right" : "chevron-down", 15));
     const type = document.createElement("span");
     type.className = "type"; type.textContent = c.type;
-    const sum = document.createElement("span");
-    sum.className = "comp-sum"; sum.textContent = summaryOf(c);
-    head.append(chev, type, sum);
+    head.append(chev, type);
     // Toggle in place (class only) so the body animates instead of re-rendering.
     const setCollapsed = (collapse: boolean): void => {
       card.classList.toggle("collapsed", collapse);
-      if (collapse) { COLLAPSED.add(c); sum.textContent = summaryOf(c); }
+      if (collapse) COLLAPSED.add(c);
       else COLLAPSED.delete(c);
       chev.replaceChildren(iconEl(collapse ? "chevron-right" : "chevron-down", 15));
     };
@@ -199,11 +197,6 @@ $("#collapse-all").addEventListener("click", () => {
   updateCollapseAll();
 });
 
-// Short preview of a component's value, shown in the header when collapsed.
-function summaryOf(c: { text?: unknown; label?: unknown; name?: unknown }): string {
-  const v = c.text ?? c.label ?? c.name ?? "";
-  return typeof v === "string" ? v : "";
-}
 
 function move(i: number, dir: number): void {
   const kids = screenChildren(screen());
