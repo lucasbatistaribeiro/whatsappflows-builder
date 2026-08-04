@@ -161,16 +161,23 @@
   /* Component cards */
   .comp-list { display: flex; flex-direction: column; gap: 7px; }
   .comp { border: 1px solid var(--border); border-radius: var(--radius); background: var(--elev);
-    padding: 9px; display: flex; flex-direction: column; gap: 8px; transition: border-color .12s, background .12s; }
+    padding: 9px; display: flex; flex-direction: column; gap: 8px;
+    transition: border-color .12s, background .12s, gap .2s ease, padding .2s ease; }
   .comp:hover { border-color: var(--dim); background: var(--panel); }
-  .comp.collapsed { padding: 4px 9px; }
+  .comp.collapsed { padding: 4px 9px; gap: 0; }
   .comp .row { display: flex; align-items: center; gap: 6px; }
   .comp-head { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; cursor: pointer; }
   .comp-chev { display: inline-flex; color: var(--dim); flex: none; }
   .comp .type { font-weight: 600; font-size: 14px; flex: none; }
   .comp-sum { color: var(--dim); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .comp:not(.collapsed) .comp-sum { display: none; }
-  .comp.collapsed .comp-body { display: none; }
+  /* Collapse animates a real auto height: the wrapper is a 1-row grid whose row
+     goes 1fr -> 0fr (interpolatable in Chromium; degrades to an instant snap
+     elsewhere, i.e. the previous behaviour). */
+  .comp-body-wrap { display: grid; grid-template-rows: 1fr; min-height: 0;
+    transition: grid-template-rows .2s ease, opacity .16s ease; }
+  .comp-body { overflow: hidden; min-height: 0; }
+  .comp.collapsed .comp-body-wrap { grid-template-rows: 0fr; opacity: 0; }
   .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
     border-radius: 6px; background: transparent; color: var(--dim); font-size: 12px; }
   .icon-btn:hover { background: var(--panel); color: var(--text); }

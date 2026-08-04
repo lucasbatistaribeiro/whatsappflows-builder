@@ -117,6 +117,7 @@ function renderComponentList(): void {
   const host = $("#comp-list");
   const kids = screenChildren(screen()); // descends into a Form container if present
   host.innerHTML = "";
+  cardToggles.length = 0; // rebuilt below, one per card
   updateCollapseAll();
   if (kids.length === 0) {
     const e = document.createElement("div");
@@ -143,13 +144,15 @@ function renderComponentList(): void {
     const sum = document.createElement("span");
     sum.className = "comp-sum"; sum.textContent = summaryOf(c);
     head.append(chev, type, sum);
-    head.onclick = () => {
-      const collapse = !card.classList.contains("collapsed");
+    // Toggle in place (class only) so the body animates instead of re-rendering.
+    const setCollapsed = (collapse: boolean): void => {
       card.classList.toggle("collapsed", collapse);
       if (collapse) { COLLAPSED.add(c); sum.textContent = summaryOf(c); }
       else COLLAPSED.delete(c);
       chev.replaceChildren(iconEl(collapse ? "chevron-right" : "chevron-down", 15));
     };
+    cardToggles.push(setCollapsed); // reused by the collapse/expand-all button
+    head.onclick = () => setCollapsed(!card.classList.contains("collapsed"));
     row.appendChild(head);
 
     row.appendChild(iconBtn("chevron-up", () => move(i, -1), "Move up"));
@@ -160,7 +163,11 @@ function renderComponentList(): void {
     const ids = flow.screens.map((s) => s.id);
     const editor = buildPropEditor(c, ids, { soft: softSync, structural: structuralSync });
     editor.classList.add("comp-body");
-    card.appendChild(editor);
+    // Grid wrapper so the collapse can animate to the body's natural height.
+    const bodyWrap = document.createElement("div");
+    bodyWrap.className = "comp-body-wrap";
+    bodyWrap.appendChild(editor);
+    card.appendChild(bodyWrap);
     host.appendChild(card);
   });
 }
@@ -168,6 +175,10 @@ function renderComponentList(): void {
 // Tracks which components are collapsed, keyed by the component object so the
 // state survives reorders and re-renders (reset only when the flow is replaced).
 const COLLAPSED = new WeakSet<object>();
+
+// One in-place collapse setter per rendered card, so "collapse all" can animate
+// the existing cards instead of re-rendering them.
+const cardToggles: ((collapse: boolean) => void)[] = [];
 
 // "Collapse all" toggle in the component-list header: collapse every card while
 // any is open, otherwise expand them all.
@@ -183,10 +194,9 @@ function updateCollapseAll(): void {
 }
 $("#collapse-all").addEventListener("click", () => {
   const collapse = anyExpanded();
-  for (const c of screenChildren(screen())) {
-    if (collapse) COLLAPSED.add(c); else COLLAPSED.delete(c);
-  }
-  renderComponentList();
+  // Drive the existing cards (each setter also updates COLLAPSED) so they animate.
+  for (const toggle of cardToggles) toggle(collapse);
+  updateCollapseAll();
 });
 
 // Short preview of a component's value, shown in the header when collapsed.
