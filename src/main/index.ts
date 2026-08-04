@@ -14,7 +14,7 @@ const GAP = 56;
 const PREFS_KEY = "flows-builder-prefs";
 const DEFAULT_PREFS: Prefs = {
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
-  showBusinessName: true, businessName: "Business name",
+  showBusinessName: false, businessName: "Business name",
 };
 
 figma.showUI(__html__, { width: 500, height: 740, themeColors: true });
@@ -52,7 +52,7 @@ figma.ui.onmessage = async (msg: UIToMain) => {
 
 const DEFAULT_OPTIONS: GenOptions = {
   os: "ios", theme: "light", interactive: true, size: "md",
-  showBusinessName: true, businessName: "Business name",
+  showBusinessName: false, businessName: "Business name",
 };
 
 // ---- Generated section + embedded Flow JSON ------------------------------

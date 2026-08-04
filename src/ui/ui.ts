@@ -523,7 +523,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(
 
 let prefs: Prefs = {
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
-  showBusinessName: true, businessName: "Business name",
+  showBusinessName: false, businessName: "Business name",
 };
 
 // The WhatsApp-mockup options sent with a generate + used by the live preview.
