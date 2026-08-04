@@ -405,10 +405,16 @@
     .builder-head { padding: 10px 10px 0; }
   }
 
-  /* Import offer banner (clicking a generated section in Figma) */
-  #offer { display: none; align-items: flex-start; gap: 10px; padding: 10px 14px;
-    background: var(--accent-weak); border-bottom: 1px solid var(--border); }
-  #offer.open { display: flex; }
+  /* Import offer banner (clicking a generated section in Figma). Animated open:
+     `display` can't transition, so it stays flex and collapses via max-height /
+     opacity / padding, with visibility keeping it out of the tab order when shut. */
+  #offer { display: flex; align-items: flex-start; gap: 10px;
+    padding: 0 14px; max-height: 0; opacity: 0; visibility: hidden; overflow: hidden;
+    background: var(--accent-weak); border-bottom: 1px solid transparent; flex: none;
+    transition: max-height .22s ease, opacity .18s ease, padding .22s ease,
+                border-bottom-color .22s ease, visibility .22s; }
+  #offer.open { max-height: 200px; opacity: 1; visibility: visible;
+    padding: 10px 14px; border-bottom-color: var(--border); }
   .offer-text { flex: 1; min-width: 0; }
   .offer-title { font-size: 14px; font-weight: 600; }
   .offer-body { font-size: 12px; color: var(--dim); margin-top: 1px; }
