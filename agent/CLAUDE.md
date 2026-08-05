@@ -51,6 +51,12 @@ then `npm run build`.
   required to confirm. Be conservative and say so.
 - **Model layer** can be unit-tested by bundling a throwaway script with esbuild
   `--platform=node` and running it with node (the model has no figma/DOM deps).
+- For a full UI pass, hand it to the **`plugin-ui-tester`** subagent
+  (`.claude/agents/plugin-ui-tester.md`): it builds, serves `plugin/`, drives the
+  real UI in a browser (import/export/Generate/preview/menu/cards, en + pt) and
+  reports measured results. It encodes the non-obvious techniques — faking the
+  sandbox over `postMessage`, injecting a File to test import, and why a hidden
+  browser pane makes animations look broken.
 
 ## Critical conventions & gotchas
 
