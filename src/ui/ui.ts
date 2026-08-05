@@ -47,7 +47,7 @@ function renderScreens(): void {
     if (flow.screens.length > 1) {
       const x = document.createElement("span");
       x.className = "x"; x.title = "Delete screen";
-      x.appendChild(iconEl("x", 13));
+      x.appendChild(iconEl("x", 16));
       x.onclick = (e) => { e.stopPropagation(); flow.screens.splice(i, 1); current = Math.max(0, current - (i <= current ? 1 : 0)); syncAndRender(); };
       chip.appendChild(x);
     }
@@ -55,7 +55,7 @@ function renderScreens(): void {
   });
   const add = document.createElement("button");
   add.className = "chip add"; add.title = "Add screen";
-  add.appendChild(iconEl("plus", 13));
+  add.appendChild(iconEl("plus", 16));
   add.appendChild(document.createTextNode(t("addScreen")));
   add.onclick = () => {
     const id = uniqueId("SCREEN");
@@ -407,7 +407,7 @@ function setGenState(state: "idle" | "busy" | "done"): void {
   // Don't clobber the validation gate when returning to idle.
   const errors = validateFlow(flow).filter((i) => i.level === "error").length;
   btn.disabled = state === "busy" || errors > 0;
-  if (icon) icon.replaceChildren(iconEl(state === "busy" ? "loader-circle" : state === "done" ? "check" : "sparkles", 15));
+  if (icon) icon.replaceChildren(iconEl(state === "busy" ? "loader-circle" : state === "done" ? "check" : "sparkles", 16));
   if (label) label.textContent = t(state === "busy" ? "generating" : state === "done" ? "genDone" : "generate");
   if (state === "done") genResetTimer = window.setTimeout(() => setGenState("idle"), 2200);
 }
@@ -417,7 +417,7 @@ function issueRow(issue: Issue): HTMLElement {
   row.className = "val-item " + issue.level;
   const ico = document.createElement("span");
   ico.className = "val-ico";
-  ico.appendChild(iconEl(issue.level === "error" ? "circle-alert" : "triangle-alert", 13));
+  ico.appendChild(iconEl(issue.level === "error" ? "circle-alert" : "triangle-alert", 16));
   row.appendChild(ico);
   if (issue.screen) {
     const scr = document.createElement("span");

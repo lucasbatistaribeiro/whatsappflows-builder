@@ -43,7 +43,7 @@ export function createDropdown(cfg: DDConfig): HTMLElement {
   valueEl.className = "dd-value";
   const chev = document.createElement("span");
   chev.className = "dd-chev";
-  chev.appendChild(iconEl("chevron-down", 14));
+  chev.appendChild(iconEl("chevron-down", 16));
   dd.append(valueEl, chev);
 
   let currentValue = cfg.value;

@@ -267,7 +267,7 @@ function button(label: string, onClick: () => void, cls = "pe-btn"): HTMLButtonE
 // "+ Add" button with a Lucide plus icon.
 function addButton(onClick: () => void): HTMLButtonElement {
   const b = button("Add", onClick);
-  b.prepend(iconEl("plus", 12));
+  b.prepend(iconEl("plus", 16));
   return b;
 }
 
@@ -275,6 +275,6 @@ function addButton(onClick: () => void): HTMLButtonElement {
 function removeButton(onClick: () => void): HTMLButtonElement {
   const b = button("", onClick, "pe-x");
   b.title = "Remove";
-  b.appendChild(iconEl("x", 12));
+  b.appendChild(iconEl("x", 16));
   return b;
 }
