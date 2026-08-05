@@ -605,15 +605,21 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(
 
 // ---- Preferences: theme & language --------------------------------------
 
+// Section defaults mirror the generator's (src/main/index.ts) — keep them in step.
+const SECTION_BG_DEFAULT = "#353535";
+const SECTION_RADIUS_DEFAULT = 24;
+
 let prefs: Prefs = {
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
+  sectionName: "", sectionColor: SECTION_BG_DEFAULT, sectionRadius: SECTION_RADIUS_DEFAULT,
 };
 
 // The WhatsApp-mockup options sent with a generate + used by the live preview.
 const genOptions = (): GenOptions => ({
   os: prefs.os, theme: prefs.previewTheme, interactive: prefs.interactive, size: prefs.size,
   showBusinessName: prefs.showBusinessName, businessName: prefs.businessName,
+  sectionName: prefs.sectionName, sectionColor: prefs.sectionColor, sectionRadius: prefs.sectionRadius,
 });
 
 // System = follow the OS/Figma theme (no data-theme); light/dark force it.
@@ -653,6 +659,18 @@ function applyBusiness(show: boolean, name: string): void {
 function applySize(size: ScreenSize): void { setPreviewSize(size); }
 function applyWaTheme(theme: PreviewTheme): void { setPreviewTheme(theme); }
 
+// Section fields only affect the generated Figma section, so there's nothing to
+// re-render here — just reflect the saved values in the inputs. Like applyBusiness,
+// never call this while typing: it would rewrite the value under the caret.
+function applySection(p: Prefs): void {
+  const name = document.querySelector<HTMLInputElement>("#section-name");
+  if (name) name.value = p.sectionName;
+  const color = document.querySelector<HTMLInputElement>("#section-color");
+  if (color) color.value = p.sectionColor;
+  const radius = document.querySelector<HTMLInputElement>("#section-radius");
+  if (radius) radius.value = String(p.sectionRadius);
+}
+
 function refreshPreview(): void { renderPreview(flow, $("#preview"), screen().id, errorScreenIds()); }
 
 // Build a menu combo box into its placeholder span. Rebuilt on language change
@@ -687,6 +705,7 @@ function applyPrefs(p: Prefs): void {
   applyLang(prefs.lang); // also (re)builds the menu combo boxes from prefs
   applyInteractive(prefs.interactive);
   applyBusiness(prefs.showBusinessName, prefs.businessName);
+  applySection(prefs);
   applySize(prefs.size);
   applyWaTheme(prefs.previewTheme);
 }
@@ -715,6 +734,29 @@ $("#biz-name").addEventListener("input", (e) => {
   refreshPreview();
 });
 $("#biz-name").addEventListener("change", () => savePrefs());
+
+// Section fields: nothing to re-render (they only shape the generated Figma
+// section), so just track the value and persist on commit rather than per keystroke.
+$("#section-name").addEventListener("input", (e) => {
+  prefs = { ...prefs, sectionName: (e.target as HTMLInputElement).value };
+});
+$("#section-name").addEventListener("change", () => savePrefs());
+
+$("#section-color").addEventListener("input", (e) => {
+  prefs = { ...prefs, sectionColor: (e.target as HTMLInputElement).value };
+});
+$("#section-color").addEventListener("change", () => savePrefs());
+
+// Empty or out-of-range input falls back to the default rather than reaching the
+// generator. Note `Number("") === 0`, so the emptiness check has to come first —
+// otherwise clearing the field would silently mean "radius 0".
+$("#section-radius").addEventListener("input", (e) => {
+  const raw = (e.target as HTMLInputElement).value.trim();
+  const n = Number(raw);
+  const ok = raw !== "" && isFinite(n) && n >= 0;
+  prefs = { ...prefs, sectionRadius: ok ? Math.min(n, 200) : SECTION_RADIUS_DEFAULT };
+});
+$("#section-radius").addEventListener("change", () => { applySection(prefs); savePrefs(); });
 
 // ---- Import offer (user clicked a generated section in Figma) -------------
 

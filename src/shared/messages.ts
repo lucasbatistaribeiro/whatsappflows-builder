@@ -16,6 +16,10 @@ export interface GenOptions {
   size: ScreenSize;    // minimum height of the generated screen frame
   showBusinessName: boolean; // business name under the flow title in the modal header
   businessName: string;      // the name itself (empty = nothing rendered)
+  // The section each Generate wraps its screens in.
+  sectionName: string;   // prefix; the run's date is always appended (empty = date only)
+  sectionColor: string;  // "#rrggbb" background fill
+  sectionRadius: number; // corner radius in px
 }
 
 export interface Prefs {
@@ -27,6 +31,9 @@ export interface Prefs {
   size: ScreenSize;
   showBusinessName: boolean;
   businessName: string;
+  sectionName: string;
+  sectionColor: string;
+  sectionRadius: number;
 }
 
 // UI -> main
