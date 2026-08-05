@@ -134,6 +134,43 @@ Every picker is the project's own control (`src/ui/dropdown.ts`), not a native
   `position()` has regressed (this was a real bug: the language picker, last in the
   menu, appeared at the top). Force the case by pinning a trigger near the bottom.
 
+### Visual regressions — catch them by measuring
+
+Layout bugs here are the likely kind (mispositioned scroll, wrong text sizes,
+overflow), and you can pin every one of them down numerically. Use the palette
+picker — its list is long enough to scroll — and try long labels.
+
+- **Scroll lives on `.dd-options`, not `.dd-list`.** The list is
+  `overflow: hidden` + flex column; the search box is `flex: none` and must stay
+  put while the options scroll under it. Assert `.dd-options` has
+  `scrollHeight > clientHeight` and that scrolling it doesn't move the search box's
+  `getBoundingClientRect().top`. If the list itself scrolls, the search field
+  drifts out of view — that's the bug.
+- **The panel stays inside the viewport.** `position()` caps the height (~260px)
+  and keeps an 8px margin: assert `top >= 8`, `bottom <= innerHeight - 8`,
+  `left >= 8`, `right <= innerWidth - 8`, and that the rendered height never exceeds
+  the inline `max-height`. Do it for a trigger at the top, in the middle and near
+  the bottom of the panel.
+- **Width matches the trigger** and never exceeds the viewport; options don't spill
+  past the list's content box.
+- **Text sizes.** Plugin chrome has a 14px minimum: assert computed `font-size >=
+  14px` on `.dd-value`, `.dd-option`, `.dd-group` and `.dd-search`. Sizes are meant
+  to be uniform across `dd-mini` / `dd-sm` / `dd-md` (only padding differs) — flag
+  any variant that drifts.
+- **Long text truncates instead of breaking layout.** `.dd-value` is
+  `nowrap` + `ellipsis`: with a long label, assert the trigger's height didn't grow
+  (no wrap) and `scrollWidth > clientWidth` (it is actually being clipped). A long
+  option shouldn't widen the list beyond the trigger.
+- **No double scrollbar** and no clipped last row: with the list scrolled to the
+  bottom, the final option's `bottom` should sit within `.dd-options`' box.
+- **Selected/hover states** are visible: `.dd-option.selected` differs in colour
+  and weight from its siblings.
+
+Be honest about the limit: geometry and computed styles are objective and you
+should report them as numbers, but you are not *looking* at the UI. A screenshot
+(`computer` → `screenshot`) is worth trying, and if it fails because the pane isn't
+displayed, say that the visual check was not possible instead of implying you eyeballed it.
+
 ## Gotchas that will fool you
 
 - **A hidden browser pane doesn't animate.** If `document.hidden` is true, Chromium
