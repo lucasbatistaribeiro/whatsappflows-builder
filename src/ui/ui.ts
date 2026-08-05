@@ -667,8 +667,19 @@ function applySection(p: Prefs): void {
   if (name) name.value = p.sectionName;
   const color = document.querySelector<HTMLInputElement>("#section-color");
   if (color) color.value = p.sectionColor;
+  const hex = document.querySelector<HTMLInputElement>("#section-hex");
+  if (hex) { hex.value = p.sectionColor; hex.classList.remove("invalid"); }
   const radius = document.querySelector<HTMLInputElement>("#section-radius");
   if (radius) radius.value = String(p.sectionRadius);
+}
+
+// Typed hex -> "#rrggbb", or null when it isn't a colour. Accepts a missing "#" and
+// the 3-digit shorthand, since both are what people actually type.
+function normalizeHex(raw: string): string | null {
+  const v = raw.trim().replace(/^#/, "").toLowerCase();
+  if (/^[0-9a-f]{6}$/.test(v)) return "#" + v;
+  if (/^[0-9a-f]{3}$/.test(v)) return "#" + v[0] + v[0] + v[1] + v[1] + v[2] + v[2];
+  return null;
 }
 
 function refreshPreview(): void { renderPreview(flow, $("#preview"), screen().id, errorScreenIds()); }
@@ -742,10 +753,26 @@ $("#section-name").addEventListener("input", (e) => {
 });
 $("#section-name").addEventListener("change", () => savePrefs());
 
+// The swatch and the hex field are two views of one value: whichever you touch
+// updates prefs and mirrors into the other.
 $("#section-color").addEventListener("input", (e) => {
   prefs = { ...prefs, sectionColor: (e.target as HTMLInputElement).value };
+  const hex = document.querySelector<HTMLInputElement>("#section-hex");
+  if (hex) { hex.value = prefs.sectionColor; hex.classList.remove("invalid"); }
 });
 $("#section-color").addEventListener("change", () => savePrefs());
+
+$("#section-hex").addEventListener("input", (e) => {
+  const field = e.target as HTMLInputElement;
+  const hex = normalizeHex(field.value);
+  field.classList.toggle("invalid", hex === null && field.value.trim() !== "");
+  if (!hex) return; // keep the last good colour while it's still half-typed
+  prefs = { ...prefs, sectionColor: hex };
+  const swatch = document.querySelector<HTMLInputElement>("#section-color");
+  if (swatch) swatch.value = hex;
+});
+// On commit, snap the field back to the value in effect so junk can't linger.
+$("#section-hex").addEventListener("change", () => { applySection(prefs); savePrefs(); });
 
 // Empty or out-of-range input falls back to the default rather than reaching the
 // generator. Note `Number("") === 0`, so the emptiness check has to come first —
