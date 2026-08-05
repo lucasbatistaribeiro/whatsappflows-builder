@@ -173,8 +173,13 @@
   .comp-list { display: flex; flex-direction: column; gap: 7px; position: relative; }
   .comp { border: 1px solid var(--border); border-radius: var(--radius); background: var(--elev);
     padding: 12px; display: flex; flex-direction: column; gap: 8px;
-    transition: background .12s, opacity .15s ease, box-shadow .15s ease, gap .2s ease, padding .2s ease; }
-  .comp:hover { background: var(--panel); }
+    transition: background .12s, border-color .12s, opacity .15s ease, box-shadow .15s ease,
+                gap .2s ease, padding .2s ease; }
+  /* Collapsed: the whole card is the hit target, so tint it. Expanded: you're
+     editing inside it, so a background shift would fight the fields — outline it
+     in the accent instead. */
+  .comp.collapsed:hover { background: var(--panel); }
+  .comp:not(.collapsed):hover { border-color: var(--accent); }
   .comp.collapsed { gap: 0; }
   .comp .row { display: flex; align-items: center; gap: 6px; }
   .comp-head { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; cursor: pointer; }
