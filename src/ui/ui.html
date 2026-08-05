@@ -208,6 +208,9 @@
   #menu-close { width: 34px; height: 34px; }
 
   /* JSON editor */
+  .json-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .json-scope-label { font-size: 14px; color: var(--dim); font-weight: 500; flex: none; }
+  #json-scope .dd { min-width: 200px; }
   textarea#json { height: 62vh; min-height: 220px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     font-size: 14px; line-height: 1.5; white-space: pre; resize: vertical; }
   .json-status { margin-top: 7px; font-size: 14px; font-weight: 500; }
@@ -610,6 +613,10 @@
         </div>
 
         <div class="panel" id="panel-json">
+          <div class="json-head">
+            <span class="json-scope-label" data-i18n="jsonScope">Showing</span>
+            <span id="json-scope"></span>
+          </div>
           <textarea id="json" spellcheck="false"></textarea>
           <div class="json-status ok" id="json-status">Valid</div>
           <div class="hint" data-i18n="jsonHint">Edits here sync back to the Build tab when valid.</div>

@@ -69,6 +69,9 @@ const DICT: Record<string, Entry> = {
   summary: { en: "Summary", pt: "Resumo" },
   valid: { en: "Valid", pt: "Válido" },
   jsonHint: { en: "Edits here sync back to the Build tab when valid.", pt: "As edições aqui sincronizam com a aba Montar quando válidas." },
+  jsonScope: { en: "Showing", pt: "Exibindo" },
+  jsonWholeFlow: { en: "Whole flow", pt: "Fluxo completo" },
+  jsonNeedsScreen: { en: "Expected a single screen object.", pt: "Esperava um objeto de tela." },
   // counts
   error: { en: "error", pt: "erro" },
   errors: { en: "errors", pt: "erros" },
