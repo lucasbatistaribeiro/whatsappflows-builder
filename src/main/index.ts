@@ -11,10 +11,17 @@ import { wireNavigation } from "./routing";
 
 const GAP = 56;
 
+// Section geometry/appearance defaults. Declared before the prefs/options defaults
+// below, which reference them.
+const SECTION_PAD = 100;
+const SECTION_BG = "#353535"; // canvas backdrop behind a generated run
+const SECTION_RADIUS = 24;
+
 const PREFS_KEY = "flows-builder-prefs";
 const DEFAULT_PREFS: Prefs = {
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
+  sectionName: "", sectionColor: SECTION_BG, sectionRadius: SECTION_RADIUS,
 };
 
 figma.showUI(__html__, { width: 500, height: 740, themeColors: true });
@@ -53,6 +60,7 @@ figma.ui.onmessage = async (msg: UIToMain) => {
 const DEFAULT_OPTIONS: GenOptions = {
   os: "ios", theme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
+  sectionName: "", sectionColor: SECTION_BG, sectionRadius: SECTION_RADIUS,
 };
 
 // ---- Generated section + embedded Flow JSON ------------------------------
@@ -60,8 +68,6 @@ const DEFAULT_OPTIONS: GenOptions = {
 // an invisible, locked TEXT node with the whole Flow JSON. Clicking that section
 // later lets the plugin offer to load the flow back into the builder.
 
-const SECTION_PAD = 100;
-const SECTION_BG = "#353535"; // canvas backdrop behind a generated run
 const JSON_MARKER = "flow.json";
 const JSON_NODE_NAME = "flow.json - do not delete";
 
@@ -69,6 +75,21 @@ function todayLabel(): string {
   const d = new Date();
   const p = (n: number) => (n < 10 ? "0" + n : String(n));
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
+// The date is always part of the name; an optional prefix goes in front of it.
+function sectionLabel(prefix: string): string {
+  const name = (prefix ?? "").trim();
+  return name ? `${name} ${todayLabel()}` : todayLabel();
+}
+
+// These come from persisted prefs, so don't trust them blindly: a corrupted colour
+// would make `fill()` produce NaN channels, and a bad radius would throw.
+function safeColor(hex: unknown): string {
+  return typeof hex === "string" && /^#[0-9a-f]{6}$/i.test(hex) ? hex : SECTION_BG;
+}
+function safeRadius(n: unknown): number {
+  return typeof n === "number" && isFinite(n) && n >= 0 ? Math.min(n, 200) : SECTION_RADIUS;
 }
 
 // Drop the new section below whatever is already on the page.
@@ -155,10 +176,10 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
   // Wrap this run in a dated section, padded on all sides.
   const sectionY = nextSectionY(); // measure the page before adding the section
   const section = figma.createSection();
-  section.name = todayLabel();
-  section.fills = [fill(SECTION_BG)];
+  section.name = sectionLabel(options.sectionName);
+  section.fills = [fill(safeColor(options.sectionColor))];
   section.strokes = [];        // no border around the generated group
-  section.cornerRadius = 24;
+  section.cornerRadius = safeRadius(options.sectionRadius);
   figma.currentPage.appendChild(section);
 
   // Lay the screens out in a row inside the section.
