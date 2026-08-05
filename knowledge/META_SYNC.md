@@ -6,7 +6,7 @@ file as the playbook to reconcile the code. It maps **each Meta doc → the exac
 code that implements it**, gives a **step-by-step routine**, and pins the
 **current values** so a diff is obvious.
 
-> How to run it: point an agent at this file — e.g. *"Follow `agent/META_SYNC.md`
+> How to run it: point an agent at this file — e.g. *"Follow `knowledge/META_SYNC.md`
 > and reconcile the project with Meta's current Flow JSON spec."* The agent
 > should follow [The routine](#the-routine) below.
 
@@ -33,7 +33,7 @@ code that implements it**, gives a **step-by-step routine**, and pins the
 
 ## Where each part of the spec lives in the code
 
-Two runtime contexts share the **pure model** in `src/model/*` (see `agent/CLAUDE.md`).
+Two runtime contexts share the **pure model** in `src/model/*` (see `knowledge/CLAUDE.md`).
 Symbol names below are stable anchors; grep for them.
 
 ### 1. Flow JSON shape & versions
@@ -124,8 +124,8 @@ Do this when Meta announces a change (or on a periodic check):
      the version is GA in the changelog.
 4. **Respect the [scope decisions](#intentional-scope-decisions)** — don't
    "fix" something that's deliberately out of scope.
-5. **Verify** (see below) and **log** the change in `agent/BUGFIXES.md` if it was
-   a non-obvious fix, per `agent/CLAUDE.md`.
+5. **Verify** (see below) and **log** the change in `knowledge/BUGFIXES.md` if it was
+   a non-obvious fix, per `knowledge/CLAUDE.md`.
 
 ### Verification (must stay green)
 
@@ -152,7 +152,7 @@ These are deliberate; changing them is a product decision, not a spec-sync fix:
 
 - **The builder models the flat, static subset.** `Form` is supported as a
   **transparent read/passthrough container** (see `screenChildren` and
-  `agent/BUGFIXES.md`) so Form-wrapped flows import — but `Form` is **not** in the
+  `knowledge/BUGFIXES.md`) so Form-wrapped flows import — but `Form` is **not** in the
   palette; the builder authors flat.
 - **Data Endpoint / dynamic-data flows are out of scope.** Bindings
   (`${data.*}` / `${form.*}`) render as placeholders and can't be resolved. The

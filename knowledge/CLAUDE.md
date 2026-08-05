@@ -3,10 +3,10 @@
 A Figma plugin that turns the WhatsApp Flows Playground into a visual builder:
 compose flow screens, edit the Flow JSON live, preview a WhatsApp phone mockup,
 and **Generate** navigable, WhatsApp-styled frames in Figma. See `README.md` for
-the user-facing overview and `agent/BUGFIXES.md` for a log of past bugs + fixes
+the user-facing overview and `knowledge/BUGFIXES.md` for a log of past bugs + fixes
 (read it — several are non-obvious Figma/auto-layout traps). To reconcile the
 project with changes to Meta's WhatsApp Flows spec (new components, limits,
-versions, validation rules), follow `agent/META_SYNC.md` — it maps each Meta doc
+versions, validation rules), follow `knowledge/META_SYNC.md` — it maps each Meta doc
 to the exact code and gives a step-by-step routine.
 
 ## Commands
@@ -20,7 +20,7 @@ npm run typecheck  # tsc --noEmit (strict; noUnusedLocals)
 
 `plugin/` is the deliverable: after a build it holds only `manifest.json`,
 `code.js` and `ui.html` — the three files Figma loads. Keep it that way; anything
-used to develop or build the plugin belongs outside it (`src/`, `build/`, `agent/`).
+used to develop or build the plugin belongs outside it (`src/`, `build/`, `knowledge/`).
 
 Never edit `plugin/code.js` or `plugin/ui.html` — they're generated. Edit `src/`,
 then `npm run build`.
@@ -101,11 +101,16 @@ src/
   main/        theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
   ui/          ui.html, ui.ts, preview, propEditor, dropdown, icons, i18n       (plugin UI)
 build/         esbuild.mjs (paths resolve from the file, not the cwd), tsconfig.json
-agent/         this file, BUGFIXES.md, META_SYNC.md
+knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md
+.claude/agents/ runnable subagent definitions — not docs (see plugin-ui-tester)
 CLAUDE.md      root pointer here (agent tooling looks for it there); AGENTS.md too
 ```
+
+`knowledge/` and `.claude/agents/` are different things: the first is prose you
+read, the second holds agents you invoke. `.claude/agents/` is a fixed path — the
+runtime only discovers subagents there — so don't "tidy" it into `knowledge/`.
 
 ## Workflow
 
 Land changes as small, focused PRs (squash-merged); keep `typecheck` + `build`
-green. Update `agent/BUGFIXES.md` when you fix a non-obvious bug.
+green. Update `knowledge/BUGFIXES.md` when you fix a non-obvious bug.
