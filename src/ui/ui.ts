@@ -295,32 +295,74 @@ function startDrag(e: PointerEvent, card: HTMLElement): void {
 
 // ---- JSON two-way sync --------------------------------------------------
 
+// The editor shows either the whole flow or a single screen, so a big flow can be
+// edited one screen at a time. Both directions stay in sync either way.
+const FLOW_SCOPE = "__flow__";
+let jsonScope = FLOW_SCOPE; // FLOW_SCOPE or a screen id
+
+// The scope's screen, or null when showing the whole flow / the id went away.
+function scopedScreen(): Screen | null {
+  if (jsonScope === FLOW_SCOPE) return null;
+  return flow.screens.find((s) => s.id === jsonScope) ?? null;
+}
+
 function syncJson(): void {
-  ($("#json") as HTMLTextAreaElement).value = JSON.stringify(flow, null, 2);
+  buildJsonScopeDropdown();
+  const shown: unknown = scopedScreen() ?? flow;
+  ($("#json") as HTMLTextAreaElement).value = JSON.stringify(shown, null, 2);
   setJsonStatus(true, t("valid"));
 }
 
+// Rebuilt only when the option set actually changes: this runs on every keystroke
+// of a prop edit, and swapping the node each time would be churn. Called from both
+// syncJson and renderAll, so the options can't go stale after the screens change
+// (editing the whole flow in this tab re-renders without rewriting the textarea).
+let jsonScopeSig = "";
+function buildJsonScopeDropdown(): void {
+  // The scoped screen can be renamed or deleted elsewhere — fall back instead of
+  // pointing at an id that no longer exists.
+  if (jsonScope !== FLOW_SCOPE && !scopedScreen()) jsonScope = FLOW_SCOPE;
+  const ids = flow.screens.map((s) => s.id);
+  const sig = [jsonScope, ...ids].join("|");
+  if (sig === jsonScopeSig) return;
+  jsonScopeSig = sig;
+  const host = $("#json-scope");
+  host.innerHTML = "";
+  host.appendChild(createDropdown({
+    value: jsonScope,
+    size: "sm",
+    options: [{ value: FLOW_SCOPE, label: t("jsonWholeFlow") }, ...ids.map((id) => ({ value: id, label: id }))],
+    onChange: (v) => { jsonScope = v; syncJson(); },
+  }));
+}
+
+const cleanKids = (arr: unknown): Component[] =>
+  (Array.isArray(arr) ? arr : []).filter(
+    (c) => !!c && typeof c === "object" && typeof (c as { type?: unknown }).type === "string",
+  ) as Component[];
+
+// Guard one screen against structurally-valid-but-broken input (no layout/children,
+// null entries). Deliberately lenient about everything else — reporting problems is
+// the validator's job, not this function's.
+function normalizeScreen(parsed: unknown): Screen | null {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  const s = parsed as Screen;
+  if (!s.layout || typeof s.layout !== "object") s.layout = { type: "SingleColumnLayout", children: [] };
+  s.layout.children = cleanKids(s.layout.children);
+  // A Form container holds the real components — sanitise its children too so a
+  // null/invalid entry inside a Form can't crash the render pipeline.
+  for (const c of s.layout.children) {
+    if (c.type === "Form" && "children" in c) c.children = cleanKids(c.children);
+  }
+  return s;
+}
+
 // Coerce a parsed value into a renderable flow, or return null if it can't be.
-// Guards the render pipeline against structurally-valid-but-broken input
-// (empty screens, a screen with no layout/children, null entries in children).
 function normalizeFlow(parsed: unknown): FlowJSON | null {
   if (!parsed || typeof parsed !== "object") return null;
   const f = parsed as FlowJSON;
   if (!Array.isArray(f.screens) || f.screens.length === 0) return null;
-  const cleanKids = (arr: unknown): Component[] =>
-    (Array.isArray(arr) ? arr : []).filter(
-      (c) => !!c && typeof c === "object" && typeof (c as { type?: unknown }).type === "string",
-    ) as Component[];
-  for (const s of f.screens) {
-    if (!s || typeof s !== "object") return null;
-    if (!s.layout || typeof s.layout !== "object") s.layout = { type: "SingleColumnLayout", children: [] };
-    s.layout.children = cleanKids(s.layout.children);
-    // A Form container holds the real components — sanitise its children too so a
-    // null/invalid entry inside a Form can't crash the render pipeline.
-    for (const c of s.layout.children) {
-      if (c.type === "Form" && "children" in c) c.children = cleanKids(c.children);
-    }
-  }
+  for (const s of f.screens) if (!normalizeScreen(s)) return null;
   return f;
 }
 
@@ -333,6 +375,20 @@ function onJsonInput(): void {
     setJsonStatus(false, "Invalid JSON: " + (err instanceof Error ? err.message : String(err)));
     return;
   }
+
+  if (jsonScope !== FLOW_SCOPE) {
+    const idx = flow.screens.findIndex((s) => s.id === jsonScope);
+    if (idx < 0) { jsonScope = FLOW_SCOPE; syncJson(); return; } // scope vanished
+    const screen = normalizeScreen(parsed);
+    if (!screen) { setJsonStatus(false, t("jsonNeedsScreen")); return; }
+    flow.screens[idx] = screen;
+    if (typeof screen.id === "string" && screen.id) jsonScope = screen.id; // follow a rename
+    setJsonStatus(true, t("valid"));
+    buildJsonScopeDropdown();
+    renderAll();
+    return;
+  }
+
   const normalized = normalizeFlow(parsed);
   if (!normalized) {
     setJsonStatus(false, "A flow needs a non-empty screens[] array of screen objects.");
@@ -440,6 +496,7 @@ function renderAll(): void {
   renderScreens(); renderScreenMeta(); renderPalette(); renderComponentList();
   renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
   renderValidation();
+  buildJsonScopeDropdown(); // screens may have changed; keep the scope options fresh
 }
 function syncAndRender(): void { syncJson(); renderAll(); }
 
@@ -494,6 +551,7 @@ function loadFlow(parsed: unknown, sourceName: string): void {
   }
   flow = normalized;
   current = 0;
+  jsonScope = FLOW_SCOPE; // a new flow has different screens — don't keep a stale scope
   collapseAllCards(flow);
   syncAndRender();
   const errors = validateFlow(flow).filter((i) => i.level === "error").length;
@@ -570,6 +628,8 @@ function applyLang(lang: Lang): void {
   applyI18n(document);
   buildTemplateDropdown();
   buildMenuDropdowns(); // rebuild the combo boxes with translated labels + current values
+  jsonScopeSig = ""; // force the JSON scope picker to rebuild with the new locale
+  buildJsonScopeDropdown();
   if (offered) $("#offer-title").textContent = t("offerTitle", [offeredName]); // JS-built text
   renderAll();
 }
