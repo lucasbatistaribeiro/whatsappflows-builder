@@ -80,15 +80,59 @@ interactive mode on (real typeable inputs, live `n / max` counter, selectable
 radios/checkboxes) vs off (static placeholder boxes); WhatsApp light/dark repaints
 the `--wa-*` vars; screen size sm/md/lg changes the phone aspect-ratio.
 
-**Menu**: the four combo boxes (template, screen size, WhatsApp theme, plugin
-theme, language) and the interactive switch; `savePrefs` is emitted; switching
-language retranslates while preserving each selection.
+**Menu**: the combo boxes (see Dropdowns below) and the interactive switch;
+`savePrefs` is emitted on every change; the drawer opens from `#menu-btn`, closes
+via `#menu-close` / backdrop / Escape, marks the rest of the app `inert` while open
+and restores focus to the trigger on close.
 
 **Cards**: add from the palette, duplicate, delete, collapse/expand (plus
 collapse-all), and drag-reorder from the grip — after which the Flow JSON order
 must match the DOM order.
 
 **i18n**: run the key flows in both `en` and `pt`.
+
+## Dropdowns
+
+Every picker is the project's own control (`src/ui/dropdown.ts`), not a native
+`<select>`, so it needs real coverage. There are two behaviours: **action-style**
+(`resetAfterSelect` — the trigger falls back to its placeholder after choosing) and
+**value-keeping** (the trigger shows the current selection).
+
+**Add component** (`#palette`) — action-style, grouped and searchable:
+- Groups render with headers in order Text → Input → Selection → Media → Action,
+  and the options match `PALETTE` in `src/model/palette.ts`. Assert against the
+  source (read it) rather than a hardcoded count, so the test survives new
+  components.
+- The filter box narrows options as you type **and hides group headers whose
+  options are all filtered out**; `Enter` picks the first still-visible option;
+  `Escape` closes without selecting.
+- Choosing appends that component to the current screen (Build list grows, Flow
+  JSON updates) and the trigger **returns to the placeholder** instead of showing
+  the picked value.
+- Search a term matching nothing: the list should be empty with no stray headers.
+
+**Menu pickers** — `#template` (action-style, `mini`) plus the value-keeping
+`#size-dd`, `#wa-theme-dd`, `#app-theme-dd`, `#lang-dd`:
+- Each opens showing the **current pref** as its value.
+- Changing one applies its effect (size → phone aspect-ratio; WhatsApp theme →
+  `--wa-*` repaint; plugin theme → `data-theme`; language → retranslation) and
+  emits `savePrefs`.
+- `#template` loads the flow, closes the drawer, and resets to its placeholder.
+- After a language change the menu pickers are **rebuilt**: option labels must be
+  retranslated while each selection is preserved (re-query them; the old nodes are
+  gone).
+
+**Shared behaviour, worth one pass on any single dropdown:**
+- The open list is appended to `<body>` with `position: fixed` and its width matched
+  to the trigger.
+- Only one is open at a time — opening a second closes the first.
+- It closes on outside `mousedown`, `Escape`, page/container scroll, and resize.
+- On the trigger, `Enter` / `Space` / `ArrowDown` opens it.
+- **Flip-up regression guard:** a dropdown near the bottom of the viewport opens
+  *above* its trigger. It must sit just above it at its natural height — if it
+  stretches from the top of the viewport instead, the `top`/`bottom` reset in
+  `position()` has regressed (this was a real bug: the language picker, last in the
+  menu, appeared at the top). Force the case by pinning a trigger near the bottom.
 
 ## Gotchas that will fool you
 
