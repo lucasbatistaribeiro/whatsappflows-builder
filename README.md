@@ -45,28 +45,49 @@ inputs (`TextInput`, `TextArea`, `DatePicker`, `CalendarPicker`, `PhotoPicker`,
 
 ```bash
 npm install
-npm run build      # -> dist/code.js + dist/ui.html
+npm run build      # -> plugin/code.js + plugin/ui.html
 npm run watch      # rebuild main on change
 npm run typecheck
 ```
 
 ## Load in Figma
 
-1. Figma desktop → **Plugins → Development → Import plugin from manifest…**
-2. Select `manifest.json` in this folder.
-3. Run **WhatsApp Flows Builder** from the Plugins menu.
+1. Run `npm install && npm run build` first — the two bundles are generated, so a
+   fresh clone has a manifest with nothing to point at.
+2. Figma desktop → **Plugins → Development → Import plugin from manifest…**
+3. Select `plugin/manifest.json`.
+4. Run **WhatsApp Flows Builder** from the Plugins menu.
 
-## Architecture
+## Repo layout
+
+`plugin/` is the plugin itself — after a build it holds exactly the three files
+Figma loads, and nothing else. Everything used to develop or build it lives
+outside that folder, so the shippable plugin is just that one directory.
 
 ```
-src/model/      Flow JSON types, palette, templates, sample, validation
-src/shared/     UI <-> main message contract
-src/main/       Figma sandbox: theme tokens, node helpers, chrome,
-                per-component renderers, screen assembly, prototype routing
-src/ui/         Plugin UI (playground): palette, screen manager, property
-                editor, live preview, live JSON editor
-esbuild.mjs     Bundles main (dist/code.js) and inlines the UI (dist/ui.html)
+plugin/           THE PLUGIN — zip or share this folder
+  manifest.json   what you import in Figma
+  code.js         main/sandbox bundle   (generated)
+  ui.html         UI, bundle inlined    (generated)
+
+src/              source
+  model/          Flow JSON types, palette, templates, sample, validation (pure)
+  shared/         UI <-> main message contract
+  main/           Figma sandbox: theme tokens, node helpers, chrome,
+                  per-component renderers, screen assembly, prototype routing
+  ui/             Plugin UI (playground): palette, screen manager, property
+                  editor, live preview, live JSON editor
+build/            esbuild.mjs (bundler) + tsconfig.json (typecheck)
+docs/             BUGFIXES.md (bug log) and META_SYNC.md (Meta spec sync playbook)
+package.json      npm scripts + dev dependencies
 ```
+
+## Sharing the plugin
+
+Run `npm run build`, then hand over the `plugin/` folder (zipped). The recipient
+imports its `manifest.json` — no install, no source, no docs. Nothing else in the
+repo is needed to run it. To share without passing files around at all, publish to
+the Figma Community (public, or unlisted/org-only).
 
 See [CLAUDE.md](CLAUDE.md) for the contributor / AI-agent guide (commands,
 runtime contexts, how to verify changes, and the key conventions), and

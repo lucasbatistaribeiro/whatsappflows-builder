@@ -138,10 +138,10 @@ npm run build
   throwaway with esbuild `--platform=node` and run it (validator, `screenChildren`,
   etc.). Always re-check that `sample.ts` + all `templates.ts` still validate with
   **no errors** (regression).
-- **UI changes** (`src/ui/*`) are verifiable in a browser: `cd dist &&
+- **UI changes** (`src/ui/*`) are verifiable in a browser: `cd plugin &&
   python -m http.server 8791` → open `ui.html`, drive with DevTools/JS.
 - **Generator changes** (`src/main/*`) can only be fully confirmed **inside
-  Figma** (Import from `manifest.json` → Generate). `typecheck` + `build` is the
+  Figma** (Import from `plugin/manifest.json` → Generate). `typecheck` + `build` is the
   most that's automatable — be conservative and say so.
 
 ---

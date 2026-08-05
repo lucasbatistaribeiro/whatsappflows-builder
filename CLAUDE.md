@@ -13,19 +13,24 @@ to the exact code and gives a step-by-step routine.
 
 ```bash
 npm install
-npm run build      # esbuild.mjs -> dist/code.js (main) + dist/ui.html (UI inlined)
+npm run build      # build/esbuild.mjs -> plugin/code.js (main) + plugin/ui.html (UI inlined)
 npm run watch      # rebuild main on change (re-run for UI changes)
 npm run typecheck  # tsc --noEmit (strict; noUnusedLocals)
 ```
 
-Never edit `dist/` — it's generated. Edit `src/`, then `npm run build`.
+`plugin/` is the deliverable: after a build it holds only `manifest.json`,
+`code.js` and `ui.html` — the three files Figma loads. Keep it that way; anything
+used to develop or build the plugin belongs outside it (`src/`, `build/`, `docs/`).
+
+Never edit `plugin/code.js` or `plugin/ui.html` — they're generated. Edit `src/`,
+then `npm run build`.
 
 ## Two runtime contexts (don't mix them)
 
 - **`src/main/*` = the Figma sandbox** (the `figma` API, no DOM). Bundled to
-  `dist/code.js`. Builds the generated screens.
+  `plugin/code.js`. Builds the generated screens.
 - **`src/ui/*` = the plugin UI** (an iframe: DOM, no `figma` API). Bundled and
-  inlined into `dist/ui.html`. This is the builder interface.
+  inlined into `plugin/ui.html`. This is the builder interface.
 - They talk only via `postMessage`; the typed contract is `src/shared/messages.ts`.
 - `src/model/*` is pure (no `figma`, no DOM) and imported by both sides — keep it
   that way (e.g. `validate.ts` returns message *keys*, not translated strings).
@@ -36,13 +41,13 @@ Never edit `dist/` — it's generated. Edit `src/`, then `npm run build`.
   browser — it runs standalone (Figma's `--figma-color-*` vars fall back to the
   themed defaults):
   ```bash
-  (cd dist && python -m http.server 8791)   # then open http://localhost:8791/ui.html
+  (cd plugin && python -m http.server 8791)   # then open http://localhost:8791/ui.html
   ```
   Drive it with DevTools/JS. The browser can't reliably emulate a narrow viewport,
   so test responsiveness by reading computed styles / clamping logic, not by resizing.
 - **Generator changes (`src/main/*`) can only be verified inside Figma** — there is
   no browser/CI path for them. `typecheck` + `build` is the most you can check
-  automatically; a real run (Import plugin from `manifest.json` → Generate) is
+  automatically; a real run (Import plugin from `plugin/manifest.json` → Generate) is
   required to confirm. Be conservative and say so.
 - **Model layer** can be unit-tested by bundling a throwaway script with esbuild
   `--platform=node` and running it with node (the model has no figma/DOM deps).
@@ -80,11 +85,17 @@ Never edit `dist/` — it's generated. Edit `src/`, then `npm run build`.
 
 ## Map
 
+`plugin/` is the shippable plugin only; source, tooling and docs sit beside it.
+
 ```
-src/model/   flowTypes, palette, templates, sample, validate   (pure, shared)
-src/shared/  messages                                          (UI <-> main contract)
-src/main/    theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
-src/ui/      ui.html, ui.ts, preview, propEditor, dropdown, icons, i18n       (plugin UI)
+plugin/        manifest.json + code.js + ui.html (the last two generated, gitignored)
+src/
+  model/       flowTypes, palette, templates, sample, validate   (pure, shared)
+  shared/      messages                                          (UI <-> main contract)
+  main/        theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
+  ui/          ui.html, ui.ts, preview, propEditor, dropdown, icons, i18n       (plugin UI)
+build/         esbuild.mjs (paths resolve from the file, not the cwd), tsconfig.json
+docs/          BUGFIXES.md, META_SYNC.md
 ```
 
 ## Workflow

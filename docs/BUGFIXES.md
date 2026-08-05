@@ -10,21 +10,22 @@ fix for each. Newest first. Links point to the merged PR.
 **Symptom.** **Plugins → Development → Import plugin from manifest…** errors out
 on a freshly cloned repo, before the plugin ever runs.
 
-**Root cause.** Not a code bug — a missing build. `manifest.json` points at
-`dist/code.js` and `dist/ui.html`, but `.gitignore` excludes `dist/` (and
-`node_modules/`), so a clone contains only `src/`. Figma resolves the manifest's
-`main`/`ui` paths at import time and fails when the files don't exist.
+**Root cause.** Not a code bug — a missing build. `plugin/manifest.json` points at
+`plugin/code.js` and `plugin/ui.html`, but those two bundles are gitignored (as is
+`node_modules/`), so a fresh clone has the manifest and no bundles. Figma resolves
+the manifest's `main`/`ui` paths at import time and fails when the files don't
+exist.
 
 **Fix.** Run the build before importing:
 
 ```bash
 npm install
-npm run build      # generates dist/code.js + dist/ui.html
+npm run build      # generates plugin/code.js + plugin/ui.html
 ```
 
-Then import `manifest.json` again. Remember that `dist/` is generated: after any
-`src/` edit you must rebuild and reload the plugin, and `npm run watch` only
-rebuilds the main bundle — **UI changes need a manual `npm run build`**.
+Then import `plugin/manifest.json` again. Remember the two bundles are generated:
+after any `src/` edit you must rebuild and reload the plugin, and `npm run watch`
+only rebuilds the main bundle — **UI changes need a manual `npm run build`**.
 
 **If the error persists,** it's a different failure with a different shape:
 - *"Editor type not supported"* — the manifest declares `"editorType": ["figma"]`,

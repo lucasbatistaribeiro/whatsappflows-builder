@@ -10,8 +10,8 @@
     "noImplicitReturns": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "typeRoots": ["./node_modules/@figma", "./node_modules/@types"],
+    "typeRoots": ["../node_modules/@figma", "../node_modules/@types"],
     "types": ["plugin-typings"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["../src/**/*.ts"]
 }
