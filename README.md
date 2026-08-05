@@ -78,8 +78,9 @@ src/              source
   ui/             Plugin UI (playground): palette, screen manager, property
                   editor, live preview, live JSON editor
 build/            esbuild.mjs (bundler) + tsconfig.json (typecheck)
-agent/            project knowledge: CLAUDE.md (working guide), BUGFIXES.md (bug
-                  log), META_SYNC.md (Meta spec sync playbook)
+knowledge/        docs to read: CLAUDE.md (working guide), BUGFIXES.md (bug log),
+                  META_SYNC.md (Meta spec sync playbook)
+.claude/agents/   subagent definitions (not docs — these are runnable agents)
 package.json      npm scripts + dev dependencies
 ```
 
@@ -90,7 +91,7 @@ imports its `manifest.json` — no install, no source, no docs. Nothing else in 
 repo is needed to run it. To share without passing files around at all, publish to
 the Figma Community (public, or unlisted/org-only).
 
-See [agent/CLAUDE.md](agent/CLAUDE.md) for the contributor / AI-agent guide (commands,
+See [knowledge/CLAUDE.md](knowledge/CLAUDE.md) for the contributor / AI-agent guide (commands,
 runtime contexts, how to verify changes, and the key conventions), and
-[agent/BUGFIXES.md](agent/BUGFIXES.md) for a log of bugs found while hardening the
+[knowledge/BUGFIXES.md](knowledge/BUGFIXES.md) for a log of bugs found while hardening the
 UI, each with its root cause and fix.
