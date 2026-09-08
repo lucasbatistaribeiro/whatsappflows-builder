@@ -90,7 +90,7 @@ flow's 19-companion screen ≈ 100 components) correctly report `vMaxComponents`
 Playground rejected it on publish/preview with a static-validation error.
 
 **Root cause.** Audited `validate.ts` against Meta's
-[error-codes reference](https://developers.facebook.com/docs/whatsapp/flows/reference/error-codes)
+[error-codes reference](https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/reference/error-codes)
 (static-validation family). Five cases were reachable from the UI but unchecked:
 - a `complete` action on a non-terminal screen (`INVALID_COMPLETE_ACTION`);
 - a `complete` action on an `EmbeddedLink` — `complete` is Footer-only

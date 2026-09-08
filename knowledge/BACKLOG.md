@@ -102,19 +102,3 @@ menu option from Meta's Playground is **OS**: the `os` field already rides in
 renders one status bar and one header regardless. The work is an iOS variant of the
 status bar (time centred/left, different icon set, no square/back nav) and of the
 header, selected by `options.os`.
-
----
-
-## Refresh the Meta doc links in META_SYNC.md
-
-**Status:** ready · found 2026-08-05
-
-All six links in `META_SYNC.md` redirect: Meta moved `/docs/whatsapp/...` to
-`/documentation/business-messaging/whatsapp/...`, and two changed shape —
-`reference/components` -> **`guides/components`** and `reference/flowjson` ->
-**`guides/flowjson`**.
-
-Also worth recording there: every doc page now has a **`.md` version** (append `.md`
-to the page path) that fetches with plain `curl`. That replaces the browser-MCP
-workaround the file currently prescribes for the HTTP 500 problem — verified on a
-template page (10 KB of clean markdown, character limits included).
