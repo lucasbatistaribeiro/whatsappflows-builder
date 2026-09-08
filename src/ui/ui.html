@@ -243,6 +243,87 @@
     box-shadow: 0 6px 24px rgba(0,0,0,.18); color: var(--wa-text, #111);
   }
   .wa-phone.has-error { border-color: #d33; }
+
+  /* ---- Chat mode (knowledge/CHAT_UI.md) -------------------------------------
+     Real WhatsApp sizes/colours, like the rest of wa-*: the 14px plugin-chrome
+     minimum does NOT apply here. Every colour comes from a --wa-* var so the
+     light/dark toggle drives this for free. Values are unconfirmed until
+     calibrated against a real screenshot. */
+  .wa-c-phone { background: var(--wa-wallpaper, #efeae2); }
+  .wa-c-header { display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    background: var(--wa-chat-header, #f0f2f5); color: var(--wa-text); flex: none; }
+  .wa-c-header svg { flex: none; color: var(--wa-text2); }
+  .wa-c-avatar { width: 30px; height: 30px; border-radius: 50%; flex: none;
+    object-fit: cover; background: var(--wa-chip); }
+  .wa-c-monogram { display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: var(--wa-text2); }
+  .wa-c-names { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .wa-c-name { font-size: 14px; font-weight: 600; line-height: 1.25;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wa-c-presence { font-size: 11px; color: var(--wa-text2); line-height: 1.2; }
+  .wa-c-actions { display: flex; align-items: center; gap: 12px; flex: none; }
+
+  /* Messages sit at the BOTTOM of the thread, like the real app: a short
+     conversation leaves the empty wallpaper above it, not below. `margin-top:auto`
+     on the first child does this without breaking scrolling, which
+     justify-content:flex-end would (it clips overflow at the top). */
+  .wa-c-thread { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 7px;
+    display: flex; flex-direction: column; gap: 8px;
+    background: var(--wa-wallpaper, #efeae2); }
+  .wa-c-thread > :first-child { margin-top: auto; }
+  .wa-c-pill-row { display: flex; justify-content: center; }
+  .wa-c-pill { font-size: 11px; padding: 5px 9px; border-radius: 7px;
+    color: var(--wa-text2); background: var(--wa-system-pill, #ffeecc);
+    box-shadow: 0 1px 0 rgba(0,0,0,.05); max-width: 85%; text-align: center; }
+  .wa-c-date { text-transform: uppercase; letter-spacing: .3px; font-weight: 500; }
+
+  .wa-c-row { display: flex; }
+  .wa-c-row.in  { justify-content: flex-start; }
+  .wa-c-row.out { justify-content: flex-end; }
+  /* Grouped runs sit tighter than the 8px thread gap. */
+  .wa-c-row.grouped { margin-top: -6px; }
+
+  .wa-c-bubble { position: relative; max-width: 75%; padding: 6px 8px;
+    border-radius: 8px; background: var(--wa-bubble-in, #fff);
+    box-shadow: 0 1px .5px rgba(11,20,26,.13); }
+  .wa-c-row.out .wa-c-bubble { background: var(--wa-bubble-out, #d9fdd3); }
+  /* The tail is a notch, which border-radius can't express: square that one
+     corner and hang a small triangle off it. The generator will do the same with
+     a vector node (BUGFIXES #37/#38 pattern). */
+  .wa-c-row.in  .wa-c-bubble.tail { border-top-left-radius: 0; }
+  .wa-c-row.out .wa-c-bubble.tail { border-top-right-radius: 0; }
+  .wa-c-bubble.tail::before { content: ""; position: absolute; top: 0;
+    border-top: 8px solid var(--wa-bubble-in, #fff); width: 0; height: 0; }
+  .wa-c-row.in .wa-c-bubble.tail::before { left: -7px; border-left: 7px solid transparent; }
+  .wa-c-row.out .wa-c-bubble.tail::before { right: -7px; border-right: 7px solid transparent;
+    border-top-color: var(--wa-bubble-out, #d9fdd3); }
+
+  .wa-c-text { font-size: 14.2px; line-height: 19px; color: var(--wa-text);
+    white-space: pre-wrap; overflow-wrap: anywhere; }
+  /* Own row, not inline with the text — see the trade-off in CHAT_UI.md. */
+  .wa-c-meta { display: flex; align-items: center; justify-content: flex-end;
+    gap: 3px; margin-top: 1px; }
+  .wa-c-time { font-size: 11px; color: var(--wa-text2); }
+  .wa-c-ticks { display: inline-flex; color: var(--wa-text2); }
+  .wa-c-ticks.read { color: var(--wa-tick, #53bdeb); }
+  .wa-c-ticks svg { display: block; }
+
+  .wa-c-quote { border-left: 3px solid var(--wa-primary); border-radius: 4px;
+    padding: 3px 6px; margin-bottom: 3px; background: rgba(11,20,26,.06); }
+  .wa-c-quote-author { font-size: 12px; font-weight: 600; color: var(--wa-primary); }
+  .wa-c-quote-text { font-size: 12px; color: var(--wa-text2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .wa-c-input { display: flex; align-items: center; gap: 6px; padding: 6px 7px;
+    background: var(--wa-chat-header, #f0f2f5); flex: none; }
+  .wa-c-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px;
+    padding: 7px 9px; border-radius: 18px; background: var(--wa-surface, #fff);
+    color: var(--wa-text2); }
+  .wa-c-field svg { flex: none; }
+  .wa-c-field-ph { flex: 1; min-width: 0; font-size: 13px; color: var(--wa-placeholder); }
+  .wa-c-mic { flex: none; width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--wa-primary); color: var(--wa-on-primary); }
   .wa-status { display: flex; justify-content: space-between; align-items: center;
     padding: 9px 16px 5px; background: var(--wa-status, #f7f8fa); color: var(--wa-text); }
   .wa-status-time { font-weight: 600; font-size: 13px; letter-spacing: .2px; }
@@ -616,6 +697,7 @@
           <button class="tab active" role="tab" aria-selected="true" data-tab="build" data-i18n="build">Build</button>
           <button class="tab" role="tab" aria-selected="false" data-tab="preview" data-i18n="preview">Preview</button>
           <button class="tab" role="tab" aria-selected="false" data-tab="json" data-i18n="flowJson">Flow JSON</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="chat" data-i18n="chatTab">Chat</button>
         </div>
         <div class="screens" id="screens"></div>
       </div>
@@ -648,6 +730,12 @@
           <textarea id="json" spellcheck="false"></textarea>
           <div class="json-status ok" id="json-status">Valid</div>
           <div class="hint" data-i18n="jsonHint">Edits here sync back to the Build tab when valid.</div>
+        </div>
+
+        <!-- Chat mode (knowledge/CHAT_UI.md): phase 1 renders a sample thread so
+             fidelity can be calibrated before the composer exists. -->
+        <div class="panel" id="panel-chat">
+          <div id="chat-preview"></div>
         </div>
       </div>
     </section>

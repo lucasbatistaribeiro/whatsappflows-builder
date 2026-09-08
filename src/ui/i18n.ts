@@ -10,6 +10,7 @@ const DICT: Record<string, Entry> = {
   build: { en: "Build", pt: "Montar" },
   preview: { en: "Preview", pt: "Prévia" },
   flowJson: { en: "Flow JSON", pt: "Flow JSON" },
+  chatTab: { en: "Chat", pt: "Conversa" },
   // top bar
   generate: { en: "Generate", pt: "Gerar" },
   generating: { en: "Generating…", pt: "Gerando…" },

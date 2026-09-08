@@ -15,6 +15,10 @@ export interface Palette {
   divider: string; primary: string; onPrimary: string; link: string;
   inputBorder: string; inputBg: string; chipBg: string; chipSelectedBg: string;
   chipSelectedBorder: string; statusBar: string; placeholder: string;
+  // Chat mode (see knowledge/CHAT_UI.md). Unconfirmed until calibrated against a
+  // real screenshot — treat as starting values, like the dark palette below.
+  bubbleIn: string; bubbleOut: string; wallpaper: string; tick: string;
+  chatHeader: string; systemPill: string;
 }
 
 export const COLOR_LIGHT: Palette = {
@@ -33,6 +37,12 @@ export const COLOR_LIGHT: Palette = {
   chipSelectedBorder: "#008069",
   statusBar: "#F7F8FA",
   placeholder: "#8696A0",
+  bubbleIn: "#FFFFFF",
+  bubbleOut: "#D9FDD3", // same green as chipSelectedBg above
+  wallpaper: "#EFEAE2",
+  tick: "#53BDEB",
+  chatHeader: "#F0F2F5",
+  systemPill: "#FFEECC",
 };
 
 // WhatsApp dark theme (curated approximations of the real tokens).
@@ -52,6 +62,12 @@ export const COLOR_DARK: Palette = {
   chipSelectedBorder: "#00A884",
   statusBar: "#1F2C34",
   placeholder: "#8696A0",
+  bubbleIn: "#202C33",
+  bubbleOut: "#005C4B",
+  wallpaper: "#0B141A",
+  tick: "#53BDEB", // the read tick keeps the same blue in both themes
+  chatHeader: "#202C33",
+  systemPill: "#182229",
 };
 
 let active: Palette = COLOR_LIGHT; // light is always the default

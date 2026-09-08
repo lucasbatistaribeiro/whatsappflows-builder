@@ -7,6 +7,8 @@ import { SAMPLE_FLOW } from "../model/sample";
 import { TEMPLATES } from "../model/templates";
 import { postToMain } from "../shared/messages";
 import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme, setPreviewBusiness } from "./preview";
+import { renderChat } from "./chat";
+import { sampleThread, type Thread } from "../model/chatTypes";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
 import { iconEl, applyIcons } from "./icons";
@@ -609,6 +611,10 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(
 const SECTION_BG_DEFAULT = "#353535";
 const SECTION_RADIUS_DEFAULT = 24;
 
+// Chat mode: phase 1 has no composer yet, so a sample thread stands in while
+// the visuals get calibrated (knowledge/CHAT_UI.md).
+const thread: Thread = sampleThread();
+
 let prefs: Prefs = {
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
@@ -845,10 +851,12 @@ document.querySelectorAll(".tab").forEach((t) => {
     $("#panel-build").classList.toggle("active", name === "build");
     $("#panel-preview").classList.toggle("active", name === "preview");
     $("#panel-json").classList.toggle("active", name === "json");
+    $("#panel-chat").classList.toggle("active", name === "chat");
     // The screen rail only belongs to Build: Preview has its own screen tabs and
     // Flow JSON just shows code.
     $("#screens").style.display = name === "build" ? "" : "none";
     if (name === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
+    if (name === "chat") renderChat(thread, $("#chat-preview"));
   });
 });
 

@@ -68,7 +68,10 @@ Top to bottom, inside the existing `.wa-phone` frame:
 1. **status bar** — reuse as-is (`statusBar()` / `.wa-status`).
 2. **conversation header** — back chevron, avatar, name over a presence line
    ("online" / "last seen ..."), then video, call and overflow icons.
-3. **thread** — the scrolling area, on `wallpaper`:
+3. **thread** — the scrolling area, on `wallpaper`. Messages are anchored to the
+   **bottom**: a short conversation leaves empty wallpaper above it, not below.
+   (`margin-top: auto` on the first child, not `justify-content: flex-end` — the
+   latter clips the top once the thread overflows.)
    - **date divider** — a centred pill ("TODAY").
    - **encryption notice** — a one-off centred pill, first thing in a thread.
    - **message rows** — a bubble aligned left (incoming) or right (outgoing),
@@ -150,7 +153,8 @@ a string keeps the model free of timezone questions.
 1. **Preview fidelity** — the thread rendered in the plugin's HTML preview: header,
    text bubbles both directions, tail, meta row with ticks, date and encryption
    pills, input bar, light and dark. Verifiable in a browser, so this is where
-   calibration happens.
+   calibration happens. *Built (structure + geometry verified); the colour and
+   spacing calibration below is still open.*
 2. **Figma generator** — the same thread as frames, reusing `markFill`/`applyFills`
    and the dated-section round-trip.
 3. **Composer** — the authoring UI, reusing the existing card machinery
