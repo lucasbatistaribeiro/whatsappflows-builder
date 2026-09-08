@@ -7,7 +7,9 @@ the user-facing overview and `knowledge/BUGFIXES.md` for a log of past bugs + fi
 (read it — several are non-obvious Figma/auto-layout traps). To reconcile the
 project with changes to Meta's WhatsApp Flows spec (new components, limits,
 versions, validation rules), follow `knowledge/META_SYNC.md` — it maps each Meta doc
-to the exact code and gives a step-by-step routine.
+to the exact code and gives a step-by-step routine. Accepted-but-unstarted work
+lives in `knowledge/BACKLOG.md` — check it before planning something new, and add
+an entry there instead of dropping an idea.
 
 ## Commands
 
@@ -101,7 +103,7 @@ src/
   main/        theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
   ui/          ui.html, ui.ts, preview, propEditor, dropdown, icons, i18n       (plugin UI)
 build/         esbuild.mjs (paths resolve from the file, not the cwd), tsconfig.json
-knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md
+knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md, BACKLOG.md
 .claude/agents/ runnable subagent definitions — not docs (see plugin-ui-tester)
 CLAUDE.md      root pointer here (agent tooling looks for it there); AGENTS.md too
 ```
@@ -113,4 +115,5 @@ runtime only discovers subagents there — so don't "tidy" it into `knowledge/`.
 ## Workflow
 
 Land changes as small, focused PRs (squash-merged); keep `typecheck` + `build`
-green. Update `knowledge/BUGFIXES.md` when you fix a non-obvious bug.
+green. Update `knowledge/BUGFIXES.md` when you fix a non-obvious bug, and
+`knowledge/BACKLOG.md` when work is deferred or a backlog entry ships.

@@ -1,0 +1,908 @@
+# Components
+
+
+
+
+Components are the reusable UI elements that you combine to build a screen. They allow you to build complex UIs and display business data using attribute models. **The maximum number of components per screen is 50.** Please refer to [best practices for components](https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/bestpractices#number-of-components).
+
+The following components are supported:
+
+- [Basic Text (Heading, Subheading, Caption, Body)](#text)
+
+- [RichText](#richtext)
+
+- [TextEntry](#textentry)
+
+- [CheckboxGroup](#checkbox)
+
+- [RadioButtonsGroup](#radio)
+
+- [Footer](#foot)
+
+- [OptIn](#opt)
+
+- [Dropdown](#drop)
+
+- [EmbeddedLink](#embed)
+
+- [DatePicker](#dp)
+
+- [Image](#img)  
+
+- [If](#if)
+
+- [Switch](#switch)
+
+- [Media upload](#media_upload)
+
+## Text Components &#123;#text&#125;
+
+### Heading
+
+This is the top level title of a page.
+
+| Parameter | Description |
+| --- | --- |
+| `type` _string_ | **Required.** &quot;TextHeading&quot; |
+| `text` _string_ | **Required.** Dynamic &quot;$&#123;data.text&#125;&quot; |
+| `visible` _boolean_ | Dynamic &quot;$&#123;data.is_visible&#125;&quot;&lt;br&gt;Default: True |
+
+### Subheading
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;TextSubheading&quot; |
+| `text _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.text&#125;&quot; |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot; &lt;br&gt;&lt;br&gt;Default: True |
+
+### Body
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | TextBody |
+| `text _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.text&#125;&quot; |
+| `font-weight _enum_` | &#123;&#039;bold&#039;,&#039;italic&#039;,&#039;bold_italic&#039;,&#039;normal&#039;&#125; &lt;br&gt;&lt;br&gt;Dynamic &quot;$&#123;data.font_weight&#125;&quot; |
+| `strikethrough _boolean_` | Dynamic &quot;$&#123;data.strikethrough&#125;&quot; |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `markdown _boolean_` | Default: False&lt;br&gt;**Note:** Requires Flow JSON V5.1+ |
+
+### Caption
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;TextCaption&quot; |
+| `text _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.text&#125;&quot; |
+| `font-weight _enum_` | &#123;&#039;bold&#039;,&#039;italic&#039;,&#039;bold_italic&#039;,&#039;normal&#039;&#125; &lt;br&gt;&lt;br&gt;Dynamic &quot;$&#123;data.font_weight&#125;&quot; |
+| `strikethrough _boolean_` | Dynamic &quot;$&#123;data.strikethrough&#125;&quot; |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `markdown _boolean_` | Default: False&lt;br&gt;**Note:** Requires Flow JSON V5.1+ |
+
+### Limits and restrictions
+
+| Component | Type | Limit / Restriction |
+| --- | --- | --- |
+| Heading&lt;br&gt;Subheading&lt;br&gt;Body&lt;br&gt;Caption | Character Limit | 80&lt;br&gt;&lt;br&gt;80&lt;br&gt;&lt;br&gt;4096&lt;br&gt;&lt;br&gt;409 |
+| Heading&lt;br&gt;&lt;br&gt;Subheading&lt;br&gt;&lt;br&gt;Body&lt;br&gt;&lt;br&gt;Caption | Text | Empty or Blank value is not accepted |
+
+### Additional capabilities for Text components
+**Note:** Supported starting with Flow JSON version 5.1
+
+In Flow JSON V5.1 `TextBody` and `TextCaption` also support a limited markdown syntax. To enable this capability, set the property `markdown=true`. The `markdown=true` property instructs WhatsApp Flows to enable markdown syntax within these components.
+
+```json
+&#123;
+   &quot;type&quot;: &quot;TextBody&quot;,
+   &quot;markdown&quot;: true,
+   &quot;text&quot;: [
+     &quot;This text is ~~***really important***~~&quot;
+   ]
+&#125;
+```
+
+```json
+&#123;
+   &quot;type&quot;: &quot;TextCaption&quot;,
+   &quot;markdown&quot;: true,
+   &quot;text&quot;: [
+     &quot;This text is ~~***really important***~~&quot;
+   ]
+&#125;
+```
+
+For comparison purposes, the following preview shows how the text components look next to one another:
+
+## Rich Text &#123;#richtext&#125;
+
+**Note:** Supported starting with Flow JSON version 5.1
+
+Flow JSON 5.1 introduces a new component - `RichText`. The goal of the component is to provide rich formatting capabilities and introduce the way to render large texts (such as **Terms of Condition**, **Policy Documents**, and **User Agreement**) without facing limitations of basic text components (such as **TextHeading**, **TextSubheading**, and **TextBody**)
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;RichText&quot; |
+| ` _string \| string array_ `&lt;br&gt;&lt;br&gt;**(required) ***string \| string array* | Dynamic &quot;$&#123;data.text&#125;&quot; |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot; &lt;br&gt;&lt;br&gt;Default: True |
+
+`RichText` component utilizes a select subset of the `Markdown` specification. It adheres strictly to standard `Markdown` syntax without introducing any custom modifications. Content created for the `RichText` component is fully compatible with standard `Markdown` documents.
+
+**Note:** **Note:**
+
+**Note:** If your use case requires text alongside other components, use the basic Text component, which supports markdown features such as bold, italic, strikethrough, links, and lists.
+
+### Supported syntax  
+
+#### Headings
+The current syntax supports only `Heading (h1)` and `Subheading (h2)`. The parser parses other heading levels but renders them as normal text - `TextBody`.  
+
+| Flow JSON | Flow Component |
+| --- | --- |
+| ```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;# Heading level 1&quot;
+   ]
+&#125;
+``` | `TextHeading` |
+| ```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;## Heading level 2&quot;
+   ]
+&#125;
+``` | `TextSubheading` |
+| ```json
+&#123;
+       &quot;type&quot;: &quot;RichText&quot;,
+       &quot;text&quot;: [
+         &quot;### Heading level 3&quot;,
+        &quot;#### Heading level 4&quot;,
+         &quot;##### Heading level 5&quot;,
+        &quot;###### Heading level 6&quot;
+       ]
+    &#125;
+``` | `TextBody` |
+
+#### Paragraphs
+To create paragraphs, split your text into different array items:
+
+```json
+&#123;
+       &quot;type&quot;: &quot;RichText&quot;,
+       &quot;text&quot;: [
+         &quot;Paragraph 1&quot;,
+        &quot;Paragraph 2&quot;
+       ]
+    &#125;
+```
+
+or add a blank line in your markdown document that you bind using dynamic binding syntax `$&#123;data.your_dynamic_field&#125;`
+
+```json
+# Heading 1
+Paragraph 1
+
+Paragraph 2
+```
+
+```json
+&#123;
+       &quot;type&quot;: &quot;RichText&quot;,
+       &quot;text&quot;: &quot;$&#123;data.text&#125;&quot;
+    &#125;
+```
+
+#### Text formatting
+| Flow JSON | Flow Component |
+| --- | --- |
+| ```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;Let&#039;s make a **bold** statement&quot;
+   ]
+&#125;
+``` | `TextBody (bold)` |
+| ```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;Let&#039;s make this text *italic*&quot;
+   ]
+&#125;
+``` | `TextBody (italic)` |
+| ```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;Let&#039;s make this text ~~Strikethrough~~&quot;
+   ]
+&#125;
+``` | `TextBody (strikethrough)` |
+| ```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;This text is ~~***really important***~~&quot;
+   ]
+&#125;
+``` | `TextBody (bold-italic-strikethrough)` |
+
+#### Lists
+
+You can organize items into ordered and unordered lists. At the moment, only single level lists are supported.
+
+| Flow JSON | Flow Component |
+| --- | --- |
+| ```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;1. Item 1&quot;,
+     &quot;2. Item 2&quot;,
+     &quot;3. Item 3&quot;
+   ]
+&#125;
+``` | `OrderedList` (not available as standalone component) |
+| ```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;- Item 1&quot;,
+     &quot;- Item 2&quot;,
+     &quot;- Item 3&quot;
+   ]
+&#125;
+```&lt;br&gt;&lt;br&gt;```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;+ Item 1&quot;,
+     &quot;+ Item 2&quot;,
+     &quot;+ Item 3&quot;
+   ]
+&#125;
+``` | `UnorderedList` (not available as standalone component) |
+
+#### Images
+
+You can also include images in the content. Please note, external URIs are not supported and you can only include base64 inline images
+
+```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [&quot;![Image alt text](data:image/png;base64,&lt;base64 content&gt;)&quot;]
+&#125;
+```
+
+**Recommended image formats:**
+
+1. png
+2. jpg / jpeg
+3. WebP (please note, WebP is only supported starting from iOS 14.6+, that corresponds to ~98% of iOS devices)
+
+#### Links
+To create a link, enclose the link text in brackets and then follow it immediately with the URL in parentheses  
+
+```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;[WhatsApp Flows let you build rich, interactive screens](https://business.whatsapp.com/products/whatsapp-flows)&quot;
+   ]
+&#125;
+```
+
+#### Tables
+
+To add a table, use three or more hyphens (---) to create each column&#039;s header, and use pipes (|) to separate each column. For compatibility, you should also add a pipe on either end of the row.
+
+Cell content can be combined with the following syntax:
+
+1. Italic, bold, strikethrough
+2. Images
+3. Links
+
+```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;\| Column Header 1     \| Column Header 2                                             \|&quot;,
+     &quot;\| -------------       \|  -------------                                              \|&quot;,
+     &quot;\| **Bold** text 1     \| [Link](&lt;URI&gt;)                                               |&quot;,
+     &quot;| **Bold** text 1     | ![Image alt text](data:image/png;base64,&lt;base64 content&gt;)   |&quot;
+   ]
+&#125;
+```
+
+**Width of the columns:**
+
+Width of the column is based on the Header content size. Markdown specification doesn&#039;t provide a specific syntax for controlling a column width. If you want to make a certain column wider, simply add additional content to the header:
+
+```json
+&#123;
+   &quot;type&quot;: &quot;RichText&quot;,
+   &quot;text&quot;: [
+     &quot;| Column Header 1 - Extended width  | Column Header 2       |&quot;,
+     &quot;| -------------                     |  -------------        |&quot;,
+     &quot;| **Bold** text 1                   | Cell text 2           |&quot;
+   ]
+&#125;
+```
+
+#### Working with large texts
+
+If your text content for markdown has a limited size, you can incorporate it as a static text as shown in all examples above. However, if your text is large and you expect to update it often on your server, send it as a part of dynamic data. This improves overall readability of the JSON and allows you to always load up-to-date text from your server.
+
+**Note:** **Please note:** These examples use the array text property for static cases since it&#039;s easier to read. However the components support both types: `Array of strings` and `string`. Your markdown can be sent as a normal string, you don&#039;t need to convert it to an array of strings.
+
+#### Syntax cheatsheet
+**Note:** - Supported starting with Flow JSON version 5.1
+
+Here is the quick overview of the syntax that&#039;s supported by RichText, TextBody, and TextCaption components
+
+| Syntax | RichText | TextBody | TextCaption |
+| --- | --- | --- | --- |
+| `# Text Heading` | ✅ | ❌ | ❌ |
+| `## Text Subheading` | ✅ | ❌ | ❌ |
+| `**bold**` | ✅ | ✅ | ✅ |
+| `*italic*` | ✅ | ✅ | ✅ |
+| `~~strikethrough~~` | ✅ | ✅ | ✅ |
+| `Normal Paragraph` | ✅ | ✅ | ✅ |
+| ```
++ Item 1
++ Item 2
+``` | ✅ | ✅ | ✅ |
+| ```
+1. Item 1
+2. Item 2
+``` | ✅ | ✅ | ✅ |
+| `[Link text](https://your-url.here)` | ✅ | ✅ | ✅ |
+| `![Image Alt](data:image/png;base64, base64-data)` | ✅ | ❌ | ❌ |
+| ```
+\| Header 1 \| Header 2 \| Header 3 \|
+\| -------- \| -------- \| -------- \|
+\| Row 1    \| Data 1   \| More Data \|
+\| Row 2    \| Data 2   \| More Data \|
+\| Row 3    \| Data 3   \| More Data \|
+``` | ✅ | ❌ | ❌ |
+
+#### Usage example
+
+## Text Entry Components &#123;#textentry&#125;
+
+### TextInput
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;TextInput&quot; |
+| `label _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.label&#125;&quot; |
+| `input-type _enum_` | &#123;&#039;text&#039;,&#039;number&#039;,&#039;email&#039;, &#039;password&#039;, &#039;passcode&#039;, &#039;phone&#039;&#125; |
+| `pattern _string_` | When specified, it is a regular expression which the input&#039;s value must match for the value to pass.&lt;br&gt;&lt;br&gt;**Note:** - Supported starting with Flow JSON version 6.2&lt;br&gt;&lt;br&gt;- Supported with input-type= &#123;&#039;text&#039;, &#039;number&#039;, &#039;password&#039;, &#039;passcode&#039;&#125;&lt;br&gt;&lt;br&gt;- Expects a raw regex string (e.g., hello, not /hello/).&lt;br&gt;&lt;br&gt;- When using the pattern field, helper-text is mandatory.&lt;br&gt;&lt;br&gt;- For input-type= &#123;&#039;number&#039;, &#039;passcode&#039; &#125;, a base regular expression is applied before the pattern validator, ensuring both validations are performed. |
+| `required _boolean_` | Dynamic &quot;$&#123;data.is_required&#125;&quot; |
+| `min-chars _string_` | Dynamic &quot;$&#123;data.min_chars&#125;&quot; |
+| `max-chars _string_` | Dynamic &quot;$&#123;data.max_chars&#125;&quot;. &lt;br&gt; Default value is 80 characters. |
+| `helper-text _string_` | Dynamic &quot;$&#123;data.helper_text&#125;&quot; |
+| `name _string_`&lt;br&gt;&lt;br&gt;**(required) ** |  |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `init-value _string_` | Dynamic &quot;$&#123;data.init-value&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** Optional Form&lt;br&gt;- Supported starting with Flow JSON version 4.0 |
+| `error-message _string_` | Dynamic &quot;$&#123;data.error-message&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** Optional Form&lt;br&gt;- Supported starting with Flow JSON version 4.0 |
+
+### TextArea
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;TextArea&quot; |
+| `label _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.label&#125;&quot; |
+| `required _boolean_` | Dynamic &quot;$&#123;data.is_required&#125;&quot; |
+| `max-length _string_` | Dynamic &quot;$&#123;data.max_length&#125;&quot;  &lt;br&gt; Default value is 600 characters. |
+| `name _string_`&lt;br&gt;&lt;br&gt;**(required) ** |  |
+| `helper-text _string_` | Dynamic &quot;$&#123;data.helper_text&#125;&quot; |
+| `enabled _boolean_` | Dynamic &quot;$&#123;data.is_enabled&#125;&quot; |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `init-value _string_` | Dynamic &quot;$&#123;data.init-value&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** Optional Form&lt;br&gt;- Supported starting with Flow JSON version 4.0 |
+| `error-message _string_` | Dynamic &quot;$&#123;data.error-message&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** Optional Form&lt;br&gt;- Supported starting with Flow JSON version 4.0 |
+
+### Limits and restrictions
+
+| Component | Type | Limit / Restriction |
+| --- | --- | --- |
+| TextInput | Helper Text&lt;br&gt;&lt;br&gt;Error Text&lt;br&gt;&lt;br&gt;Label | 80 characters&lt;br&gt;&lt;br&gt;30 characters&lt;br&gt;&lt;br&gt;20 characters |
+| TextArea | Helper Text&lt;br&gt;&lt;br&gt;Label | 80 characters&lt;br&gt;&lt;br&gt;20 characters |
+
+Together, the text entry components look like as shown:  
+
+## CheckboxGroup &#123;#checkbox&#125;
+
+CheckboxGroup component allows users to pick multiple selections from a list of options.
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;CheckboxGroup&quot; |
+| `data-source _array_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.data_source&#125;&quot;&lt;br&gt;**Note:** **Flow JSON versions before 5.0: **&lt;br&gt;- *Array&lt; id: String, title: String, description: String, metadata: String, enabled: Boolean&gt;*&lt;br&gt;&lt;br&gt;**Flow JSON versions after 5.0: **&lt;br&gt;- *Array&lt; id: String, title: String, description: String, metadata: String, enabled: Boolean, image: Base64 of an image, alt-text: string, color: 6-digit hex color string &gt;* |
+| `name _string_`&lt;br&gt;&lt;br&gt;**(required) ** |  |
+| `min-selected-items _int_` | Dynamic &quot;$&#123;data.min_selected_items&#125;&quot; |
+| `max-selected-items _int_` | Dynamic &quot;$&#123;data.max_selected_items&#125;&quot; |
+| `enabled _boolean_` | Dynamic &quot;$&#123;data.is_enabled&#125;&quot; |
+| `label _string_` | Dynamic &quot;$&#123;data.label&#125;&quot;&lt;br&gt;**Note:** - Flow JSON versions before 4.0: **optional**&lt;br&gt;&lt;br&gt;- Flow JSON versions after 4.0: **required** |
+| `required _boolean_` | Dynamic &quot;$&#123;data.is_required&#125;&quot; |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `on-select-action _action_` |  |
+| `description _string_` | Dynamic &quot;$&#123;data.description&#125;&quot;&lt;br&gt;**Note:** - Supported starting with Flow JSON version 4.0 |
+| `init-value _array&lt;string&gt;` | Dynamic &quot;$&#123;data.init-value&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** - Supported starting with Flow JSON version 4.0 |
+| `error-message _string_` | Dynamic &quot;$&#123;data.error-message&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** - Supported starting with Flow JSON version 4.0 |
+| `media-size _enum_` | &#123;&#039;regular&#039;, &#039;large&#039;&#125;&lt;br&gt;&lt;br&gt;Dynamic &quot;$&#123;data.media-size&#125;&quot;&lt;br&gt;**Note:** - Supported starting with Flow JSON version 5.0 |
+
+**Note:** Images in WebP format are not supported on iOS versions prior to iOS 14.
+
+### Example
+
+For the `data-source` field, you can declare it dynamically or statically.
+
+### Static example
+
+This static example hardcodes the respective `id`&#039;s and `title`&#039;s for the `data-source` field.
+
+### Dynamic example
+
+In this dynamic example, you can see that `data-source` references the `days_per_week_options` of type `array` defined before it using `days_per_week_options`. When defining such a structure, you need to specify `items` in the `array`, which will be of type `object`. Then inside the `items` object, you have a `properties` dictionary with `id` and `title` just like in the static declaration. Both `id` and `title` will always be of type `String`. Within the `days_per_week_options` array, you must define concrete examples in the `__example__` field.
+
+### Limits and restrictions
+
+| Type | Limit / Restriction |
+| --- | --- |
+| Label Content&lt;br&gt;&lt;br&gt;Title&lt;br&gt;&lt;br&gt;Description&lt;br&gt;&lt;br&gt;Metadata&lt;br&gt;&lt;br&gt;Min # of options&lt;br&gt;&lt;br&gt;Max # of options&lt;br&gt;&lt;br&gt;Image | 30 Characters&lt;br&gt;&lt;br&gt;30 Characters&lt;br&gt;&lt;br&gt;300 Characters&lt;br&gt;&lt;br&gt;20 Characters&lt;br&gt;&lt;br&gt;1&lt;br&gt;&lt;br&gt;20 |
+
+## RadioButtonsGroup &#123;#radio&#125;
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;RadioButtonsGroup&quot; |
+| `data-source _array_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.data_source&#125;&quot;&lt;br&gt;**Note:** **Flow JSON versions before 5.0: **&lt;br&gt;- *Array&lt; id: String, title: String, description: String, metadata: String, enabled: Boolean&gt;*&lt;br&gt;&lt;br&gt;**Flow JSON versions after 5.0: **&lt;br&gt;- *Array&lt; id: String, title: String, description: String, metadata: String, enabled: Boolean, image: Base64 of an image, alt-text: string, color: 6-digit hex color string &gt;* |
+| `name _string_`&lt;br&gt;&lt;br&gt;**(required) ** |  |
+| `enabled _boolean_` | Dynamic &quot;$&#123;data.is_enabled&#125;&quot; |
+| `label _string_` | Dynamic &quot;$&#123;data.label&#125;&quot;&lt;br&gt;**Note:** - Flow JSON versions before 4.0: **optional**&lt;br&gt;&lt;br&gt;- Flow JSON versions after 4.0: **required** |
+| `required _boolean_` | Dynamic &quot;$&#123;data.is_required&#125;&quot; |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `on-select-action _action_` |  |
+| `description _string_` | Dynamic &quot;$&#123;data.description&#125;&quot;&lt;br&gt;**Note:** - Supported starting with Flow JSON version 4.0 |
+| `init-value _array&lt;string&gt;` | Dynamic &quot;$&#123;data.init-value&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** - Supported starting with Flow JSON version 4.0 |
+| `error-message _string_` | Dynamic &quot;$&#123;data.error-message&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** - Supported starting with Flow JSON version 4.0 |
+| `media-size _enum_` | &#123;&#039;regular&#039;, &#039;large&#039;&#125;&lt;br&gt;&lt;br&gt;Dynamic &quot;$&#123;data.media-size&#125;&quot;&lt;br&gt;**Note:** - Supported starting with Flow JSON version 5.0 |
+
+**Note:** Images in WebP format are not supported on iOS versions prior to iOS 14.
+
+### Example
+
+For the `data-source` field, you can declare it dynamically or statically.
+
+### Static example
+
+This static example hardcodes the respective `id`&#039;s and `title`&#039;s for the `data-source` field.
+
+### Dynamic example
+
+In this dynamic example, you can see that `data-source` references the `experience_level_options` of type `array` defined before it using `data.experience_level_options`. When defining such a structure, you need to specify `items` in the `array`, which will be of type `object`. Then inside the `items` object, you have a `properties` dictionary with `id` and `title` just like in the static declaration. Both `id` and `title` will always be of type `String`. Within the `experience_level_options` array you must define concrete examples in the `__example__` field.
+
+### Limits and restrictions
+
+| Type | Limit / Restriction |
+| --- | --- |
+| Label Content&lt;br&gt;&lt;br&gt;Title&lt;br&gt;&lt;br&gt;Description&lt;br&gt;&lt;br&gt;Metadata&lt;br&gt;&lt;br&gt;Min # of options&lt;br&gt;&lt;br&gt;Max # of options&lt;br&gt;&lt;br&gt;Image | 30 Characters&lt;br&gt;&lt;br&gt;30 Characters&lt;br&gt;&lt;br&gt;300 Characters&lt;br&gt;&lt;br&gt;20 Characters&lt;br&gt;&lt;br&gt;1&lt;br&gt;&lt;br&gt;20 |
+
+## Footer &#123;#foot&#125;
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;Footer&quot; |
+| `label _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.label&#125;&quot; |
+| `left-caption _string_` | Dynamic &quot;$&#123;data.left_caption&#125;&quot;&lt;br&gt;**Note:** Can set left-caption **and** right-caption **or** only center-caption, but not all 3 at once |
+| `center-caption _string_` | Dynamic &quot;$&#123;data.center_caption&#125;&quot;&lt;br&gt;**Note:** Can set center-caption **or** left-caption **and** right-caption, but not all 3 at once |
+| `right-caption _string_` | Dynamic &quot;$&#123;data.right_caption&#125;&quot;&lt;br&gt;**Note:** Can set right-caption **and** left-caption **or** only center-caption, but not all 3 at once |
+| `enabled _boolean_` | Dynamic &quot;$&#123;data.is_enabled&#125;&quot; |
+| `on-click-action _action_`&lt;br&gt;&lt;br&gt;**(required) ** | Action |
+
+### Limits and restrictions
+
+| Type | Limit / Restriction |
+| --- | --- |
+| Label Max Character Limit&lt;br&gt;&lt;br&gt;Captions Max Character Limit | 35&lt;br&gt;&lt;br&gt;15 |
+
+## OptIn  &#123;#opt&#125;
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;OptIn&quot; |
+| `label _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.label&#125;&quot; |
+| `required _boolean_` | Dynamic &quot;$&#123;data.is_required&#125;&quot; |
+| `name _string_`&lt;br&gt;&lt;br&gt;**(required) ** |  |
+| `on-click-action _action_` | Action that is executed on clicking &quot;Read more&quot;.&lt;br&gt;**Note:** &quot;Read more&quot; is only visible when an on-click-action is specified.&lt;br&gt;&lt;br&gt;**Note:** Allowed values are `data_exchange` and `navigate`. From Flow JSON version 6.0 and later, allowed values are `data_exchange`, `navigate` and `open_url`. |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `init-value _boolean_` | Dynamic &quot;$&#123;data.init-value&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** Optional Form&lt;br&gt;- Supported starting with Flow JSON version 4.0 |
+
+### Example
+
+### Limits and restrictions
+
+| Type | Limit / Restriction |
+| --- | --- |
+| Content Max Character Limit&lt;br&gt;&lt;br&gt;Max number of Opt-Ins Per Screen | 120&lt;br&gt;&lt;br&gt;5 |
+
+## Dropdown &#123;#drop&#125;
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;Dropdown&quot; |
+| `label _string_`&lt;br&gt;&lt;br&gt;**(required) ** |  |
+| `data-source _array_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.data_source&#125;&quot;&lt;br&gt;**Note:** **Flow JSON versions before 5.0: **&lt;br&gt;- *Array&lt; id: String, title: String, description: String, metadata: String, enabled: Boolean&gt;*&lt;br&gt;&lt;br&gt;**Flow JSON versions after 5.0: **&lt;br&gt;- *Array&lt; id: String, title: String, description: String, metadata: String, enabled: Boolean, image: Base64 of an image, alt-text: string, color: 6-digit hex color string &gt;* |
+| `required _boolean_` |  |
+| `enabled _boolean_` | Dynamic &quot;$&#123;data.is_enabled&#125;&quot; |
+| `required _boolean_` | Dynamic &quot;$&#123;data.is_required&#125;&quot; |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `on-select-action _action_` |  |
+| `init-value _string_` | Dynamic &quot;$&#123;data.init-value&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component |
+| `error-message _string_` | Dynamic &quot;$&#123;data.error-message&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component |
+
+**Note:** Images in WebP format are not supported on iOS versions prior to iOS 14.
+
+### Example
+
+### Limits and restrictions
+
+| Type | Limit / Restriction |
+| --- | --- |
+| Label&lt;br&gt;&lt;br&gt;Title&lt;br&gt;&lt;br&gt;Min dropdown options&lt;br&gt;&lt;br&gt;Max dropdown options&lt;br&gt;&lt;br&gt;Description&lt;br&gt;&lt;br&gt;Metadata&lt;br&gt;&lt;br&gt;Image | 20 characters&lt;br&gt;&lt;br&gt;30 characters&lt;br&gt;&lt;br&gt;1&lt;br&gt;&lt;br&gt;200 if no images are present in the `data-source`, 100 otherwise&lt;br&gt;&lt;br&gt;300 characters&lt;br&gt;&lt;br&gt;20 characters |
+
+For the `data-source` field, you can declare it dynamically or statically.
+
+### Static example
+
+This static example hardcodes the respective `id`&#039;s and `title`&#039;s for the `data-source` field.
+
+### Dynamic example
+
+In this dynamic example, you can see that `data-source` references the `experience_level_options` of type `array` defined before it using  `experience_level_options`. When defining such a structure, you need to specify `items` in the `array`, which will be of type `object`. Then inside the `items` object, you have a `properties` dictionary with `id` and `title` just like in the static declaration. Both `id` and `title` will always be of type `String`. Within the `experience_level_options` array you must define concrete examples in the `__example__` field.
+
+## Embedded Link &#123;#embed&#125;
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;EmbeddedLink&quot; |
+| `text _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.text&#125;&quot; |
+| `on-click-action _action_`&lt;br&gt;&lt;br&gt;**(required) ** | Action&lt;br&gt;&lt;br&gt;**Note:** Allowed values are `data_exchange` and `navigate`. From Flow JSON version 6.0 and later, allowed values are `data_exchange`, `navigate` and `open_url`. |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+
+### Limits and restrictions
+
+| Type | Limit / Restriction |
+| --- | --- |
+| Character limit | 25 |
+| Case | No restriction on formatting |
+| Max Number of Embedded Links Per Screen | 2 |
+| Text | Empty or Blank value is not accepted |
+
+## DatePicker &#123;#dp&#125;  
+The DatePicker component allows users to input dates through an intuitive date selection interface.
+
+**Warning:** Before Flow JSON version 5.0, the DatePicker doesn&#039;t support scenarios where the business and the end user are in different
+time zones. Only use the component if you plan to send your Flows to users in a specific
+time zone. For details, please refer to section
+[Guidelines for Usage](#datepicker-guidelines)
+
+Starting from Flow JSON version 5.0, the DatePicker has been updated to use a formatted date string in the format &quot;YYYY-MM-DD&quot;, such as &quot;2024-10-21&quot;,
+for setting and retrieving date values. This update makes the date values of the date picker unrelated to time zones, allowing businesses to send messages and collect dates from users in any time zone.
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;DatePicker&quot; |
+| `label _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.label&#125;&quot; |
+| `min-date`&lt;br&gt;&lt;br&gt;*String (timestamp in milliseconds)* | Dynamic &quot;$&#123;data.min_date&#125;&quot;. Please refer to section&lt;br&gt;[Guidelines for Usage](#datepicker-guidelines) |
+| `max-date`&lt;br&gt;&lt;br&gt;*String (timestamp in milliseconds)* | Dynamic &quot;$&#123;data.max_date&#125;&quot;. Please refer to section&lt;br&gt;[Guidelines for Usage](#datepicker-guidelines) |
+| `name _string_`&lt;br&gt;&lt;br&gt;**(required) ** |  |
+| `unavailable-dates`&lt;br&gt;&lt;br&gt;*Array &lt; timestamp in milliseconds: String  &gt;* | Dynamic &quot;$&#123;data.unavailable_dates&#125;&quot;. Please refer to section&lt;br&gt;[Guidelines for Usage](#datepicker-guidelines) |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `helper-text _string_` | Dynamic &quot;$&#123;data.helper_text&#125;&quot; |
+| `enabled _boolean_` | Dynamic &quot;$&#123;data.is_enabled&#125;&quot; &lt;br&gt;&lt;br&gt;Default: True |
+| `on-select-action _action_` | Only `data_exchange` is supported. |
+| `init-value _string_` | Dynamic &quot;$&#123;data.init-value&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** Optional Form&lt;br&gt;- Supported starting with Flow JSON version 4.0 |
+| `error-message _string_` | Dynamic &quot;$&#123;data.error-message&#125;&quot;  &lt;br&gt;&lt;br&gt;Only available when component is outside Form component&lt;br&gt;**Note:** Optional Form&lt;br&gt;- Supported starting with Flow JSON version 4.0 |
+
+The payload sent to a data channel business endpoint is a string that shows the timestamp in milliseconds.
+
+### Guidelines for Usage &#123;#datepicker-guidelines&#125;
+
+### Before flow JSON version 5.0
+
+Due to current system limitations, the DatePicker functions correctly and as intended(that is, correct selection range is shown to the User, and accurate user-selection value is returned to the Business) as long as
+
+- The guidelines in this section are followed
+- Both the business sending the Flow and its end-users are in the same time zone.
+
+**Note:** Correct behavior is not guaranteed if businesses and end-users are in different time zones. For example, if a business operating in Sao Paulo (UTC-3) sends a Flow to a user in Manaus (UTC-4), the DatePicker does not work as expected. Do not use it if your users are in different time zones than you.
+
+#### Handling of dates for businesses and users in the same time zone
+
+DatePicker allows setting of date range for user selection through `min-dates` and `max-dates` fields, and also prevents selection of specific dates using the `unavailable-dates` field. If you have not supplied the date range, then by default, the component allows the user to select dates from `1 January 1900` to `31 December 2100`.
+
+**Setting Date Parameters in the Component**
+
+When you  specify the  date range or set unavailable dates, you should convert your local dates with midnight (00:00:00) as a base time to UTC timestamps.
+
+For example, if you are a business based in India who wants to collect a date in the range `21 March 2024` to `25 March 2024`, then you should set `min-dates` and `max-dates` as `1710958020000` and `1711303620000`, respectively.
+
+`21 March 2024, 00:00:00.000 IST` converts to `20 March 2024, 18:30:00.000 UTC` which is represented by timestamp `1710958020000`.
+
+`25 March 2024, 00:00:00.000 IST` converts to `24 March 2024, 18:30:00.000 UTC` which is represented by timestamp `1711303620000`.
+
+**Component Integration**
+
+DatePicker will read the timestamps in `min-dates`, `max-dates` and `unavailable-dates` fields and convert it to the end user&#039;s local date for displaying on the UI. In the previous example, a user in India will see dates from `21 March 2024` to `25 March 2024` in the DatePicker component.
+
+**Processing User Selection**
+
+Businesses will receive a UTC timestamp, which should be converted back to the business&#039;s local time zone. Importantly, businesses should focus solely on the date portion of the resulting timestamp, disregarding the time portion. Focusing on the date portion ensures that the date remains consistent with the user&#039;s selection. Unfortunately, this conversion will only work correctly when the business and user are in the same time zone.
+
+For example, if you receive a timestamp `1711013400000` then convert it to your local timezone and extract the date. If you are in IST, the timestamp will convert to  `21 March 2024 15:00 IST`, and you should treat `21st March 2024` as the user selected date.
+
+#### Recommendation for navigating Time Zone differences
+
+If you need to send flow messages to users in time zones different from yours despite reviewing the above guidelines, follow these steps to overcome the limitation:
+
+- If you are a business based in Brazil and want to serve flows to your users across the country, then your time zone range will be `UTC-2 (Fernando de Noronha)` to `UTC-5 (Rio Branco)`.
+- Add a `Dropdown` component within your Flow that allows users to select their current time zone.
+- Identify the westernmost time zone from your time zone range. In our example, it is `UTC-5`.
+- Provide the dates you want to collect in the westernmost time zone, using midnight as the reference time. For example, if you want to collect dates from `March 20th, 2024` to `March 25th, 2024`, then provide the timestamp in milliseconds for `March 20th, 2024 at 5 AM UTC` and `March 25th, 2024 at 5 AM UTC`.
+- Convert the timestamps received from the user to their respective time zone and use the corresponding date. For example, if a user is in Sao Paulo(UTC-3) and you receive a timestamp of `1710910800000`, then convert it to `UTC-3` to get `March 20th, 2024`.
+
+### Start from flow JSON version 5.0 &#123;#datepicker-from-v5&#125;
+DatePicker component has been updated to use a formatted date string in the format &quot;YYYY-MM-DD&quot;, such as &quot;2024-10-21&quot;, for setting and retrieving date values. This update makes the date values of the date picker unrelated to time zones, allowing businesses to send messages and collect dates from users in any time zone in a consistent manner.
+
+### Limits and restrictions
+
+| Type | Limit / Restriction |
+| --- | --- |
+| Label Max Length | 40 characters |
+| Helper Text Max Length | 80 characters |
+| Error Message Max Length | 80 characters |
+
+## CalendarPicker &#123;#calendarpicker&#125;
+**Note:** Supported starting with Flow JSON version 6.1
+
+The CalendarPicker component allows users to select a single date or a range of dates from a full calendar interface.
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;CalendarPicker&quot; |
+| `name _string_`&lt;br&gt;&lt;br&gt;**(required) ** |  |
+| `title _string_` | Dynamic &quot;$&#123;data.title&#125;&quot; &lt;br&gt;&lt;br&gt;Only available when &#039;mode&#039; is set to &#039;range&#039; |
+| `description _string_` | Dynamic &quot;$&#123;data.description&#125;&quot; &lt;br&gt;&lt;br&gt;Only available when &#039;mode&#039; is set to &#039;range&#039; |
+| `label _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Dynamic &quot;$&#123;data.label&#125;&quot; &lt;br&gt;&lt;br&gt;When &#039;mode&#039; is set to &#039;range&#039; the value should be in &#039;&#123;&quot;start-date&quot;: String, &quot;end-date&quot;: String&#125;&#039; format |
+| `helper-text _string_` | Dynamic &quot;$&#123;data.helper_text&#125;&quot; &lt;br&gt;&lt;br&gt;When &#039;mode&#039; is set to &#039;range&#039; the value should be in &#039;&#123;&quot;start-date&quot;: String, &quot;end-date&quot;: String&#125;&#039; format |
+| `required _boolean_` | Dynamic &quot;$&#123;data.is_required&#125;&quot; &lt;br&gt;&lt;br&gt;Default: False &lt;br&gt;&lt;br&gt;When &#039;mode&#039; is set to &#039;range&#039; the value should be in &#039;&#123;&quot;start-date&quot;: Boolean, &quot;end-date&quot;: Boolean&#125;&#039; format |
+| `visible _boolean_` | Dynamic &quot;$&#123;data.is_visible&#125;&quot;  &lt;br&gt;&lt;br&gt;Default: True |
+| `enabled _boolean_` | Dynamic &quot;$&#123;data.is_enabled&#125;&quot; &lt;br&gt;&lt;br&gt;Default: True |
+| `mode _enum_` | &#123;&quot;single&quot;, &quot;range&quot;&#125; &lt;br&gt;&lt;br&gt;Dynamic &quot;$&#123;data.mode&#125;&quot; &lt;br&gt;&lt;br&gt;Default: &quot;single&quot; &lt;br&gt;&lt;br&gt;Allows to select one date in &#039;single&#039; mode or start and end dates in &#039;range&#039; mode |
+| `min-date _string_` | Dynamic &quot;$&#123;data.min_date&#125;&quot; &lt;br&gt;&lt;br&gt;Formatted date string in the format &quot;YYYY-MM-DD&quot; &lt;br&gt;&lt;br&gt;Disallows selecting dates before specified min-date |
+| `max-date _string_` | Dynamic &quot;$&#123;data.max_date&#125;&quot; &lt;br&gt;&lt;br&gt;Formatted date string in the format &quot;YYYY-MM-DD&quot; &lt;br&gt;&lt;br&gt;Disallows selecting dates after specified max-date |
+| `unavailable-dates _array&lt;string&gt;` | Dynamic &quot;$&#123;data.unavailable_dates&#125;&quot; &lt;br&gt;&lt;br&gt;Formatted date strings in the format &quot;YYYY-MM-DD&quot; &lt;br&gt;&lt;br&gt;Disallows selecting specific dates, should be in the range between min-date and max-date if specified |
+| `include-days`&lt;br&gt;&lt;br&gt;*Array&lt;enum&gt;* | &#123;&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;&#125; &lt;br&gt;&lt;br&gt;Dynamic &quot;$&#123;data.include_days&#125;&quot; &lt;br&gt;&lt;br&gt;Default: all weekdays - [&quot;Mon&quot;, &quot;Tue&quot;, &quot;Wed&quot;, &quot;Thu&quot;, &quot;Fri&quot;, &quot;Sat&quot;, &quot;Sun&quot;] &lt;br&gt;&lt;br&gt;Enables specific weekdays, for example to enable only working days Monday through Friday and disallow selecting Saturdays and Sundays |
+| `min-days _int_` | Dynamic &quot;$&#123;data.min_days&#125;&quot; &lt;br&gt;&lt;br&gt;Available only in &#039;range&#039; mode to set the minimum number of days between start and end dates |
+| `max-days _int_` | Dynamic &quot;$&#123;data.max_days&#125;&quot; &lt;br&gt;&lt;br&gt;Available only in &#039;range&#039; mode to set the maximum number of days between start and end dates |
+| `on-select-action _action_` | Only &#039;data_exchange&#039; is supported. &lt;br&gt;&lt;br&gt;Payload that is sent to a data channel business endpoint is a string in &quot;YYYY-MM-DD&quot; format for &#039;single&#039; mode or dictionary in &#123;&quot;start-date&quot;:&quot;YYYY-MM-DD&quot;,&quot;end-date&quot;:&quot;YYYY-MM-DD&quot;&#125; format for &#039;range&#039; mode |
+| `init-value _string_` | Dynamic &quot;$&#123;data.init-value&#125;&quot;  &lt;br&gt;&lt;br&gt;When &#039;mode&#039; is set to &#039;range&#039; the value should be in &#039;&#123;&quot;start-date&quot;: String, &quot;end-date&quot;: String&#125;&#039; format &lt;br&gt;&lt;br&gt;Only available when component is outside Form component |
+| `error-message _string_` | Dynamic &quot;$&#123;data.error-message&#125;&quot;  &lt;br&gt;&lt;br&gt;When &#039;mode&#039; is set to &#039;range&#039; the value should be in &#039;&#123;&quot;start-date&quot;: String, &quot;end-date&quot;: String&#125;&#039; format &lt;br&gt;&lt;br&gt;Only available when component is outside Form component |
+
+### Examples
+#### CalendarPicker single mode example
+
+#### CalendarPicker range mode example
+
+### Limits and restrictions
+
+| Type | Limit / Restriction |
+| --- | --- |
+| Title Max Length | 80 characters |
+| Description Max Length | 300 characters |
+| Label Max Length | 40 characters |
+| Helper Text Max Length | 80 characters |
+| Error Message Max Length | 80 characters |
+
+## Image &#123;#img&#125;
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;Image&quot; |
+| `src _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Base64 of an image. &lt;br&gt;&lt;br&gt;Dynamic &quot;$&#123;data.src&#125;&quot; |
+| `width _int_` | Dynamic &quot;$&#123;data.width&#125;&quot; |
+| `height _int_` | Dynamic &quot;$&#123;data.height&#125;&quot; |
+| `scale-type _string_` | `cover` or `contain` &lt;br&gt;&lt;br&gt;Default value: `contain` |
+| `aspect-ratio`&lt;br&gt;&lt;br&gt;*Number* | Default value: 1 &lt;br&gt;&lt;br&gt;Dynamic &quot;$&#123;data.aspect_ratio&#125;&quot; |
+| `alt-text _string_` | Alternative Text is for the accessibility feature, for example Talkback and Voice over &lt;br&gt;&lt;br&gt;Dynamic &quot;$&#123;data.alt_text&#125;&quot; |
+
+### Image scale types
+
+| Scale Type | Description |
+| --- | --- |
+| `cover` | Image is clipped to fit the image container.&lt;br&gt;&lt;br&gt;If there is no height value (which is the default), the image will be displayed to its full width with its original aspect ratio.&lt;br&gt;&lt;br&gt;If the height value is set, the image is cropped within the fixed height. Depending on the image whether it is portrait or landscape, image is clipped vertically or horizontally. |
+| `contain` | Image is contained within the image container with the original aspect ratio.&lt;br&gt;&lt;br&gt;If there is no height value (which is the default), the image will be displayed to its full width with its original aspect ratio.&lt;br&gt;&lt;br&gt;If the height value is set, the image is contained in the image container with the fixed height and the original aspect ratio.&lt;br&gt;&lt;br&gt;**Warning:** Developers should consider setting a specific height, width, and aspect ratio for images whenever using `contain`. On Android devices WhatsApp sets a default height value of 400, which may create some unwanted spacing. |
+
+### Example
+
+### Limits and restrictions
+
+| Type | Limit / Restriction |
+| --- | --- |
+| Max number of images per screen&lt;br&gt;&lt;br&gt;Recommended image size&lt;br&gt;&lt;br&gt;Total data channel payload size&lt;br&gt;&lt;br&gt;Supported images formats | 3&lt;br&gt;&lt;br&gt;Up to 300kb&lt;br&gt;&lt;br&gt;1 Mb&lt;br&gt;&lt;br&gt;JPEG&lt;br&gt;PNG |
+
+## If &#123;#if&#125;
+**Note:** Supported starting with Flow JSON version 4.0
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;If&quot; |
+| `condition _string_`&lt;br&gt;&lt;br&gt;**(required) ** | Boolean expression, it allows both dynamic and static data. Check section below for more info. |
+| `then`&lt;br&gt;&lt;br&gt;**(required) ***Array of Components* | The components that will be rendered when `condition` is `true`. Allowed components: &quot;TextHeading&quot;, &quot;TextSubheading&quot;, &quot;TextBody&quot;, &quot;TextCaption&quot;, &quot;CheckboxGroup&quot;, &quot;DatePicker&quot;, &quot;Dropdown&quot;, &quot;EmbeddedLink&quot;, &quot;Footer&quot;, &quot;Image&quot;, &quot;OptIn&quot;, &quot;RadioButtonsGroup&quot;, &quot;Switch&quot;, &quot;TextArea&quot;, &quot;TextInput&quot; and &quot;If&quot;*. It is allowed to nest up to 3 &quot;If&quot; components. |
+| `else`&lt;br&gt;&lt;br&gt;*Array of Components* | The components that will be rendered when `condition` is `false`. Allowed components: &quot;TextHeading&quot;, &quot;TextSubheading&quot;, &quot;TextBody&quot;, &quot;TextCaption&quot;, &quot;CheckboxGroup&quot;, &quot;DatePicker&quot;, &quot;Dropdown&quot;, &quot;EmbeddedLink&quot;, &quot;Footer&quot;, &quot;Image&quot;, &quot;OptIn&quot;, &quot;RadioButtonsGroup&quot;, &quot;Switch&quot;, &quot;TextArea&quot;, &quot;TextInput&quot; and &quot;If&quot;*. It is allowed to nest up to 3 &quot;If&quot; components. |
+
+### Supported operators
+| Operator | Symbol | Types allowed | Description and examples |
+| --- | --- | --- | --- |
+| `Parentheses` | `()` | `boolean` &lt;br&gt;&lt;br&gt;`number` &lt;br&gt;&lt;br&gt;`string` | Parentheses define the precedence of operations, or let you perform boolean operations where one of the sides is the result of a number or string comparison. Parentheses always require an operation within them. One expression can contain multiple parentheses. Examples: &lt;br&gt;&lt;br&gt;- `$&#123;form.opt_in&#125; \|\| ($&#123;data.num_value&#125; &gt; 5)`&lt;br&gt;- `$&#123;form.opt_in&#125; &amp;&amp; ($&#123;form.address&#125; != &#039;&#039;)`&lt;br&gt;- `!$&#123;form.value1&#125;` |
+| `Equal to` | `==` | `boolean` &lt;br&gt;&lt;br&gt;`number` &lt;br&gt;&lt;br&gt;`string` | It is used to compare booleans, numbers, and strings. Both sides should have the same type and at least one of them should contain a dynamic variable. Examples: &lt;br&gt;&lt;br&gt;- `$&#123;form.opt_in&#125; == true`&lt;br&gt;- `$&#123;data.num_value&#125; == 5`&lt;br&gt;- `$&#123;form.city&#125; == &#039;London&#039;` |
+| `Not equal to` | `!=` | `boolean` &lt;br&gt;&lt;br&gt;`number` &lt;br&gt;&lt;br&gt;`string` | It is used to compare booleans, numbers, and strings. Both sides should have the same type and at least one of them should contain a dynamic variable. Examples: &lt;br&gt;&lt;br&gt;- `$&#123;form.opt_in&#125; != true`&lt;br&gt;- `$&#123;data.num_value&#125; != 5`&lt;br&gt;- `$&#123;form.city&#125; != &#039;London&#039;` |
+| `AND` | `&amp;&amp;` | `boolean` | The `AND` operator performs the boolean `AND` operation. The `AND` operator evaluates as true only if both sides are true. This operator has high priority, i.e. it will be evaluated before other operators. The exception is parentheses, if one of the sides contain an opening or closing parenthesis, then the parenthesis is evaluated first. Example: &lt;br&gt;&lt;br&gt;- `$&#123;form.opt_in&#125; &amp;&amp; $&#123;data.boolean_value&#125;` |
+| `OR` | `\|\|` | `boolean` | It performs the boolean `OR` operation. It evaluates as true if at least one side is true. Example: &lt;br&gt;&lt;br&gt;- `$&#123;form.opt_in&#125; \|\| $&#123;data.boolean_value&#125;` |
+| `NOT` | `!` | `boolean` | It performs the boolean `NOT` operation. It negates the statement after it. It can be used before immediately `boolean` values or parentheses (that will result into boolean values) Examples: &lt;br&gt;&lt;br&gt;- `!($&#123;form.opt_in&#125; \|\| $&#123;data.boolean_value&#125;)`&lt;br&gt;- `!($&#123;data.num_value&#125; &gt; 5)`&lt;br&gt;- `!$&#123;form.value1&#125;` |
+| `Greater than` | `&gt;` | `number` | It is used to compare to numbers. At least one of them should be a dynamic variable. Examples: &lt;br&gt;&lt;br&gt;- `$&#123;data.num_value&#125; &gt; 5`&lt;br&gt;- `$&#123;data.num_value&#125; &gt; $&#123;data.num_value2&#125;` |
+| `Greater than or equal to` | `&gt;=` | `number` | It is used to compare to numbers. At least one of them should be a dynamic variable. Examples: &lt;br&gt;&lt;br&gt;- `$&#123;data.num_value&#125; &gt;= 5`&lt;br&gt;- `$&#123;data.num_value&#125; &gt;= $&#123;data.num_value&#125;` |
+| `Less than` | `&lt;` | `number` | It is used to compare to numbers. At least one of them should be a dynamic variable. Examples: &lt;br&gt;&lt;br&gt;- `$&#123;data.num_value&#125; &lt; 5`&lt;br&gt;- `$&#123;data.num_value&#125; &lt; $&#123;data.num_value2&#125;` |
+| `Less than or equal to` | `&lt;=` | `number` | It is used to compare to numbers. At least one of them should be a dynamic variable. Examples: &lt;br&gt;&lt;br&gt;- `$&#123;data.num_value&#125; == 5`&lt;br&gt;- `$&#123;data.num_value&#125; &lt;= $&#123;data.num_value&#125;` |
+
+### Example
+
+### Rules  
+#### Condition
+- Should have at least one dynamic value (e.g. `$&#123;data...&#125;` or `$&#123;form...&#125;`).
+- Should always be resolved into a boolean (i.e. no strings or number values).
+- Can be used with literals but should not only contain literals.
+
+####  Footer
+- `Footer` can be added within `If` only in the first level, not inside a nested `If`.
+- If there is a `Footer` within `If`, it should exist in both branches (i.e. `then` and `else`). This means that `else` becomes mandatory.
+- If there is a `Footer` within `If` it cannot exist a footer outside, because the max count of `Footer` is 1 per screen.
+
+### Limitations and restrictions
+The table below show examples of limitations and validation errors that will be shown for certain cases.
+| Scenario | Validation error shown |
+| --- | --- |
+| - `Given` there is a footer component inside `then`&lt;br&gt;- `And` `else` is not defined&lt;br&gt;- `When` validating the flow&lt;br&gt;- `Then` it should show a validation error | Missing Footer inside one of the if branches. Branch &quot;else&quot; should exist and contain one Footer. |
+| - `Given` there is a footer component inside `then`&lt;br&gt;- `And` there is no footer inside `else`&lt;br&gt;- `When` validating the flow&lt;br&gt;- `Then` it should show a validation error | Missing Footer inside one of the if branches. |
+| - `Given` there is no footer component inside `then`&lt;br&gt;- `And` there is a footer inside `else`&lt;br&gt;- `When` validating the flow&lt;br&gt;- `Then` it should show a validation error | Missing Footer inside one of the if branches. |
+| - `Given` there is a footer component inside `then`&lt;br&gt;- `And` there is a footer component inside `else`&lt;br&gt;- `And` there is a footer component outside the `If`&lt;br&gt;- `When` validating the flow&lt;br&gt;- `Then` it should show a validation error | You can only have 1 Footer component per screen. |
+| - `Given` there is an empty array defined for `then`&lt;br&gt;- `When` validating the flow&lt;br&gt;- `Then` it should show a validation error | Invalid value found at: &quot;$root/screens/path_to_your_component/then&quot; due to empty array. It should contain at least one component. |
+
+## Switch &#123;#switch&#125;
+**Note:** Supported starting with Flow JSON version 4.0
+
+| Parameter | Description |
+| --- | --- |
+| `type _string_`&lt;br&gt;&lt;br&gt;**(required) ** | &quot;Switch&quot; |
+| `value _string_`&lt;br&gt;&lt;br&gt;**(required) ** | A variable that will have its value evaluated during runtime. Example&lt;br&gt;- `$&#123;data.animal&#125;` |
+| `cases`&lt;br&gt;&lt;br&gt;**(required) ***Map of Array of Components* | Each property is a key (string) that maps to an Array of Components. When the `value` matches the key, it renders its array of components. Allowed components: &quot;TextHeading&quot;, &quot;TextSubheading&quot;, &quot;TextBody&quot;, &quot;TextCaption&quot;, &quot;CheckboxGroup&quot;, &quot;DatePicker&quot;, &quot;Dropdown&quot;, &quot;EmbeddedLink&quot;, &quot;Footer&quot;, &quot;Image&quot;, &quot;OptIn&quot;, &quot;RadioButtonsGroup&quot;, &quot;TextArea&quot;, &quot;TextInput&quot;. |
+
+### Example
+
+### Rules  
+#### Cases
+- Should have at least one value. It cannot be empty (e.g. `&quot;cases&quot;: &#123;&#125;`)
+
+### Limitations and restrictions
+The table below show examples of limitations and validation errors that will be shown for certain cases.
+| Scenario | Validation error shown |
+| --- | --- |
+| - `Given` there is a `Switch` component&lt;br&gt;- `And` its `cases` property is empty&lt;br&gt;- `When` validating the flow&lt;br&gt;- `Then` it should show a validation error | Invalid empty property found at: &quot;$root/screens/path_to_your_component/cases&quot;. |
+
+## Media upload &#123;#media_upload&#125;
+
+Please refer to the specific page for [media upload components](https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/media_upload).
+
+## Dynamic components
+
+If you check the attribute model of certain components (`Dropdown`, `DatePicker`, `RadioButtonsGroup`, and `CheckboxGroup`), you will find that some of them accept the `on-xxxx-action` attribute. This attribute allows the component to trigger a data-exchange action. It can be used in the following scenarios:
+
+1. When a user selects a date in the DatePicker component.
+2. When the business needs to fetch available data (such as table slots or tickets) for this selected date by calling a data_exchange action.
+3. Once the data is received, the user will see an updated screen with new data.
+
+## Prerequisites
+
+The following steps require communication between the client and the business server. Please ensure that you have configured the data channel before attempting to use this feature.
+
+## Step 1 - Defining the layout
+Begin with a minimal example, consisting of an empty form and a CTA button, and gradually add more components.
+
+Suppose you want to build a simple form that takes a date and displays the list of available time slots. First, add a `DatePicker` component:
+
+Next step is to add a `Dropdown` to display all available time slots:
+
+## Step 2 - Defining 3P data
+
+Until now, the examples have used static mock data, but now you can connect a screen with dynamic data. Dynamic data can originate from various sources:
+
+1. Initial message payload
+2. `navigate` - transitioning from the previous screen using a `navigate` action
+3. `data_exchange` - a request to the business server
+
+In this example, assume that the data will come from a `data_exchange` request. So, instruct Flow JSON to use the data channel request by providing the `&quot;data_api_version&quot;: &quot;3.0&quot;` property.
+
+## Step 3 - Allowing DatePicker to make a request to the server
+
+Provide `&quot;on-select-action&quot;` to the `DatePicker` component so you can execute the call to the business server. In the `payload`, you can pass any data you want to the business server to understand the type of request.
+
+```json
+&#123;
+   &quot;on-select-action&quot;:&#123;
+      &quot;name&quot;:&quot;data_exchange&quot;,
+      &quot;payload&quot;:&#123;
+         &quot;date&quot;:&quot;$&#123;form.date&#125;&quot;,
+         &quot;component_action&quot;:&quot;update_date&quot;
+      &#125;
+   &#125;
+&#125;
+```
+
+In this example, send the value of the field `date` to the action payload, and also add some static data `&quot;component_action&quot;: &quot;update_date&quot;` to help the server recognize the type of request. There is no strict format here; you can choose whatever works for your case.
+
+Now when you try to select a date, a `data_exchange` request will be executed. The server may return the data that can change the UI. For now, your Flow doesn&#039;t expect or use any data from the server. Fix it by first defining the data model that you expect for a screen.
+
+## Step 4 - Define a server data model
+
+Declare a `data` property for the screen outlining the data that you expect to receive from the server. In this case, you want to receive an `available_slots` array with time slot options.
+
+It should have the following model. The `__example__` field is mock data used to display the data within the web preview.
+
+```json
+&#123;
+    &quot;available_slots&quot;: &#123;
+        &quot;type&quot;: &quot;array&quot;,
+        &quot;items&quot;: &#123;
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: &#123; &quot;id&quot;: &#123;&quot;type&quot;: &quot;string&quot;&#125;, &quot;title&quot;: &#123;&quot;type&quot;: &quot;string&quot;&#125; &#125;
+        &#125;,
+        &quot;__example__&quot;: [ &#123;&quot;id&quot;: &quot;1&quot;, &quot;title&quot;: &quot;08:00&quot;&#125;, &#123;&quot;id&quot;: &quot;2&quot;, &quot;title&quot;: &quot;09:00&quot;&#125; ]
+    &#125;
+&#125;
+```
+
+It means that the expected payload to be returned from server can look like the following:
+
+```json
+&#123;
+    &quot;version&quot;: &quot;3.0&quot;,
+    &quot;screen&quot;: &quot;BOOKING&quot;,
+    &quot;data&quot;: &#123;
+       &quot;available_slots&quot;: [ &#123;&quot;id&quot;: &quot;1&quot;, &quot;title&quot;: &quot;08:00&quot;&#125;, &#123;&quot;id&quot;: &quot;2&quot;, &quot;title&quot;: &quot;09:00&quot;&#125; ]
+    &#125;
+&#125;
+```
+
+So your Flow JSON now should look like the following:  
+
+## Step 5 - Control visibility of the component
+
+Now, when you select a date in `DatePicker`, the application will send a request to the business server to get available time slots. However, you don&#039;t want a `Dropdown` to be visible until there is data to display. How can you hide it?
+
+For this purpose, you can use the `visible` attribute on `Dropdown` and connect it with server data. The business server can control the visibility of the component based on a set condition.
+
+So, you need to make the following changes:
+
+1. Define `is_dropdown_visible` in the `data` model of the screen.
+2. Connect a property via dynamic binding `&quot;visible&quot;: &quot;$&#123;data.is_dropdown_visible&#125;&quot;`.
+3. Ensure that the server returns the correct data.
+
+**Update your code:**
+
+*NOTE: The current version of the playground  doesn&#039;t support endpoint requests*
+
+## Summary
+
+You now have a dynamic component set up. If you&#039;re facing any challenges, you can ask a question on the developer forum.
