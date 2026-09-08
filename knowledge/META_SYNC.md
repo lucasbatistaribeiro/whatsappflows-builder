@@ -14,20 +14,37 @@ code that implements it**, gives a **step-by-step routine**, and pins the
 
 ## Meta documentation links
 
+Meta moved these in 2026: the old `/docs/whatsapp/...` paths still redirect, but
+`reference/flowjson` and `reference/components` also **changed shape** to `guides/`.
+Use the current URLs.
+
 | Area | Link |
 |---|---|
-| Flow JSON reference (top-level, screens, routing) | https://developers.facebook.com/docs/whatsapp/flows/reference/flowjson |
-| Components reference (types, properties, per-component limits) | https://developers.facebook.com/docs/whatsapp/flows/reference/components |
-| Error codes (incl. **static validation** errors) | https://developers.facebook.com/docs/whatsapp/flows/reference/error-codes |
-| Best practices (rationale for limits, UX) | https://developers.facebook.com/docs/whatsapp/flows/guides/bestpractices |
-| **Changelog** (Flow JSON versions — check this first) | https://developers.facebook.com/docs/whatsapp/flows/changelogs |
-| Playground | https://developers.facebook.com/docs/whatsapp/flows/playground |
+| Flow JSON reference (top-level, screens, routing) | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/flowjson |
+| Components reference (types, properties, per-component limits) | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/components |
+| Media upload — **PhotoPicker / DocumentPicker live here**, not in the components ref | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/media_upload |
+| Error codes (incl. **static validation** errors) | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/reference/error-codes |
+| Best practices (rationale for limits, UX) | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/bestpractices |
+| **Changelog** (Flow JSON versions — check this first) | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/changelogs |
+| Playground | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/playground |
 
-> ⚠️ **Fetching gotcha.** These pages return **HTTP 500 to `WebFetch`/curl**
-> (bot protection). To read them, use the **in-app browser MCP**
-> (`mcp__Claude_Browser__navigate` → `get_page_text` / `javascript_tool` to
-> slice the text). They also render in the reader's locale — search for both the
-> English term and the Portuguese one (e.g. `maximum` / `máximo`).
+> ⚠️ **Fetching gotcha.** The HTML pages return **HTTP 500 to `WebFetch`** (bot
+> protection), so the **in-app browser MCP** (`mcp__Claude_Browser__navigate` →
+> `get_page_text` / `javascript_tool`) stays the authoritative way to read them.
+> They render in the reader's locale, so search both the English term and the
+> Portuguese one (`maximum` / `máximo`) — and note that section headings are
+> translated too (`NavigationList` appears as *"Lista de navegação"*).
+>
+> **A faster first pass:** appending `.md` to a page path returns clean markdown
+> over plain `curl` (e.g. `…/flows/guides/components.md`). Handy for grepping —
+> but **it can be incomplete, so never trust it alone for a spec check.** Measured
+> on 2026-08-05: `components.md` carried 23 sections while the rendered page had
+> **26**, silently missing `NavigationList`, `ChipsSelector` and `ImageCarousel`.
+> Available for `guides/*` pages (`components`, `flowjson`, `bestpractices`,
+> `media_upload`); **not** for `changelogs` or `reference/error-codes`.
+>
+> Both specs for *conversation* messaging (not Flows) publish official **OpenAPI
+> 3.1** that downloads with plain `curl` — see `BACKLOG.md` if that's ever needed.
 
 ---
 
@@ -79,14 +96,14 @@ If Meta's number differs from the value here, that's the edit.
 | Rule | Value in code | Constant / key | Meta source |
 |---|---|---|---|
 | Flow JSON version (default) | `7.3` | `"7.3"` literals | Changelog |
-| Max components per screen | `50` | `MAX_COMPONENTS` → `vMaxComponents` | Components ref (overview): *"O número máximo de componentes por tela é 50."* |
+| Max components per screen | `50` | `MAX_COMPONENTS` → `vMaxComponents` | Components ref: *"maximum number of components per screen is 50"* (re-confirmed 2026-08-05); rationale in Best practices `#number-of-components` |
 | Footer label max chars | `35` | `FOOTER_LABEL_MAX` → `vFooterLen` | Components ref (Footer) |
 | Heading/Subheading max chars | `80` | `HEADING_MAX` → `vHeadingLen` | Components ref (Text) |
 | EmbeddedLink text max chars | `25` | `LINK_TEXT_MAX` → `vLinkLen` | Components ref (EmbeddedLink) |
 | Max EmbeddedLink per screen | `2` | `vMaxLinks` | Components ref |
 | Max Image per screen | `3` | `vMaxImages` | Components ref |
 | Max NavigationList per screen | `2` | `vMaxNavList` | Components ref |
-| PhotoPicker / DocumentPicker | 1 each, not together | `vOnePhoto` / `vOneDoc` / `vPhotoDoc` | Components ref |
+| PhotoPicker / DocumentPicker | 1 each, not together | `vOnePhoto` / `vOneDoc` / `vPhotoDoc` | **Media upload** ref (the components ref doesn't mention either type) |
 | Selection needs data-source | required (binding ok) | `vNeedsDataSource` | Components ref |
 | `complete` → terminal only | enforced | `vCompleteNonTerminal` | Error codes (`INVALID_COMPLETE_ACTION`) |
 | `complete` → Footer only | enforced | `vLinkComplete` | Error codes (`INVALID_ENUM_VALUE`) |
