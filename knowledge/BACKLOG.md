@@ -11,7 +11,7 @@ Status: **idea** (no design yet) · **ready** (approach settled) · **blocked**.
 
 ## Chat UI: generate WhatsApp conversation screens
 
-**Status:** ready · raised 2026-08-05
+**Status:** in progress on `feat/chat-mode` · raised 2026-08-05 · design spec: `CHAT_UI.md`
 
 Same idea as the Flows generator, but for the **WhatsApp chat interface**: compose
 a conversation in the plugin (bubbles in/out, header, input bar) and Generate it as
