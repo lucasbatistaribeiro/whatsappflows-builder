@@ -428,8 +428,11 @@ function renderValidation(): void {
 
   // Block generation while errors exist (warnings still allowed).
   const gen = $("#generate") as HTMLButtonElement;
-  gen.disabled = errors > 0 || gen.classList.contains("busy");
-  gen.title = errors > 0 ? `Fix ${errors} error${errors > 1 ? "s" : ""} before generating` : "";
+  // Chat mode generates a conversation, which the Flow JSON validator says
+  // nothing about — so flow errors only gate the Flows tabs.
+  const gated = activeTab !== "chat" && errors > 0;
+  gen.disabled = gated || gen.classList.contains("busy");
+  gen.title = gated ? `Fix ${errors} error${errors > 1 ? "s" : ""} before generating` : "";
 }
 
 // ---- Generate button feedback -------------------------------------------
@@ -610,6 +613,10 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(
 // Section defaults mirror the generator's (src/main/index.ts) — keep them in step.
 const SECTION_BG_DEFAULT = "#353535";
 const SECTION_RADIUS_DEFAULT = 24;
+
+// Which tab is showing. Generate dispatches on this, and the validation gate
+// only applies to the Flows tabs — a flow error must not block chat mode.
+let activeTab = "build";
 
 // Chat mode: phase 1 has no composer yet, so a sample thread stands in while
 // the visuals get calibrated (knowledge/CHAT_UI.md).
@@ -857,6 +864,8 @@ document.querySelectorAll(".tab").forEach((t) => {
     $("#screens").style.display = name === "build" ? "" : "none";
     if (name === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
     if (name === "chat") renderChat(thread, $("#chat-preview"));
+    activeTab = name ?? "build";
+    renderValidation(); // the Generate gate depends on the mode
   });
 });
 
@@ -864,7 +873,8 @@ $("#json").addEventListener("input", onJsonInput);
 
 $("#generate").addEventListener("click", () => {
   setGenState("busy");
-  postToMain({ type: "generate", flow, options: genOptions() });
+  if (activeTab === "chat") postToMain({ type: "generateChat", thread, options: genOptions() });
+  else postToMain({ type: "generate", flow, options: genOptions() });
 });
 
 $("#copy").addEventListener("click", () => {

@@ -156,7 +156,7 @@ a string keeps the model free of timezone questions.
    calibration happens. *Built (structure + geometry verified); the colour and
    spacing calibration below is still open.*
 2. **Figma generator** — the same thread as frames, reusing `markFill`/`applyFills`
-   and the dated-section round-trip.
+   and the dated-section round-trip. *Built; only verifiable inside Figma.*
 3. **Composer** — the authoring UI, reusing the existing card machinery
    (drag-reorder + accordion) rather than inventing an interaction.
 4. **Media and extras** — image/video/document/audio bubbles, quoted replies.
@@ -181,12 +181,36 @@ side by side. Until that happens, the token values above and every padding are
 Phase 2 is generator code: `typecheck` + `build` is all that can be checked
 automatically; a real run in Figma is required.
 
+## Generator notes (`src/main/thread.ts`)
+
+Things the Figma side forces that the CSS side doesn't:
+
+- **The scroll area must be named `body`.** `enforceMinHeight()` in `index.ts`
+  finds the child by that name to absorb the slack when a short thread is padded
+  to the standard phone height. Rename it and the input bar stops being pinned to
+  the bottom.
+- **Bottom anchoring** is `primaryAxisAlignItems = "MAX"` on a vertically-filling
+  frame — the counterpart of the CSS `margin-top: auto`. It only works because the
+  frame fills; on a hugging frame, alignment is a no-op.
+- **Grouping needs one frame per run.** Figma auto-layout has a single item
+  spacing per frame and no per-child margin, so tightening a run can't be done by
+  poking the row — each run of same-direction messages gets its own frame
+  (`ROW_GAP` between runs, `GROUPED_GAP` inside).
+- **There is no max-width.** A bubble's text is measured at its natural width and
+  rebuilt at a fixed width only if it exceeds the 75% cap.
+- **The section is shared.** `placeInSection()` in `index.ts` is used by both
+  modes, so a run looks identical whichever produced it.
+- The embedded round-trip payload is tagged `{ mode: "chat", thread }`. Flow mode
+  still writes the bare Flow JSON, so sections generated before chat mode existed
+  keep re-importing; the flow reader requires `screens[]`, so it declines a chat
+  section rather than mis-importing it. No chat importer yet.
+
 ## Open questions
 
 - Does chat mode share the Generate button and the dated section, or get its own?
   (Leaning: share both — one section per run, chat frames inside it.)
 - One frame per thread, or one frame per "scroll state", so long threads stay
   readable on the canvas?
-- Does the round-trip JSON embedded in a section need to record which mode produced
-  it, so clicking a section offers the right importer? (Almost certainly yes — a
-  `mode` field on the embedded payload.)
+- ~~Does the round-trip JSON need to record which mode produced it?~~ Answered:
+  yes, chat sections embed `{ mode: "chat", thread }`. The importer that reads it
+  back still has to be written.

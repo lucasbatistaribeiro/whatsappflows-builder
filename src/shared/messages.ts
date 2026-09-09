@@ -1,5 +1,6 @@
 // Message contract between the plugin UI (iframe) and the main thread (Figma sandbox).
 import type { FlowJSON } from "../model/flowTypes";
+import type { Thread } from "../model/chatTypes";
 
 export type ThemePref = "system" | "light" | "dark";
 export type LangPref = "en" | "pt";
@@ -39,6 +40,9 @@ export interface Prefs {
 // UI -> main
 export type UIToMain =
   | { type: "generate"; flow: FlowJSON; options: GenOptions }
+  // Chat mode (knowledge/CHAT_UI.md). Separate from `generate` because the
+  // payload and the renderer are different, but it reuses the same options.
+  | { type: "generateChat"; thread: Thread; options: GenOptions }
   | { type: "resize"; width: number; height: number }
   | { type: "notify"; message: string }
   | { type: "savePrefs"; prefs: Prefs };
