@@ -79,10 +79,6 @@
      entirely rather than sitting there empty. The validation badge goes too: it
      reports Flow JSON problems, which say nothing about a conversation, so
      leaving it up in chat mode just misleads. */
-  /* Each mode shows only its own tab row, and the screen rail is Flows-only. */
-  .chat-tabs { display: none; }
-  body.chat-mode .chat-tabs { display: flex; }
-  body.chat-mode .tabs:not(.chat-tabs), body.chat-mode #screens { display: none; }
   body.chat-mode #val-badge { display: none; }
 
   /* Composer: rows of fields beside a delete button, and stacked pairs. */
@@ -137,6 +133,14 @@
     transition: color .12s, border-color .12s; }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+  /* Each mode shows only its own tab row, and the screen rail is Flows-only.
+     These must come AFTER `.tabs { display: flex }`: `.chat-tabs` ties it at
+     0,1,0 specificity, so source order is what decides. Earlier, both rows
+     rendered at once in Flows mode. */
+  .chat-tabs { display: none; }
+  body.chat-mode .chat-tabs { display: flex; }
+  body.chat-mode .tabs:not(.chat-tabs), body.chat-mode #screens { display: none; }
 
   /* Screens rail */
   .screens { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
@@ -360,6 +364,53 @@
     color: var(--wa-link); text-align: center; }
   .wa-c-action + .wa-c-action { border-top: 1px solid var(--wa-divider); }
   .wa-c-action svg { flex: none; }
+
+  /* Media bubbles. Grounded on the official conversation screenshot: the media
+     nearly fills the bubble and the meta is overlaid on it, bottom-right, over a
+     scrim — not on a row underneath. */
+  .wa-c-bubble.media { padding: 3px; }
+  .wa-c-media { position: relative; border-radius: 6px; overflow: hidden;
+    width: 100%; min-width: 190px; }
+  .wa-c-media-img { display: block; width: 100%; height: auto; }
+  .wa-c-media-ph { aspect-ratio: 4 / 3; display: flex; align-items: center;
+    justify-content: center; background: var(--wa-chip); color: var(--wa-placeholder); }
+  .wa-c-play { position: absolute; inset: 0; margin: auto; width: 40px; height: 40px;
+    border-radius: 50%; background: rgba(11,20,26,.45); color: #fff;
+    display: flex; align-items: center; justify-content: center; }
+  .wa-c-dur { position: absolute; top: 6px; left: 6px; font-size: 11px; color: #fff;
+    background: rgba(11,20,26,.45); border-radius: 4px; padding: 1px 5px; }
+  /* Overlaid meta: white on a scrim, since it sits on arbitrary imagery. */
+  .wa-c-meta.over { position: absolute; right: 6px; bottom: 5px; margin: 0;
+    background: rgba(11,20,26,.42); border-radius: 8px; padding: 1px 6px; }
+  .wa-c-meta.over .wa-c-time { color: #fff; }
+  .wa-c-meta.over .wa-c-ticks { color: #fff; }
+  .wa-c-meta.over .wa-c-ticks.read { color: #9ce7ff; }
+  .wa-c-caption { padding: 4px 5px 1px; }
+
+  /* Voice note: play glyph, waveform, avatar; duration + meta on the row below. */
+  .wa-c-audio-wrap { min-width: 200px; }
+  .wa-c-audio { display: flex; align-items: center; gap: 8px; }
+  .wa-c-audio > svg { flex: none; color: var(--wa-text2); }
+  .wa-c-wave { flex: 1; min-width: 0; display: flex; align-items: center; gap: 1.5px; }
+  .wa-c-playhead { flex: none; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--wa-primary); margin-right: 3px; }
+  .wa-c-bar { flex: none; width: 2px; border-radius: 1px; background: var(--wa-placeholder); }
+  .wa-c-audio-av { position: relative; flex: none; }
+  .wa-c-mic-badge { position: absolute; right: -1px; bottom: -1px; width: 13px; height: 13px;
+    border-radius: 50%; background: var(--wa-primary); color: var(--wa-on-primary);
+    display: flex; align-items: center; justify-content: center; }
+  .wa-c-audio-foot { display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-top: 2px; }
+  .wa-c-audio-foot .wa-c-meta { margin-top: 0; }
+
+  /* Document — inferred, no reference screenshot. */
+  .wa-c-doc { display: flex; align-items: center; gap: 8px; min-width: 180px;
+    padding: 6px 8px; border-radius: 6px; background: var(--wa-chip); }
+  .wa-c-doc > svg { flex: none; color: var(--wa-text2); }
+  .wa-c-doc-text { flex: 1; min-width: 0; }
+  .wa-c-doc-name { font-size: 13.5px; color: var(--wa-text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wa-c-doc-size { font-size: 11px; color: var(--wa-text2); }
 
   /* The list menu's bottom sheet — the second state a list message has. */
   .wa-c-sheet { background: var(--wa-surface); border-radius: 12px 12px 0 0;

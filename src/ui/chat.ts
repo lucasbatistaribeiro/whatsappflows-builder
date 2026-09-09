@@ -141,17 +141,107 @@ function interactive(inter: Interactive): HTMLElement {
   return box;
 }
 
-function bubble(msg: Message, tail: boolean, showMeta: boolean): HTMLElement {
+/**
+ * Image / video body. The media nearly fills the bubble and the meta is overlaid
+ * on it bottom-right over a scrim — that's how the official screenshot shows an
+ * image bubble, not with the meta on a row below.
+ */
+function mediaBox(msg: Message, showMeta: boolean): HTMLElement {
+  const box = el("div", "wa-c-media");
+  if (msg.media?.src) {
+    const img = el("img", "wa-c-media-img") as HTMLImageElement;
+    img.src = msg.media.src;
+    img.alt = "";
+    box.appendChild(img);
+  } else {
+    // Same placeholder logic as Flows mode's Image without a src.
+    const ph = el("div", "wa-c-media-ph");
+    ph.appendChild(iconEl(msg.type === "video" ? "video" : "image", 22));
+    box.appendChild(ph);
+  }
+  if (msg.type === "video") {
+    const play = el("div", "wa-c-play");
+    play.appendChild(iconEl("play", 18));
+    box.appendChild(play);
+    if (msg.media?.duration) box.appendChild(el("div", "wa-c-dur", msg.media.duration));
+  }
+  if (showMeta) {
+    const over = metaRow(msg);
+    over.classList.add("over");
+    box.appendChild(over);
+  }
+  return box;
+}
+
+/** Voice note: play glyph, waveform, avatar; duration and meta on the row below. */
+function audioBody(msg: Message, contact: string, showMeta: boolean): HTMLElement {
+  const wrap = el("div", "wa-c-audio-wrap");
+  const row = el("div", "wa-c-audio");
+  row.appendChild(iconEl("play", 20));
+  const wave = el("div", "wa-c-wave");
+  wave.appendChild(el("span", "wa-c-playhead"));
+  // A fixed pseudo-random pattern: a real waveform would need the audio, and a
+  // flat row of equal bars reads as a progress bar rather than a voice note.
+  const bars = [5, 9, 14, 7, 11, 16, 8, 13, 6, 10, 15, 9, 12, 7, 14, 8, 11, 6, 13, 9];
+  for (const h of bars) {
+    const b = el("span", "wa-c-bar");
+    b.style.height = `${h}px`;
+    wave.appendChild(b);
+  }
+  row.appendChild(wave);
+  const av = el("div", "wa-c-audio-av");
+  av.appendChild(avatar(contact));
+  const mic = el("span", "wa-c-mic-badge");
+  mic.appendChild(iconEl("mic", 9));
+  av.appendChild(mic);
+  row.appendChild(av);
+  wrap.appendChild(row);
+
+  const foot = el("div", "wa-c-audio-foot");
+  foot.appendChild(el("span", "wa-c-time", msg.media?.duration ?? "0:00"));
+  if (showMeta) foot.appendChild(metaRow(msg));
+  wrap.appendChild(foot);
+  return wrap;
+}
+
+/** Document: file glyph, name, and a size line. No reference screenshot — inferred. */
+function documentBody(msg: Message): HTMLElement {
+  const row = el("div", "wa-c-doc");
+  row.appendChild(iconEl("file-text", 20));
+  const stack = el("div", "wa-c-doc-text");
+  stack.appendChild(el("div", "wa-c-doc-name", msg.media?.name ?? "document.pdf"));
+  if (msg.media?.size) stack.appendChild(el("div", "wa-c-doc-size", msg.media.size));
+  row.appendChild(stack);
+  return row;
+}
+
+function bubble(msg: Message, tail: boolean, showMeta: boolean, contact: string): HTMLElement {
   const row = el("div", "wa-c-row " + (msg.direction === "out" ? "out" : "in"));
-  const b = el("div", "wa-c-bubble" + (tail ? " tail" : ""));
+  const visual = msg.type === "image" || msg.type === "video";
+  const b = el("div", "wa-c-bubble" + (tail ? " tail" : "") + (visual ? " media" : ""));
   const tpl = msg.interactive?.kind === "template" ? msg.interactive : null;
 
   if (msg.replyTo) b.appendChild(quoted(msg.replyTo));
   if (tpl?.header) b.appendChild(el("div", "wa-c-tpl-header", tpl.header));
-  if (msg.text) b.appendChild(el("div", "wa-c-text", msg.text));
-  if (tpl?.footer) b.appendChild(el("div", "wa-c-tpl-footer", tpl.footer));
-  if (showMeta) b.appendChild(metaRow(msg));
-  // The action block sits below the meta, spanning the bubble's full width, so
+
+  if (visual) {
+    // The meta rides on the media unless there's a caption to hang it under.
+    b.appendChild(mediaBox(msg, showMeta && !msg.text));
+    if (msg.text) {
+      const cap = el("div", "wa-c-caption");
+      cap.appendChild(el("div", "wa-c-text", msg.text));
+      if (showMeta) cap.appendChild(metaRow(msg));
+      b.appendChild(cap);
+    }
+  } else if (msg.type === "audio") {
+    b.appendChild(audioBody(msg, contact, showMeta));
+  } else {
+    if (msg.type === "document") b.appendChild(documentBody(msg));
+    if (msg.text) b.appendChild(el("div", "wa-c-text", msg.text));
+    if (tpl?.footer) b.appendChild(el("div", "wa-c-tpl-footer", tpl.footer));
+    if (showMeta) b.appendChild(metaRow(msg));
+  }
+  // The action block sits below everything, spanning the bubble's full width, so
   // its dividers reach both edges — hence the negative margins in the CSS.
   if (msg.interactive) b.appendChild(interactive(msg.interactive));
 
@@ -191,7 +281,7 @@ export function renderChat(thread: Thread, host: HTMLElement): void {
   thread.messages.forEach((msg, i) => {
     const first = startsRun(thread.messages, i);
     // Time + ticks only on the last message of a run, as the real app does.
-    const row = bubble(msg, first, endsRun(thread.messages, i));
+    const row = bubble(msg, first, endsRun(thread.messages, i), thread.contact.name);
     if (!first) row.classList.add("grouped");
     body.appendChild(row);
   });

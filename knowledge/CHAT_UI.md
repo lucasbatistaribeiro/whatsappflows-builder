@@ -223,6 +223,20 @@ a string keeps the model free of timezone questions.
    the renderer both support up to 10; multi-section authoring needs a nested
    repeatable UI that isn't worth it until someone asks.
 4. **Media and extras** — image/video/document/audio bubbles, quoted replies.
+   *Built.* Grounded on the one official conversation screenshot for audio and
+   image; document is inferred.
+
+   Two details that came from that screenshot rather than from guessing: a voice
+   note is `[play] [playhead + waveform] [avatar with a mic badge]` with the
+   duration on the left of the row below and the meta on its right; and on an
+   image the **meta is overlaid on the media**, bottom-right over a dark scrim,
+   not on a row underneath. The overlay only applies when there's no caption —
+   with one, the meta hangs under the caption instead.
+
+   Divergence in the Figma renderer: the overlay needs absolute positioning
+   inside auto-layout, so there the meta stays a row below the media. Base64
+   media is not decoded either, so the generator draws the tinted placeholder —
+   the same gap `Image` has in Flows mode.
 5. **Interactive patterns** — reply buttons, the list menu, flows and template
    bubbles. *Built, in both renderers.* Shapes and limits are official
    (`CHAT_PATTERNS.md`); the layout is our reading, since no screenshot of these

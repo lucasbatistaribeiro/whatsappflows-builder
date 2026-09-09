@@ -6,7 +6,7 @@
 // `maxlength` on every capped field and a disabled "add" once a count is reached,
 // so an over-long label can't be typed rather than being flagged after the fact.
 import type {
-  Interactive, ListRow, Message, TemplateButton, TemplateButtonType, Thread,
+  Interactive, ListRow, Message, MessageType, TemplateButton, TemplateButtonType, Thread,
 } from "../model/chatTypes";
 import { LIMITS } from "../model/chatTypes";
 import { createDropdown } from "./dropdown";
@@ -166,6 +166,41 @@ function flowEditor(inter: Extract<Interactive, { kind: "flow" }>, redraw: Reren
   return box;
 }
 
+const MESSAGE_TYPES: MessageType[] = ["text", "image", "video", "document", "audio"];
+
+/** Fields that only make sense for the chosen media type. */
+function mediaEditor(msg: Message, redraw: Rerender): HTMLElement {
+  const box = el("div", "chat-sub");
+  const media = msg.media ?? (msg.media = {});
+  if (msg.type === "image" || msg.type === "video") {
+    box.appendChild(label(t("chatMediaSrc")));
+    // Long base64 belongs in a textarea; the cap is generous, not spec-derived.
+    box.appendChild(area(media.src ?? "", 2_000_000, (v) => { media.src = v.trim() || undefined; redraw(); }));
+  }
+  if (msg.type === "document") {
+    box.appendChild(label(t("chatFileName")));
+    box.appendChild(field(media.name ?? "", 80, (v) => { media.name = v || undefined; redraw(); }, "invoice.pdf"));
+    box.appendChild(label(t("chatFileSize")));
+    box.appendChild(field(media.size ?? "", 20, (v) => { media.size = v || undefined; redraw(); }, "1.2 MB"));
+  }
+  if (msg.type === "audio" || msg.type === "video") {
+    box.appendChild(label(t("chatDuration")));
+    box.appendChild(field(media.duration ?? "", 10, (v) => { media.duration = v || undefined; redraw(); }, "0:35"));
+  }
+  return box;
+}
+
+/** The quoted-reply block: author plus one line of quoted text. */
+function replyEditor(msg: Message, redraw: Rerender): HTMLElement {
+  const box = el("div", "chat-sub");
+  const reply = msg.replyTo!;
+  box.appendChild(label(t("chatReplyAuthor")));
+  box.appendChild(field(reply.author, 40, (v) => { reply.author = v; redraw(); }));
+  box.appendChild(label(t("chatReplyText")));
+  box.appendChild(field(reply.text, 120, (v) => { reply.text = v; redraw(); }));
+  return box;
+}
+
 const KINDS = ["none", "buttons", "list", "flow", "template"] as const;
 
 function freshInteractive(kind: string): Interactive | undefined {
@@ -180,7 +215,7 @@ function freshInteractive(kind: string): Interactive | undefined {
 
 /** One-line summary for a collapsed card. */
 function summary(msg: Message): string {
-  const kind = msg.interactive ? ` · ${msg.interactive.kind}` : "";
+  const kind = (msg.type !== "text" ? ` · ${msg.type}` : "") + (msg.interactive ? ` · ${msg.interactive.kind}` : "");
   const text = (msg.text ?? "").trim();
   const head = text.length > 34 ? text.slice(0, 34) + "…" : text || t("chatEmptyMessage");
   return head + kind;
@@ -244,8 +279,20 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
       redraw();
     }));
 
-  body.appendChild(label(t("chatText")));
+  body.appendChild(label(t("chatType")));
+  body.appendChild(dropdown(msg.type, MESSAGE_TYPES.map((v) => ({ value: v, label: t("chatType_" + v) })),
+    (v) => { msg.type = v as MessageType; redraw(); }));
+  if (msg.type !== "text") body.appendChild(mediaEditor(msg, redraw));
+
+  // For media the text is the caption, which the spec caps the same as a body.
+  body.appendChild(label(msg.type === "text" ? t("chatText") : t("chatCaption")));
   body.appendChild(area(msg.text ?? "", LIMITS.bodyText, (v) => { msg.text = v; redraw(); }));
+
+  body.appendChild(toggle(t("chatQuoted"), !!msg.replyTo, (on) => {
+    msg.replyTo = on ? { author: thread.contact.name, text: "" } : undefined;
+    redraw();
+  }));
+  if (msg.replyTo) body.appendChild(replyEditor(msg, redraw));
 
   const meta = el("div", "chat-row");
   const timeBox = el("div", "chat-stack");

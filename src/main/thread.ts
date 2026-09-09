@@ -6,7 +6,7 @@
 // renders on the canvas.
 import type { Interactive, Message, Thread } from "../model/chatTypes";
 import { startsRun } from "../model/chatTypes";
-import { COLOR, DEVICE } from "./theme";
+import { COLOR, DEVICE, fill } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, divider, markFill, markFillV, text } from "./nodes";
 import { statusBar } from "./chrome";
@@ -152,6 +152,64 @@ function interactiveBlock(inter: Interactive): FrameNode {
   return box;
 }
 
+/**
+ * Image / video placeholder. Base64 media isn't decoded here — Flows mode has the
+ * same gap for `Image` — so this is the tinted box with a glyph, plus a play badge
+ * for video. The meta is overlaid on the media in the real app, but overlaying
+ * inside auto-layout needs absolute positioning, so here it stays a row below;
+ * flagged as a known divergence in CHAT_UI.md.
+ */
+function mediaBox(msg: Message): FrameNode {
+  const box = autoFrame({ name: msg.type === "video" ? "Video" : "Image", axis: "HORIZONTAL",
+    align: "CENTER", counterAlign: "CENTER", bg: COLOR.chipBg, radius: 6,
+    width: MAX_BUBBLE_W - 6, height: Math.round((MAX_BUBBLE_W - 6) * 0.75) });
+  box.appendChild(text(msg.type === "video" ? "▶" : "❑",
+    { size: 22, color: COLOR.placeholder }));
+  return box;
+}
+
+/** Voice note: play glyph, a bar waveform, duration. */
+function audioBody(msg: Message): FrameNode {
+  const wrap = autoFrame({ name: "Audio", gap: 2 });
+  markFill(wrap);
+  const row = autoFrame({ name: "Player", axis: "HORIZONTAL", gap: 8, counterAlign: "CENTER" });
+  markFill(row);
+  row.appendChild(text("▶", { size: 15, color: COLOR.textSecondary }));
+
+  const wave = autoFrame({ name: "Waveform", axis: "HORIZONTAL", gap: 2, counterAlign: "CENTER" });
+  markFill(wave);
+  const bars = [5, 9, 14, 7, 11, 16, 8, 13, 6, 10, 15, 9, 12, 7, 14, 8, 11, 6, 13, 9];
+  for (const h of bars) {
+    const bar = figma.createRectangle();
+    bar.name = "bar";
+    bar.resize(2, h);
+    bar.cornerRadius = 1;
+    bar.fills = [fill(COLOR.placeholder)];
+    wave.appendChild(bar);
+  }
+  row.appendChild(wave);
+  wrap.appendChild(row);
+
+  const foot = autoFrame({ name: "Foot", axis: "HORIZONTAL", counterAlign: "CENTER" });
+  markFill(foot);
+  foot.appendChild(text(msg.media?.duration ?? "0:00", { size: 11, color: COLOR.textSecondary }));
+  wrap.appendChild(foot);
+  return wrap;
+}
+
+/** Document row — inferred, no reference screenshot. */
+function documentBody(msg: Message): FrameNode {
+  const row = autoFrame({ name: "Document", axis: "HORIZONTAL", gap: 8, counterAlign: "CENTER",
+    padding: [6, 8, 6, 8], bg: COLOR.chipBg, radius: 6 });
+  markFill(row);
+  const stack = autoFrame({ name: "File", gap: 1 });
+  markFill(stack);
+  stack.appendChild(text(msg.media?.name ?? "document.pdf", { size: 13.5, color: COLOR.textPrimary }));
+  if (msg.media?.size) stack.appendChild(text(msg.media.size, { size: 11, color: COLOR.textSecondary }));
+  row.appendChild(stack);
+  return row;
+}
+
 function bubble(msg: Message, tail: boolean, showMeta: boolean): FrameNode {
   const out = msg.direction === "out";
   const row = autoFrame({ name: out ? "Out" : "In", axis: "HORIZONTAL", align: out ? "MAX" : "MIN" });
@@ -174,6 +232,9 @@ function bubble(msg: Message, tail: boolean, showMeta: boolean): FrameNode {
   if (tpl && tpl.header) {
     content.appendChild(text(tpl.header, { size: 15, font: FONT.semibold, lineHeight: 20, color: COLOR.textPrimary }));
   }
+  if (msg.type === "image" || msg.type === "video") content.appendChild(mediaBox(msg));
+  else if (msg.type === "audio") content.appendChild(audioBody(msg));
+  else if (msg.type === "document") content.appendChild(documentBody(msg));
   if (msg.text) content.appendChild(bubbleText(msg.text));
   if (tpl && tpl.footer) {
     content.appendChild(text(tpl.footer, { size: 12.5, lineHeight: 17, color: COLOR.textSecondary }));
@@ -182,10 +243,13 @@ function bubble(msg: Message, tail: boolean, showMeta: boolean): FrameNode {
   if (meta) content.appendChild(meta);
   b.appendChild(content);
 
+  const wide = msg.interactive || msg.type === "image" || msg.type === "video";
   if (msg.interactive) {
     // A bubble with actions takes the full width cap: the rows need the room, and
     // that is how the real app draws them.
     b.appendChild(interactiveBlock(msg.interactive));
+  }
+  if (wide) {
     b.counterAxisSizingMode = "FIXED";
     b.resize(MAX_BUBBLE_W, b.height);
   }

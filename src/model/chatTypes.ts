@@ -161,8 +161,15 @@ export function sampleThread(): Thread {
       { id: "m5", direction: "in", type: "text", time: "09:41",
         text: "You can also book a table for later.",
         interactive: { kind: "flow", cta: "Book a table" } },
-      { id: "m6", direction: "out", type: "text", time: "09:42", status: "delivered",
-        text: "Perfect 👍" },
+      // Media: a voice note, a photo with a caption, and a quoted reply.
+      { id: "m6", direction: "out", type: "audio", time: "09:42", status: "read",
+        media: { duration: "0:14" } },
+      { id: "m7", direction: "in", type: "image", time: "09:43",
+        text: "Here it is, wrapped and ready.", media: { size: "412 KB" } },
+      { id: "m8", direction: "in", type: "document", time: "09:43",
+        media: { name: "receipt-4127.pdf", size: "88 KB" } },
+      { id: "m9", direction: "out", type: "text", time: "09:44", status: "delivered",
+        text: "Perfect 👍", replyTo: { author: "Aurora Books", text: "Here it is, wrapped and ready." } },
     ],
   };
 }
