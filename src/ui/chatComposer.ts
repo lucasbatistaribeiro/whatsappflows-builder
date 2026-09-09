@@ -9,6 +9,7 @@ import type {
   Interactive, ListRow, Message, MessageType, TemplateButton, TemplateButtonType, Thread,
 } from "../model/chatTypes";
 import { LIMITS } from "../model/chatTypes";
+import { CHAT_PALETTE, CHAT_PALETTE_GROUPS } from "../model/chatPalette";
 import { createDropdown } from "./dropdown";
 import { startDrag } from "./drag";
 import { iconEl } from "./icons";
@@ -368,22 +369,27 @@ export function renderComposer(thread: Thread, host: HTMLElement, onChange: Rere
   if (!thread.messages.length) list.appendChild(el("div", "empty", t("chatNoMessages")));
   host.appendChild(list);
 
-  const add = el("div", "chat-row");
-  for (const dir of ["in", "out"] as const) {
-    const b = document.createElement("button");
-    b.className = "btn ghost add-row";
-    b.appendChild(iconEl("plus", 16));
-    b.appendChild(document.createTextNode(dir === "in" ? t("chatAddIn") : t("chatAddOut")));
-    b.onclick = () => {
-      const msg: Message = {
-        id: "m" + Date.now().toString(36), direction: dir, type: "text", text: "",
-        time: "09:41", ...(dir === "out" ? { status: "read" as const } : {}),
-      };
-      openOnFirstRender(msg);
+  // The same grouped, searchable picker the Flows palette uses, so adding a list
+  // menu is the same gesture as adding a component. Entries arrive fully formed.
+  const groups = CHAT_PALETTE_GROUPS
+    .map((g) => ({ label: g, options: CHAT_PALETTE.filter((e) => e.group === g).map((e) => ({ value: e.key, label: e.label })) }))
+    .filter((g) => g.options.length > 0);
+  const picker = el("div", "chat-add");
+  picker.appendChild(createDropdown({
+    value: "",
+    placeholder: t("chatAddPlaceholder"),
+    groups,
+    searchable: true,
+    searchPlaceholder: t("chatSearchMessage"),
+    resetAfterSelect: true,
+    onChange: (key) => {
+      const entry = CHAT_PALETTE.find((e) => e.key === key);
+      if (!entry) return;
+      const msg = entry.make();
+      openOnFirstRender(msg); // a freshly added message opens ready to edit
       thread.messages.push(msg);
       redraw();
-    };
-    add.appendChild(b);
-  }
-  host.appendChild(add);
+    },
+  }));
+  host.appendChild(picker);
 }

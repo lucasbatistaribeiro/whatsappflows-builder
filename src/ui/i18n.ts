@@ -10,7 +10,6 @@ const DICT: Record<string, Entry> = {
   build: { en: "Build", pt: "Montar" },
   preview: { en: "Preview", pt: "Prévia" },
   flowJson: { en: "Flow JSON", pt: "Flow JSON" },
-  chatTab: { en: "Chat", pt: "Conversa" },
   modeFlows: { en: "Flows", pt: "Fluxos" },
   modeChat: { en: "Chat", pt: "Conversa" },
   // chat composer
@@ -26,8 +25,8 @@ const DICT: Record<string, Entry> = {
   chatMessages: { en: "Messages", pt: "Mensagens" },
   chatNoMessages: { en: "No messages yet. Add one below.", pt: "Nenhuma mensagem ainda. Adicione uma abaixo." },
   chatEmptyMessage: { en: "(empty)", pt: "(vazia)" },
-  chatAddIn: { en: "Incoming", pt: "Recebida" },
-  chatAddOut: { en: "Outgoing", pt: "Enviada" },
+  chatAddPlaceholder: { en: "Add a message...", pt: "Adicionar mensagem..." },
+  chatSearchMessage: { en: "Search messages...", pt: "Buscar mensagem..." },
   chatIn: { en: "Incoming", pt: "Recebida" },
   chatOut: { en: "Outgoing", pt: "Enviada" },
   chatDirection: { en: "Direction", pt: "Direção" },

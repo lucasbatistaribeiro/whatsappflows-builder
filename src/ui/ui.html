@@ -623,6 +623,13 @@
     border: 3px solid transparent; background-clip: padding-box; }
   ::-webkit-scrollbar-thumb:hover { background: var(--dim); background-clip: padding-box; border: 3px solid transparent; }
 
+  /* ...except inside the phone. The rules above are for the plugin chrome, but
+     they also reach into the mockup, where an 11px desktop scrollbar is simply
+     wrong: a phone shows none. Scrolling still works (wheel, trackpad, touch) —
+     only the track is hidden. Scoped to .wa-phone so the chrome keeps its own. */
+  .wa-phone, .wa-phone * { scrollbar-width: none; -ms-overflow-style: none; }
+  .wa-phone ::-webkit-scrollbar, .wa-phone::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
   /* ---- Right-side actions drawer ---- */
   #menu-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.35); opacity: 0;
     pointer-events: none; transition: opacity .22s ease; z-index: 999; }
