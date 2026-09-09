@@ -23,7 +23,11 @@ export interface GenOptions {
   sectionRadius: number; // corner radius in px
 }
 
+/** Which generator the plugin is showing. */
+export type Mode = "flows" | "chat";
+
 export interface Prefs {
+  mode: Mode; // reopen in whichever generator was last used
   theme: ThemePref; // plugin-chrome theme (distinct from the WhatsApp mockup theme)
   lang: LangPref;
   os: OS;

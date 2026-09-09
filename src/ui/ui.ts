@@ -14,7 +14,7 @@ import { buildPropEditor } from "./propEditor";
 import { iconEl, applyIcons } from "./icons";
 import { createDropdown } from "./dropdown";
 import { t, setLang, applyI18n, type Lang } from "./i18n";
-import type { Prefs, ThemePref, GenOptions, ScreenSize, PreviewTheme } from "../shared/messages";
+import type { Prefs, ThemePref, GenOptions, ScreenSize, PreviewTheme, Mode } from "../shared/messages";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -429,8 +429,8 @@ function renderValidation(): void {
   // Block generation while errors exist (warnings still allowed).
   const gen = $("#generate") as HTMLButtonElement;
   // Chat mode generates a conversation, which the Flow JSON validator says
-  // nothing about — so flow errors only gate the Flows tabs.
-  const gated = activeTab !== "chat" && errors > 0;
+  // nothing about — so flow errors only gate the Flows generator.
+  const gated = mode !== "chat" && errors > 0;
   gen.disabled = gated || gen.classList.contains("busy");
   gen.title = gated ? `Fix ${errors} error${errors > 1 ? "s" : ""} before generating` : "";
 }
@@ -614,15 +614,18 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(
 const SECTION_BG_DEFAULT = "#353535";
 const SECTION_RADIUS_DEFAULT = 24;
 
-// Which tab is showing. Generate dispatches on this, and the validation gate
-// only applies to the Flows tabs — a flow error must not block chat mode.
-let activeTab = "build";
+// Which generator is showing, and which Flows tab within it. Generate dispatches
+// on the mode, and the flow validation gate only applies to Flows — a flow error
+// must not block generating a conversation.
+let mode: Mode = "flows";
+let activeTab = "build"; // Flows only; restored when switching back from Chat
 
 // Chat mode: phase 1 has no composer yet, so a sample thread stands in while
 // the visuals get calibrated (knowledge/CHAT_UI.md).
 const thread: Thread = sampleThread();
 
 let prefs: Prefs = {
+  mode: "flows",
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
   sectionName: "", sectionColor: SECTION_BG_DEFAULT, sectionRadius: SECTION_RADIUS_DEFAULT,
@@ -730,6 +733,7 @@ function applyPrefs(p: Prefs): void {
   applyInteractive(prefs.interactive);
   applyBusiness(prefs.showBusinessName, prefs.businessName);
   applySection(prefs);
+  applyMode(prefs.mode ?? "flows"); // reopen in the generator last used
   applySize(prefs.size);
   applyWaTheme(prefs.previewTheme);
 }
@@ -858,22 +862,49 @@ document.querySelectorAll(".tab").forEach((t) => {
     $("#panel-build").classList.toggle("active", name === "build");
     $("#panel-preview").classList.toggle("active", name === "preview");
     $("#panel-json").classList.toggle("active", name === "json");
-    $("#panel-chat").classList.toggle("active", name === "chat");
     // The screen rail only belongs to Build: Preview has its own screen tabs and
     // Flow JSON just shows code.
     $("#screens").style.display = name === "build" ? "" : "none";
     if (name === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
-    if (name === "chat") renderChat(thread, $("#chat-preview"));
     activeTab = name ?? "build";
-    renderValidation(); // the Generate gate depends on the mode
   });
 });
 
 $("#json").addEventListener("input", onJsonInput);
 
+// Switch generator. Chat has one view so far, so its panel simply replaces the
+// Flows tab row + panels; when a composer arrives it gets its own tabs.
+function applyMode(m: Mode): void {
+  mode = m;
+  document.body.classList.toggle("chat-mode", m === "chat");
+  document.querySelectorAll<HTMLElement>(".mode-switch .seg-item").forEach((b) => {
+    const on = b.dataset.mode === m;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", String(on));
+  });
+  $("#panel-chat").classList.toggle("active", m === "chat");
+  // Returning to Flows restores whichever tab was open there.
+  $("#panel-build").classList.toggle("active", m === "flows" && activeTab === "build");
+  $("#panel-preview").classList.toggle("active", m === "flows" && activeTab === "preview");
+  $("#panel-json").classList.toggle("active", m === "flows" && activeTab === "json");
+  if (m === "chat") renderChat(thread, $("#chat-preview"));
+  else if (activeTab === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
+  renderValidation(); // the Generate gate depends on the mode
+}
+
+document.querySelectorAll<HTMLElement>(".mode-switch .seg-item").forEach((b) => {
+  b.addEventListener("click", () => {
+    const m = b.dataset.mode as Mode;
+    if (m === mode) return;
+    applyMode(m);
+    prefs = { ...prefs, mode: m };
+    savePrefs();
+  });
+});
+
 $("#generate").addEventListener("click", () => {
   setGenState("busy");
-  if (activeTab === "chat") postToMain({ type: "generateChat", thread, options: genOptions() });
+  if (mode === "chat") postToMain({ type: "generateChat", thread, options: genOptions() });
   else postToMain({ type: "generate", flow, options: genOptions() });
 });
 

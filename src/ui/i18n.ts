@@ -11,6 +11,8 @@ const DICT: Record<string, Entry> = {
   preview: { en: "Preview", pt: "Prévia" },
   flowJson: { en: "Flow JSON", pt: "Flow JSON" },
   chatTab: { en: "Chat", pt: "Conversa" },
+  modeFlows: { en: "Flows", pt: "Fluxos" },
+  modeChat: { en: "Chat", pt: "Conversa" },
   // top bar
   generate: { en: "Generate", pt: "Gerar" },
   generating: { en: "Generating…", pt: "Gerando…" },

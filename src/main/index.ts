@@ -21,6 +21,7 @@ const SECTION_RADIUS = 24;
 
 const PREFS_KEY = "flows-builder-prefs";
 const DEFAULT_PREFS: Prefs = {
+  mode: "flows",
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
   sectionName: "", sectionColor: SECTION_BG, sectionRadius: SECTION_RADIUS,

@@ -23,11 +23,31 @@ no UI kit (checked; see `BACKLOG.md`). So:
 That inverts how we verify. In Flows mode a wrong value is a spec violation we can
 look up; here it's a pixel that has to be compared against the real app.
 
+## Chat is a mode, not a tab
+
+The two generators are switched by a segmented control in the top bar, right of the
+hamburger. They are separate products that happen to share a shell: different model,
+different panels, different Generate payload, and a validator that only applies to
+one of them.
+
+What the switch does:
+
+- swaps the panel — Chat has one view so far, so the **Flows tab row and screen
+  rail are hidden** rather than left sitting there empty;
+- **hides the validation badge**, which reports Flow JSON problems and says nothing
+  about a conversation. Leaving it up in chat mode just misleads;
+- **lifts the validation gate**: a broken flow must not block generating a
+  conversation, so `Generate` stays enabled in chat mode;
+- routes `Generate` to `generateChat` instead of `generate`;
+- **remembers the Flows tab** you were on, so switching away and back doesn't reset
+  you to Build;
+- persists in `Prefs.mode`, so the plugin reopens in the generator last used.
+
 ## Where it plugs in
 
 | concern | Flows mode | chat mode |
 |---|---|---|
-| tab | Build / Preview / Flow JSON | **+ Chat** (4th tab, same `data-tab` machinery) |
+| entry point | the Flows tabs | **a mode**, switched in the top bar next to the hamburger |
 | model | `src/model/flowTypes.ts` | `src/model/chatTypes.ts` (new, pure) |
 | tokens | `src/main/theme.ts` `Palette` | same file, extended (below) |
 | preview | `src/ui/preview.ts` | `src/ui/chat.ts` (new) |

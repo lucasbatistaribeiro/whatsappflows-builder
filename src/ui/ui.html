@@ -72,6 +72,15 @@
   .btn.primary:hover { filter: brightness(1.05); border-color: transparent; }
   .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
   #menu-btn { width: 34px; height: 34px; }
+  /* The mode switch sits next to the hamburger and never shrinks. */
+  .mode-switch { flex: none; }
+  .mode-switch .seg-item { padding: 4px 10px; font-size: 13px; }
+  /* Chat mode has one view so far, so the Flows tab row and screen rail go away
+     entirely rather than sitting there empty. The validation badge goes too: it
+     reports Flow JSON problems, which say nothing about a conversation, so
+     leaving it up in chat mode just misleads. */
+  body.chat-mode .builder-head { display: none; }
+  body.chat-mode #val-badge { display: none; }
   #generate { padding: 9px 16px; font-size: 15px; }
   #generate svg { width: 16px; height: 16px; }
   /* Generate feedback: spinner while the main thread builds, then a check that
@@ -642,6 +651,12 @@
     <button id="menu-btn" class="icon-btn" title="Menu" aria-label="Menu">
       <span class="ic" data-icon="menu" data-size="24"></span>
     </button>
+    <!-- Which generator is active. Chat is a mode, not a tab: it has its own
+         model, panels and Generate payload (knowledge/CHAT_UI.md). -->
+    <div class="seg mode-switch" role="tablist" aria-label="Generator">
+      <button class="seg-item active" role="tab" aria-selected="true" data-mode="flows" data-i18n="modeFlows">Flows</button>
+      <button class="seg-item" role="tab" aria-selected="false" data-mode="chat" data-i18n="modeChat">Chat</button>
+    </div>
     <span id="val-badge" class="badge"></span>
     <span class="spacer"></span>
     <button id="generate" class="btn primary" title="Generate the screens in Figma">
@@ -738,7 +753,6 @@
           <button class="tab active" role="tab" aria-selected="true" data-tab="build" data-i18n="build">Build</button>
           <button class="tab" role="tab" aria-selected="false" data-tab="preview" data-i18n="preview">Preview</button>
           <button class="tab" role="tab" aria-selected="false" data-tab="json" data-i18n="flowJson">Flow JSON</button>
-          <button class="tab" role="tab" aria-selected="false" data-tab="chat" data-i18n="chatTab">Chat</button>
         </div>
         <div class="screens" id="screens"></div>
       </div>
