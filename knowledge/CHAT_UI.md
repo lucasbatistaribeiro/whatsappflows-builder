@@ -52,6 +52,7 @@ What the switch does:
 | tokens | `src/main/theme.ts` `Palette` | same file, extended (below) |
 | preview | `src/ui/preview.ts` | `src/ui/chat.ts` (new) |
 | composer | `src/ui/ui.ts` + `propEditor.ts` | `src/ui/chatComposer.ts` (new) |
+| palette | `src/model/palette.ts` | `src/model/chatPalette.ts` (new, same shape) |
 | drag-reorder | — | `src/ui/drag.ts`, now shared by both |
 | generator | `src/main/screen.ts` + `components.ts` | `src/main/thread.ts` (new) |
 | contract | `src/shared/messages.ts` | same file, a `generateChat` message |
@@ -139,6 +140,25 @@ Top to bottom, inside the existing `.wa-phone` frame:
 - media variants: image, video (with a play badge), document (icon + filename +
   size), audio (avatar + waveform + duration).
 
+## No scrollbars inside the phone
+
+A phone doesn't show a scrollbar, so the mockup mustn't either.
+
+**Preview:** the stylesheet themes scrollbars globally for the plugin chrome, and
+that reached into the mockup — an 11px desktop scrollbar inside a phone frame. The
+rules are now cancelled inside `.wa-phone` (`scrollbar-width: none` plus the
+`::-webkit-scrollbar` reset), scoped so the chrome keeps its own. Scrolling still
+works by wheel, trackpad and touch; only the track is hidden.
+
+**Generated Figma frames:** there is nothing to fix — no code sets
+`overflowDirection`, so a Figma frame never shows a scrollbar. What happens instead
+is that the frame **grows to fit the conversation**: `enforceMinHeight` only pins a
+height when the content is *shorter* than the standard phone height, so nothing is
+ever clipped. The consequence worth knowing is the other one: a long thread makes a
+frame taller than a phone. Capping it to one screen height would trade a scrollbar
+for hidden content, which is why it isn't done — but it's a real choice, not an
+oversight.
+
 ## Decided trade-offs
 
 **1. The timestamp does not sit inline with the text.** *(Confirmed as a real
@@ -218,6 +238,13 @@ a string keeps the model free of timezone questions.
    the cap and says why (`Button (3/3)`), so an over-long label can't be typed
    rather than being flagged afterwards. `LIMITS` is read for every one — no
    literals.
+
+   Messages are added from the **same grouped, searchable picker** the Flows
+   palette uses (`src/model/chatPalette.ts` mirrors `palette.ts` entry for entry),
+   so adding a list menu is the same gesture as adding a `RadioButtonsGroup`.
+   Entries arrive **fully formed** — a list menu comes with a section and two
+   rows, a template with header, footer and buttons — because something you have
+   to assemble from empty fields hasn't really been "added".
 
    Known gap, deliberate: the list editor exposes **one section**. The model and
    the renderer both support up to 10; multi-section authoring needs a nested
