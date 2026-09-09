@@ -231,6 +231,18 @@ const seen = new WeakSet<Message>();
 
 function openOnFirstRender(msg: Message): void { seen.add(msg); }
 
+/**
+ * One setter per rendered card, rebuilt on every composer render. The collapse-all
+ * button drives these rather than re-rendering, so the cards animate — the same
+ * reason the Flows list keeps its own `cardToggles`.
+ */
+const cardToggles: ((collapse: boolean) => void)[] = [];
+
+const anyExpanded = (thread: Thread): boolean => thread.messages.some((m) => !collapsed.has(m));
+
+/** Set by the header on each render; cards call it after an individual toggle. */
+let repaintCollapseAll: () => void = () => { /* no header yet */ };
+
 function collapseIfNew(msg: Message): void {
   if (seen.has(msg)) return;
   seen.add(msg);
@@ -254,11 +266,16 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
 
   const chev = el("span", "comp-chev");
   chev.appendChild(iconEl(isCollapsed ? "chevron-down" : "chevron-up", 16));
+  // Toggle in place (class only) so the body animates instead of re-rendering.
+  const setCollapsed = (collapse: boolean): void => {
+    card.classList.toggle("collapsed", collapse);
+    if (collapse) collapsed.add(msg); else collapsed.delete(msg);
+    chev.replaceChildren(iconEl(collapse ? "chevron-down" : "chevron-up", 16));
+  };
+  cardToggles.push(setCollapsed);
   const toggleCard = (): void => {
-    const next = !card.classList.contains("collapsed");
-    card.classList.toggle("collapsed", next);
-    if (next) collapsed.add(msg); else collapsed.delete(msg);
-    chev.replaceChildren(iconEl(next ? "chevron-down" : "chevron-up", 16));
+    setCollapsed(!card.classList.contains("collapsed"));
+    repaintCollapseAll(); // otherwise the header still offers the stale action
   };
   head.onclick = toggleCard;
   chev.onclick = toggleCard;
@@ -336,7 +353,12 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
   actions.appendChild(iconBtn("trash-2", () => { thread.messages.splice(i, 1); redraw(); }, t("remove")));
   body.appendChild(actions);
 
-  card.appendChild(body);
+  // Grid wrapper so the collapse can animate to the body's natural height. Without
+  // it `.comp.collapsed .comp-body-wrap` never matches and collapsing does nothing
+  // visible — the class flips, the chevron flips, and the body stays 644px tall.
+  const bodyWrap = el("div", "comp-body-wrap");
+  bodyWrap.appendChild(body);
+  card.appendChild(bodyWrap);
   return card;
 }
 
@@ -363,9 +385,28 @@ export function renderComposer(thread: Thread, host: HTMLElement, onChange: Rere
   host.appendChild(toggle(t("chatEncryption"), !!thread.showEncryptionNotice,
     (v) => { thread.showEncryptionNotice = v || undefined; onChange(); }));
 
-  host.appendChild(el("div", "section-label", t("chatMessages")));
+  const head = el("div", "section-label section-row");
+  head.appendChild(el("span", undefined, t("chatMessages")));
+  const collapseAll = document.createElement("button");
+  collapseAll.className = "collapse-all";
+  collapseAll.type = "button";
+  const paintCollapseAll = (): void => {  // also installed as repaintCollapseAll below
+    collapseAll.style.display = thread.messages.length ? "" : "none";
+    collapseAll.textContent = t(anyExpanded(thread) ? "collapseAll" : "expandAll");
+  };
+  collapseAll.onclick = () => {
+    const collapse = anyExpanded(thread);
+    for (const toggle of cardToggles) toggle(collapse); // animates; also updates the set
+    paintCollapseAll();
+  };
+  head.appendChild(collapseAll);
+  host.appendChild(head);
+  repaintCollapseAll = paintCollapseAll;
+
+  cardToggles.length = 0; // rebuilt below, one per card
   const list = el("div", "chat-list");
   thread.messages.forEach((msg, i) => list.appendChild(messageCard(msg, i, thread, list, redraw)));
+  paintCollapseAll();
   if (!thread.messages.length) list.appendChild(el("div", "empty", t("chatNoMessages")));
   host.appendChild(list);
 

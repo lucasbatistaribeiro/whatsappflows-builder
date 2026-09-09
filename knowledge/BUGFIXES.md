@@ -5,6 +5,33 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Chat cards never actually collapsed
+
+**Symptom.** A message card in the chat composer looked collapsible — the
+`collapsed` class flipped, the chevron flipped — but the body stayed fully
+visible. Collapsing did nothing you could see.
+
+**Root cause.** The collapse animation lives on a wrapper: `.comp-body-wrap` is a
+grid that goes `grid-template-rows: 1fr` → `0fr`, and the hiding rule is
+`.comp.collapsed .comp-body-wrap`. The Flows list wraps its editor in that div;
+the chat composer appended `.comp-body` straight into the card, so the rule had
+nothing to match and the body was never hidden. A collapsed chat card measured
+693px against a Flows card's 49px.
+
+**Fix.** Wrap the body in `.comp-body-wrap`, as the Flows list does.
+
+**Why it wasn't caught earlier.** Every assertion about collapsing measured
+`classList.contains("collapsed")` — the *mechanism* — and the class was being set
+correctly all along. Nothing measured the outcome. Asserting the height instead
+would have failed on the first run.
+
+**Second trap in the same area.** Re-measuring after the fix showed the body still
+at 0 after clicking to expand, which looked like the fix hadn't worked. It had:
+`grid-template-rows` is transitioned, and with `document.hidden` true the pane
+doesn't advance CSS transitions, so a wall-clock wait measures nothing. Killing
+transitions and measuring end states gave the real answer (49.2px collapsed,
+701.4px expanded).
+
 ## Both tab rows rendered at once in Flows mode
 
 **Symptom.** Chat mode got its own `Compose / Preview` tab row. In Flows mode both
