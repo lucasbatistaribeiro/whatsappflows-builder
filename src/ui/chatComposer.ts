@@ -17,6 +17,13 @@ import { t } from "./i18n";
 
 type Rerender = () => void;
 
+/**
+ * The thread being composed. Set at the top of every render — the list editor
+ * needs it to clear `sheetOpen` on sibling messages, and threading it through
+ * four editor signatures for that one case is worse.
+ */
+let currentThread: Thread;
+
 const el = (tag: string, cls?: string, text?: string): HTMLElement => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -133,6 +140,16 @@ function listEditor(inter: Extract<Interactive, { kind: "list" }>, redraw: Reren
   });
   box.appendChild(addBtn(t("chatAddRow"), section.rows.length, LIMITS.listRows,
     () => { section.rows.push({ title: "" }); redraw(); }));
+
+  // Which of the list's two states to mock. Only one sheet can be open at a time,
+  // so turning this on clears it on every other list message.
+  box.appendChild(toggle(t("chatSheetOpen"), !!inter.sheetOpen, (on) => {
+    if (on) for (const m of currentThread.messages) {
+      if (m.interactive && m.interactive.kind === "list") m.interactive.sheetOpen = undefined;
+    }
+    inter.sheetOpen = on || undefined;
+    redraw();
+  }));
   return box;
 }
 
@@ -367,6 +384,7 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
 /** Render the composer for `thread` into `host`. `onChange` refreshes the preview. */
 export function renderComposer(thread: Thread, host: HTMLElement, onChange: Rerender): void {
   const redraw = (): void => { renderComposer(thread, host, onChange); onChange(); };
+  currentThread = thread;
   host.innerHTML = "";
 
   host.appendChild(el("div", "section-label", t("chatContact")));

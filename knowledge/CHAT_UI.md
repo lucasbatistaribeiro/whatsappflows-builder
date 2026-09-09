@@ -246,6 +246,10 @@ a string keeps the model free of timezone questions.
    rows, a template with header, footer and buttons — because something you have
    to assemble from empty fields hasn't really been "added".
 
+   The list editor also carries **"Show the menu open"** — the switch between the
+   list's two states. It's a property of the message, so the preview never decides
+   it, and it's exclusive across messages because the sheet is an overlay.
+
    Known gap, deliberate: the list editor exposes **one section**. The model and
    the renderer both support up to 10; multi-section authoring needs a nested
    repeatable UI that isn't worth it until someone asks.

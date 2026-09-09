@@ -265,9 +265,12 @@ CTA, the flow CTA and template buttons all read as the same thing: a full-width,
 centred, accent-coloured row divided by hairlines. Four near-identical builders
 would have been worse.
 
-The list's **open sheet** is built too, and docked over the bottom of the thread so
-the state is visible. Once the composer exists that should become a toggle rather
-than always-on.
+The list's **open sheet** is built too, docked over the bottom of the thread. Which
+of the list's two states you get is **authored per message** (`sheetOpen`), not
+decided by the preview — a sheet that is always open isn't a mockup of anything.
+Only one can be open at a time, since it's an overlay, so turning it on clears it
+on every other list message. Both renderers read the same flag, so the canvas
+shows the state the preview shows.
 
 ### Two structural differences between the two renderers
 

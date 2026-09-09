@@ -45,6 +45,7 @@ const DICT: Record<string, Entry> = {
   chatRowTitle: { en: "Row title", pt: "Título da linha" },
   chatRowDesc: { en: "Description", pt: "Descrição" },
   chatAddRow: { en: "Row", pt: "Linha" },
+  chatSheetOpen: { en: "Show the menu open", pt: "Mostrar o menu aberto" },
   chatFlowCta: { en: "Flow button label", pt: "Rótulo do botão do fluxo" },
   chatTplHeader: { en: "Template header", pt: "Cabeçalho do template" },
   chatTplFooter: { en: "Template footer", pt: "Rodapé do template" },
