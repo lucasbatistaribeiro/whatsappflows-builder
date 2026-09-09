@@ -8,11 +8,13 @@ import { TEMPLATES } from "../model/templates";
 import { postToMain } from "../shared/messages";
 import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme, setPreviewBusiness } from "./preview";
 import { renderChat } from "./chat";
+import { renderComposer } from "./chatComposer";
 import { sampleThread, type Thread } from "../model/chatTypes";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
 import { iconEl, applyIcons } from "./icons";
 import { createDropdown } from "./dropdown";
+import { startDrag } from "./drag";
 import { t, setLang, applyI18n, type Lang } from "./i18n";
 import type { Prefs, ThemePref, GenOptions, ScreenSize, PreviewTheme, Mode } from "../shared/messages";
 
@@ -139,7 +141,7 @@ function renderComponentList(): void {
     const grip = document.createElement("span");
     grip.className = "comp-grip"; grip.title = t("dragToReorder");
     grip.appendChild(iconEl("grip-vertical", 16));
-    grip.addEventListener("pointerdown", (e) => startDrag(e, card));
+    grip.addEventListener("pointerdown", (e) => startDrag(e, card, host, kids, syncAndRender));
 
     const head = document.createElement("div");
     head.className = "comp-head";
@@ -239,62 +241,6 @@ $("#collapse-all").addEventListener("click", () => {
 // fully opaque (the others fade via .comp-list.dragging), while an accent line
 // marks the slot it will drop into. The list itself isn't reordered until release,
 // so the indicator is the single source of truth for "where will this land".
-function startDrag(e: PointerEvent, card: HTMLElement): void {
-  e.preventDefault();
-  const host = $("#comp-list");
-  const cards = Array.from(host.children) as HTMLElement[];
-  const from = cards.indexOf(card);
-  if (from < 0) return;
-
-  // Snapshot the geometry up front: the dragged card gets a transform, so live
-  // rects would follow the pointer and poison the midpoint test. Nothing else
-  // reflows during the drag, so these stay accurate.
-  const rects = cards.map((el) => el.getBoundingClientRect());
-  const startY = e.clientY;
-  let insertAt = from; // index in the current list to insert *before*
-
-  host.classList.add("dragging");
-  card.classList.add("dragging");
-  const line = document.createElement("div");
-  line.className = "drop-line";
-  host.appendChild(line);
-
-  // Vertical center of the gap that precedes card `idx` (or follows the last one).
-  const hostTop = host.getBoundingClientRect().top;
-  const slotY = (idx: number): number => {
-    if (idx <= 0) return rects[0].top - hostTop - 4;
-    if (idx >= rects.length) return rects[rects.length - 1].bottom - hostTop + 3;
-    return (rects[idx - 1].bottom + rects[idx].top) / 2 - hostTop - 1;
-  };
-  const paint = (): void => { line.style.top = `${slotY(insertAt)}px`; };
-  paint();
-
-  const onMove = (ev: PointerEvent): void => {
-    card.style.transform = `translateY(${ev.clientY - startY}px)`;
-    let idx = rects.length;
-    for (let k = 0; k < rects.length; k++) {
-      if (ev.clientY < rects[k].top + rects[k].height / 2) { idx = k; break; }
-    }
-    if (idx !== insertAt) { insertAt = idx; paint(); }
-  };
-  const onUp = (): void => {
-    document.removeEventListener("pointermove", onMove);
-    document.removeEventListener("pointerup", onUp);
-    line.remove();
-    host.classList.remove("dragging");
-    card.classList.remove("dragging");
-    card.style.transform = "";
-    // Inserting after its own slot shifts the target left by one once removed.
-    const to = insertAt > from ? insertAt - 1 : insertAt;
-    if (to === from) return; // dropped back where it started
-    const kids = screenChildren(screen());
-    kids.splice(to, 0, ...kids.splice(from, 1));
-    syncAndRender();
-  };
-  document.addEventListener("pointermove", onMove);
-  document.addEventListener("pointerup", onUp);
-}
-
 // ---- JSON two-way sync --------------------------------------------------
 
 // The editor shows either the whole flow or a single screen, so a big flow can be
@@ -619,10 +565,11 @@ const SECTION_RADIUS_DEFAULT = 24;
 // must not block generating a conversation.
 let mode: Mode = "flows";
 let activeTab = "build"; // Flows only; restored when switching back from Chat
+let chatTab = "compose"; // Chat's own tab, likewise remembered
 
 // Chat mode: phase 1 has no composer yet, so a sample thread stands in while
 // the visuals get calibrated (knowledge/CHAT_UI.md).
-const thread: Thread = sampleThread();
+const thread: Thread = sampleThread(); // mutated in place by the composer
 
 let prefs: Prefs = {
   mode: "flows",
@@ -882,15 +829,38 @@ function applyMode(m: Mode): void {
     b.classList.toggle("active", on);
     b.setAttribute("aria-selected", String(on));
   });
-  $("#panel-chat").classList.toggle("active", m === "chat");
-  // Returning to Flows restores whichever tab was open there.
+  // Returning to either mode restores whichever tab was open there.
   $("#panel-build").classList.toggle("active", m === "flows" && activeTab === "build");
   $("#panel-preview").classList.toggle("active", m === "flows" && activeTab === "preview");
   $("#panel-json").classList.toggle("active", m === "flows" && activeTab === "json");
-  if (m === "chat") renderChat(thread, $("#chat-preview"));
+  $("#panel-chat-compose").classList.toggle("active", m === "chat" && chatTab === "compose");
+  $("#panel-chat-preview").classList.toggle("active", m === "chat" && chatTab === "preview");
+  if (m === "chat") renderChatAll();
   else if (activeTab === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
   renderValidation(); // the Generate gate depends on the mode
 }
+
+/** Composer + phone, so an edit in one shows up in the other. */
+function renderChatAll(): void {
+  renderComposer(thread, $("#chat-composer"), () => renderChat(thread, $("#chat-preview")));
+  renderChat(thread, $("#chat-preview"));
+}
+
+document.querySelectorAll<HTMLElement>(".chat-tabs .tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const name = tab.dataset.chatTab ?? "compose";
+    if (name === chatTab) return;
+    chatTab = name;
+    document.querySelectorAll(".chat-tabs .tab").forEach((x) => {
+      x.classList.remove("active"); x.setAttribute("aria-selected", "false");
+    });
+    tab.classList.add("active");
+    tab.setAttribute("aria-selected", "true");
+    $("#panel-chat-compose").classList.toggle("active", name === "compose");
+    $("#panel-chat-preview").classList.toggle("active", name === "preview");
+    if (name === "preview") renderChat(thread, $("#chat-preview"));
+  });
+});
 
 document.querySelectorAll<HTMLElement>(".mode-switch .seg-item").forEach((b) => {
   b.addEventListener("click", () => {

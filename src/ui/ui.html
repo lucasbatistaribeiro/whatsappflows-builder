@@ -79,8 +79,26 @@
      entirely rather than sitting there empty. The validation badge goes too: it
      reports Flow JSON problems, which say nothing about a conversation, so
      leaving it up in chat mode just misleads. */
-  body.chat-mode .builder-head { display: none; }
+  /* Each mode shows only its own tab row, and the screen rail is Flows-only. */
+  .chat-tabs { display: none; }
+  body.chat-mode .chat-tabs { display: flex; }
+  body.chat-mode .tabs:not(.chat-tabs), body.chat-mode #screens { display: none; }
   body.chat-mode #val-badge { display: none; }
+
+  /* Composer: rows of fields beside a delete button, and stacked pairs. */
+  .chat-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 6px; }
+  .chat-row > input, .chat-row > .chat-stack { flex: 1; min-width: 0; }
+  .chat-stack { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .chat-sub { margin: 6px 0 2px; padding: 8px 10px; border-radius: 8px;
+    background: var(--panel); display: flex; flex-direction: column; gap: 2px; }
+  .chat-area { font: inherit; font-size: 14px; width: 100%; resize: vertical;
+    padding: 6px 8px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--elev); color: inherit; }
+  .chat-summary { color: var(--dim); font-size: 13px; font-weight: 400;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .chat-list { display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .add-row { font-size: 13px; }
+  .add-row:disabled { opacity: .45; cursor: not-allowed; }
   #generate { padding: 9px 16px; font-size: 15px; }
   #generate svg { width: 16px; height: 16px; }
   /* Generate feedback: spinner while the main thread builds, then a check that
@@ -754,6 +772,11 @@
           <button class="tab" role="tab" aria-selected="false" data-tab="preview" data-i18n="preview">Preview</button>
           <button class="tab" role="tab" aria-selected="false" data-tab="json" data-i18n="flowJson">Flow JSON</button>
         </div>
+        <!-- Chat mode's own tab row: it has two views, so it needs one. -->
+        <div class="tabs chat-tabs" role="tablist">
+          <button class="tab active" role="tab" aria-selected="true" data-chat-tab="compose" data-i18n="chatCompose">Compose</button>
+          <button class="tab" role="tab" aria-selected="false" data-chat-tab="preview" data-i18n="chatPreviewTab">Preview</button>
+        </div>
         <div class="screens" id="screens"></div>
       </div>
 
@@ -789,7 +812,10 @@
 
         <!-- Chat mode (knowledge/CHAT_UI.md): phase 1 renders a sample thread so
              fidelity can be calibrated before the composer exists. -->
-        <div class="panel" id="panel-chat">
+        <div class="panel" id="panel-chat-compose">
+          <div id="chat-composer"></div>
+        </div>
+        <div class="panel" id="panel-chat-preview">
           <div id="chat-preview"></div>
         </div>
       </div>

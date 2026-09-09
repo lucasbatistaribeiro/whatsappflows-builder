@@ -51,6 +51,8 @@ What the switch does:
 | model | `src/model/flowTypes.ts` | `src/model/chatTypes.ts` (new, pure) |
 | tokens | `src/main/theme.ts` `Palette` | same file, extended (below) |
 | preview | `src/ui/preview.ts` | `src/ui/chat.ts` (new) |
+| composer | `src/ui/ui.ts` + `propEditor.ts` | `src/ui/chatComposer.ts` (new) |
+| drag-reorder | — | `src/ui/drag.ts`, now shared by both |
 | generator | `src/main/screen.ts` + `components.ts` | `src/main/thread.ts` (new) |
 | contract | `src/shared/messages.ts` | same file, a `generateChat` message |
 
@@ -206,8 +208,20 @@ a string keeps the model free of timezone questions.
    Spacing and type sizes are still uncalibrated.*
 2. **Figma generator** — the same thread as frames, reusing `markFill`/`applyFills`
    and the dated-section round-trip. *Built; only verifiable inside Figma.*
-3. **Composer** — the authoring UI, reusing the existing card machinery
-   (drag-reorder + accordion) rather than inventing an interaction.
+3. **Composer** — the authoring UI. *Built.* Reuses the Flows card machinery
+   (grip + accordion + drag) and its CSS, so there is one interaction to learn,
+   not two. Chat mode gained its own **Compose / Preview** tab row, since it now
+   has two views.
+
+   The composer is where the official limits from `CHAT_PATTERNS.md` are actually
+   *felt*: `maxlength` on every capped field and an "add" button that disables at
+   the cap and says why (`Button (3/3)`), so an over-long label can't be typed
+   rather than being flagged afterwards. `LIMITS` is read for every one — no
+   literals.
+
+   Known gap, deliberate: the list editor exposes **one section**. The model and
+   the renderer both support up to 10; multi-section authoring needs a nested
+   repeatable UI that isn't worth it until someone asks.
 4. **Media and extras** — image/video/document/audio bubbles, quoted replies.
 5. **Interactive patterns** — reply buttons, the list menu, flows and template
    bubbles. *Built, in both renderers.* Shapes and limits are official

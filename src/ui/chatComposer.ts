@@ -1,0 +1,342 @@
+// Chat mode's authoring UI: contact, thread options, and the message list.
+// Reuses the Flows card machinery (grip + accordion + drag) and its CSS classes
+// rather than inventing a second interaction — see knowledge/CHAT_UI.md.
+//
+// The official limits from CHAT_PATTERNS.md are enforced *here*, in the inputs:
+// `maxlength` on every capped field and a disabled "add" once a count is reached,
+// so an over-long label can't be typed rather than being flagged after the fact.
+import type {
+  Interactive, ListRow, Message, TemplateButton, TemplateButtonType, Thread,
+} from "../model/chatTypes";
+import { LIMITS } from "../model/chatTypes";
+import { createDropdown } from "./dropdown";
+import { startDrag } from "./drag";
+import { iconEl } from "./icons";
+import { t } from "./i18n";
+
+type Rerender = () => void;
+
+const el = (tag: string, cls?: string, text?: string): HTMLElement => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+};
+
+function label(text: string): HTMLElement {
+  const l = el("label", "f");
+  l.textContent = text;
+  return l;
+}
+
+/** A capped text input. `max` comes from LIMITS, never a literal. */
+function field(value: string, max: number, onInput: (v: string) => void, placeholder = ""): HTMLInputElement {
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.value = value;
+  inp.maxLength = max;
+  inp.placeholder = placeholder;
+  inp.oninput = () => onInput(inp.value);
+  return inp;
+}
+
+function area(value: string, max: number, onInput: (v: string) => void): HTMLTextAreaElement {
+  const ta = document.createElement("textarea");
+  ta.className = "chat-area";
+  ta.value = value;
+  ta.maxLength = max;
+  ta.rows = 2;
+  ta.oninput = () => onInput(ta.value);
+  return ta;
+}
+
+function iconBtn(name: string, onClick: () => void, title = ""): HTMLButtonElement {
+  const b = document.createElement("button");
+  b.className = "icon-btn";
+  b.title = title;
+  b.onclick = onClick;
+  b.appendChild(iconEl(name, 16));
+  return b;
+}
+
+function dropdown(value: string, options: { value: string; label: string }[], onChange: (v: string) => void): HTMLElement {
+  const host = el("span");
+  host.appendChild(createDropdown({ value, options, size: "sm", onChange }));
+  return host;
+}
+
+function toggle(text: string, on: boolean, onChange: (v: boolean) => void): HTMLElement {
+  const wrap = el("label", "menu-toggle");
+  wrap.appendChild(el("span", undefined, text));
+  const box = document.createElement("input");
+  box.type = "checkbox";
+  box.className = "menu-switch";
+  box.checked = on;
+  box.onchange = () => onChange(box.checked);
+  wrap.appendChild(box);
+  return wrap;
+}
+
+/**
+ * An "add" button that disables itself at the official cap, so the limit is felt
+ * in the UI instead of being a comment in a doc.
+ */
+function addBtn(text: string, count: number, max: number, onClick: () => void): HTMLButtonElement {
+  const b = document.createElement("button");
+  b.className = "btn ghost add-row";
+  b.appendChild(iconEl("plus", 16));
+  b.appendChild(document.createTextNode(`${text} (${count}/${max})`));
+  b.disabled = count >= max;
+  if (b.disabled) b.title = t("chatAtLimit");
+  else b.onclick = onClick;
+  return b;
+}
+
+// ---- interactive editors --------------------------------------------------
+
+function buttonsEditor(inter: Extract<Interactive, { kind: "buttons" }>, redraw: Rerender): HTMLElement {
+  const box = el("div", "chat-sub");
+  inter.buttons.forEach((b, i) => {
+    const row = el("div", "chat-row");
+    row.appendChild(field(b.title, LIMITS.replyButtonTitle, (v) => { b.title = v; redraw(); }, t("chatButtonLabel")));
+    row.appendChild(iconBtn("trash-2", () => { inter.buttons.splice(i, 1); redraw(); }, t("remove")));
+    box.appendChild(row);
+  });
+  box.appendChild(addBtn(t("chatAddButton"), inter.buttons.length, LIMITS.replyButtons,
+    () => { inter.buttons.push({ title: "" }); redraw(); }));
+  return box;
+}
+
+function listEditor(inter: Extract<Interactive, { kind: "list" }>, redraw: Rerender): HTMLElement {
+  const box = el("div", "chat-sub");
+  box.appendChild(label(t("chatListCta")));
+  box.appendChild(field(inter.cta, LIMITS.listCta, (v) => { inter.cta = v; redraw(); }));
+
+  // The model supports up to 10 sections; the editor exposes the first one only.
+  // Multi-section authoring is a deliberate gap, not an oversight — see CHAT_UI.md.
+  const section = inter.sections[0] ?? { rows: [] as ListRow[] };
+  if (!inter.sections.length) inter.sections.push(section);
+
+  box.appendChild(label(t("chatSectionTitle")));
+  box.appendChild(field(section.title ?? "", LIMITS.listSectionTitle, (v) => { section.title = v || undefined; redraw(); }));
+
+  section.rows.forEach((r, i) => {
+    const row = el("div", "chat-row");
+    const stack = el("div", "chat-stack");
+    stack.appendChild(field(r.title, LIMITS.listRowTitle, (v) => { r.title = v; redraw(); }, t("chatRowTitle")));
+    stack.appendChild(field(r.description ?? "", LIMITS.listRowDescription,
+      (v) => { r.description = v || undefined; redraw(); }, t("chatRowDesc")));
+    row.appendChild(stack);
+    row.appendChild(iconBtn("trash-2", () => { section.rows.splice(i, 1); redraw(); }, t("remove")));
+    box.appendChild(row);
+  });
+  box.appendChild(addBtn(t("chatAddRow"), section.rows.length, LIMITS.listRows,
+    () => { section.rows.push({ title: "" }); redraw(); }));
+  return box;
+}
+
+const TEMPLATE_BUTTON_TYPES: TemplateButtonType[] =
+  ["QUICK_REPLY", "URL", "PHONE_NUMBER", "COPY_CODE", "FLOW", "MPM", "CATALOG", "OTP"];
+
+function templateEditor(inter: Extract<Interactive, { kind: "template" }>, redraw: Rerender): HTMLElement {
+  const box = el("div", "chat-sub");
+  box.appendChild(label(t("chatTplHeader")));
+  box.appendChild(field(inter.header ?? "", LIMITS.headerText, (v) => { inter.header = v || undefined; redraw(); }));
+  box.appendChild(label(t("chatTplFooter")));
+  box.appendChild(field(inter.footer ?? "", LIMITS.footerText, (v) => { inter.footer = v || undefined; redraw(); }));
+
+  inter.buttons.forEach((b: TemplateButton, i) => {
+    const row = el("div", "chat-row");
+    // Types stay in English: they mirror the spec, like Flows component names.
+    row.appendChild(dropdown(b.type, TEMPLATE_BUTTON_TYPES.map((v) => ({ value: v, label: v })),
+      (v) => { b.type = v as TemplateButtonType; redraw(); }));
+    row.appendChild(field(b.text, LIMITS.templateButtonText, (v) => { b.text = v; redraw(); }, t("chatButtonLabel")));
+    row.appendChild(iconBtn("trash-2", () => { inter.buttons.splice(i, 1); redraw(); }, t("remove")));
+    box.appendChild(row);
+  });
+  box.appendChild(addBtn(t("chatAddButton"), inter.buttons.length, LIMITS.templateButtons,
+    () => { inter.buttons.push({ type: "QUICK_REPLY", text: "" }); redraw(); }));
+  return box;
+}
+
+function flowEditor(inter: Extract<Interactive, { kind: "flow" }>, redraw: Rerender): HTMLElement {
+  const box = el("div", "chat-sub");
+  box.appendChild(label(t("chatFlowCta")));
+  box.appendChild(field(inter.cta, LIMITS.flowCta, (v) => { inter.cta = v; redraw(); }));
+  return box;
+}
+
+const KINDS = ["none", "buttons", "list", "flow", "template"] as const;
+
+function freshInteractive(kind: string): Interactive | undefined {
+  if (kind === "buttons") return { kind: "buttons", buttons: [{ title: "" }] };
+  if (kind === "list") return { kind: "list", cta: "", sections: [{ rows: [{ title: "" }] }] };
+  if (kind === "flow") return { kind: "flow", cta: "" };
+  if (kind === "template") return { kind: "template", buttons: [] };
+  return undefined;
+}
+
+// ---- message card ---------------------------------------------------------
+
+/** One-line summary for a collapsed card. */
+function summary(msg: Message): string {
+  const kind = msg.interactive ? ` · ${msg.interactive.kind}` : "";
+  const text = (msg.text ?? "").trim();
+  const head = text.length > 34 ? text.slice(0, 34) + "…" : text || t("chatEmptyMessage");
+  return head + kind;
+}
+
+// Cards start collapsed, matching the Flows component list — a long thread is
+// unreadable with every editor open. `seen` is what makes "first render" mean
+// something; a message added from the toolbar is marked seen *without* being
+// collapsed, so it opens ready to type in.
+const collapsed = new WeakSet<Message>();
+const seen = new WeakSet<Message>();
+
+function openOnFirstRender(msg: Message): void { seen.add(msg); }
+
+function collapseIfNew(msg: Message): void {
+  if (seen.has(msg)) return;
+  seen.add(msg);
+  collapsed.add(msg);
+}
+
+function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement, redraw: Rerender): HTMLElement {
+  collapseIfNew(msg);
+  const isCollapsed = collapsed.has(msg);
+  const card = el("div", "comp" + (isCollapsed ? " collapsed" : ""));
+
+  const row = el("div", "row");
+  const grip = el("span", "comp-grip");
+  grip.title = t("dragToReorder");
+  grip.appendChild(iconEl("grip-vertical", 16));
+  grip.addEventListener("pointerdown", (e) => startDrag(e as PointerEvent, card, host, thread.messages, redraw));
+
+  const head = el("div", "comp-head");
+  head.appendChild(el("span", "type", msg.direction === "out" ? t("chatOut") : t("chatIn")));
+  head.appendChild(el("span", "chat-summary", summary(msg)));
+
+  const chev = el("span", "comp-chev");
+  chev.appendChild(iconEl(isCollapsed ? "chevron-down" : "chevron-up", 16));
+  const toggleCard = (): void => {
+    const next = !card.classList.contains("collapsed");
+    card.classList.toggle("collapsed", next);
+    if (next) collapsed.add(msg); else collapsed.delete(msg);
+    chev.replaceChildren(iconEl(next ? "chevron-down" : "chevron-up", 16));
+  };
+  head.onclick = toggleCard;
+  chev.onclick = toggleCard;
+  row.append(grip, head, chev);
+  card.appendChild(row);
+
+  const body = el("div", "comp-body");
+
+  body.appendChild(label(t("chatDirection")));
+  body.appendChild(dropdown(msg.direction,
+    [{ value: "in", label: t("chatIn") }, { value: "out", label: t("chatOut") }],
+    (v) => {
+      msg.direction = v as Message["direction"];
+      // Keep the model in step with what the Status dropdown *shows*. Incoming
+      // messages carry no ticks, so the status is dropped; going back to outgoing
+      // has to restore one, or the dropdown would display "Sent" over an
+      // undefined status and the preview would render no tick at all.
+      msg.status = v === "out" ? (msg.status ?? "sent") : undefined;
+      redraw();
+    }));
+
+  body.appendChild(label(t("chatText")));
+  body.appendChild(area(msg.text ?? "", LIMITS.bodyText, (v) => { msg.text = v; redraw(); }));
+
+  const meta = el("div", "chat-row");
+  const timeBox = el("div", "chat-stack");
+  timeBox.appendChild(label(t("chatTime")));
+  timeBox.appendChild(field(msg.time ?? "", 8, (v) => { msg.time = v || undefined; redraw(); }, "09:41"));
+  meta.appendChild(timeBox);
+  if (msg.direction === "out") {
+    const statusBox = el("div", "chat-stack");
+    statusBox.appendChild(label(t("chatStatus")));
+    statusBox.appendChild(dropdown(msg.status ?? "sent",
+      [{ value: "sent", label: t("chatSent") }, { value: "delivered", label: t("chatDelivered") },
+       { value: "read", label: t("chatRead") }],
+      (v) => { msg.status = v as Message["status"]; redraw(); }));
+    meta.appendChild(statusBox);
+  }
+  body.appendChild(meta);
+
+  body.appendChild(label(t("chatInteractive")));
+  body.appendChild(dropdown(msg.interactive?.kind ?? "none",
+    KINDS.map((k) => ({ value: k, label: k === "none" ? t("chatNone") : k })),
+    (v) => { msg.interactive = freshInteractive(v); redraw(); }));
+
+  const inter = msg.interactive;
+  if (inter) {
+    if (inter.kind === "buttons") body.appendChild(buttonsEditor(inter, redraw));
+    else if (inter.kind === "list") body.appendChild(listEditor(inter, redraw));
+    else if (inter.kind === "flow") body.appendChild(flowEditor(inter, redraw));
+    else body.appendChild(templateEditor(inter, redraw));
+  }
+
+  const actions = el("div", "comp-actions");
+  actions.appendChild(iconBtn("copy", () => {
+    const copy: Message = JSON.parse(JSON.stringify(msg));
+    copy.id = "m" + Date.now().toString(36);
+    seen.add(copy); // open/closed like the card it came from
+    if (collapsed.has(msg)) collapsed.add(copy);
+    thread.messages.splice(i + 1, 0, copy);
+    redraw();
+  }, t("duplicate")));
+  actions.appendChild(iconBtn("trash-2", () => { thread.messages.splice(i, 1); redraw(); }, t("remove")));
+  body.appendChild(actions);
+
+  card.appendChild(body);
+  return card;
+}
+
+// ---- the composer ---------------------------------------------------------
+
+/** Render the composer for `thread` into `host`. `onChange` refreshes the preview. */
+export function renderComposer(thread: Thread, host: HTMLElement, onChange: Rerender): void {
+  const redraw = (): void => { renderComposer(thread, host, onChange); onChange(); };
+  host.innerHTML = "";
+
+  host.appendChild(el("div", "section-label", t("chatContact")));
+  host.appendChild(label(t("chatName")));
+  host.appendChild(field(thread.contact.name, 40, (v) => { thread.contact.name = v; onChange(); }));
+  host.appendChild(label(t("chatPresence")));
+  host.appendChild(field(thread.contact.presence ?? "", 40,
+    (v) => { thread.contact.presence = v || undefined; onChange(); }, "online"));
+  host.appendChild(toggle(t("chatVerified"), !!thread.contact.verified,
+    (v) => { thread.contact.verified = v || undefined; onChange(); }));
+
+  host.appendChild(el("div", "section-label", t("chatThread")));
+  host.appendChild(label(t("chatDateLabel")));
+  host.appendChild(field(thread.dateLabel ?? "", 20,
+    (v) => { thread.dateLabel = v || undefined; onChange(); }, "TODAY"));
+  host.appendChild(toggle(t("chatEncryption"), !!thread.showEncryptionNotice,
+    (v) => { thread.showEncryptionNotice = v || undefined; onChange(); }));
+
+  host.appendChild(el("div", "section-label", t("chatMessages")));
+  const list = el("div", "chat-list");
+  thread.messages.forEach((msg, i) => list.appendChild(messageCard(msg, i, thread, list, redraw)));
+  if (!thread.messages.length) list.appendChild(el("div", "empty", t("chatNoMessages")));
+  host.appendChild(list);
+
+  const add = el("div", "chat-row");
+  for (const dir of ["in", "out"] as const) {
+    const b = document.createElement("button");
+    b.className = "btn ghost add-row";
+    b.appendChild(iconEl("plus", 16));
+    b.appendChild(document.createTextNode(dir === "in" ? t("chatAddIn") : t("chatAddOut")));
+    b.onclick = () => {
+      const msg: Message = {
+        id: "m" + Date.now().toString(36), direction: dir, type: "text", text: "",
+        time: "09:41", ...(dir === "out" ? { status: "read" as const } : {}),
+      };
+      openOnFirstRender(msg);
+      thread.messages.push(msg);
+      redraw();
+    };
+    add.appendChild(b);
+  }
+  host.appendChild(add);
+}
