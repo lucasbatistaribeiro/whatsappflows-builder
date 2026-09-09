@@ -80,7 +80,8 @@ src/              source
 build/            esbuild.mjs (bundler) + tsconfig.json (typecheck)
 knowledge/        docs to read: CLAUDE.md (working guide), BUGFIXES.md (bug log),
                   META_SYNC.md (Meta spec sync playbook), BACKLOG.md (deferred
-                  work), CHAT_UI.md (chat-mode design spec)
+                  work), CHAT_UI.md (chat-mode design spec),
+                  CHAT_PATTERNS.md (interactive message types)
 .claude/agents/   subagent definitions (not docs — these are runnable agents)
 package.json      npm scripts + dev dependencies
 ```

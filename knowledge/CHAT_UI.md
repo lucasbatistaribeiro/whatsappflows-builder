@@ -189,8 +189,11 @@ a string keeps the model free of timezone questions.
 3. **Composer** — the authoring UI, reusing the existing card machinery
    (drag-reorder + accordion) rather than inventing an interaction.
 4. **Media and extras** — image/video/document/audio bubbles, quoted replies.
-5. *(optional)* **Template-accurate bubbles** — render a real WhatsApp template
-   message, using the official OpenAPI specs noted in `BACKLOG.md` for button types.
+5. **Interactive patterns** — reply buttons, the list menu, flows and template
+   bubbles. Every shape and limit is already documented in `CHAT_PATTERNS.md`,
+   extracted from Meta's OpenAPI specs; what's missing is the *rendering*, which
+   has no reference screenshot yet. Promoted from "optional": these are what makes
+   a business conversation look like one.
 
 Phase 1 first and on its own: if the bubbles do not look right, nothing downstream
 matters.
