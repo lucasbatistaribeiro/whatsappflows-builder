@@ -61,7 +61,17 @@ export interface TemplateButton { type: TemplateButtonType; text: string }
  */
 export type Interactive =
   | { kind: "buttons"; buttons: ReplyButton[] }
-  | { kind: "list"; cta: string; sections: ListSection[] }
+  | {
+      kind: "list";
+      cta: string;
+      sections: ListSection[];
+      /**
+       * Whether to mock the *open* sheet rather than just the bubble. A list
+       * message has two states and both are worth drawing, so which one you get
+       * is authored per message — it isn't something the preview decides.
+       */
+      sheetOpen?: boolean;
+    }
   | { kind: "flow"; cta: string }
   | { kind: "template"; header?: string; footer?: string; buttons: TemplateButton[] };
 

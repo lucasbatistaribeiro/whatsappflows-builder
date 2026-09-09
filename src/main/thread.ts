@@ -276,6 +276,55 @@ function inputBar(): FrameNode {
   return bar;
 }
 
+/**
+ * The list menu's open sheet, docked over the bottom of the thread. Drawn only
+ * when a message asks for it (`sheetOpen`), so preview and canvas agree on which
+ * of the list's two states is being mocked.
+ */
+function listSheet(inter: Extract<Interactive, { kind: "list" }>): FrameNode {
+  const sheet = autoFrame({ name: "List sheet", padding: [10, 0, 4, 0], bg: COLOR.surface });
+  markFill(sheet);
+  sheet.topLeftRadius = 12;
+  sheet.topRightRadius = 12;
+
+  const title = autoFrame({ name: "Sheet title", axis: "HORIZONTAL", padding: [4, 16, 10, 16] });
+  markFill(title);
+  title.appendChild(text(inter.cta || "Menu", { size: 15, font: FONT.semibold, color: COLOR.textPrimary }));
+  sheet.appendChild(title);
+
+  for (const section of inter.sections) {
+    if (section.title) {
+      const head = autoFrame({ name: "Section", axis: "HORIZONTAL", padding: [8, 16, 4, 16] });
+      markFill(head);
+      head.appendChild(text(section.title.toUpperCase(), { size: 12, font: FONT.semibold, color: COLOR.primary }));
+      sheet.appendChild(head);
+    }
+    for (const row of section.rows) {
+      sheet.appendChild(divider());
+      const r = autoFrame({ name: "Row", axis: "HORIZONTAL", gap: 10,
+        padding: [9, 16, 9, 16], counterAlign: "CENTER" });
+      markFill(r);
+      const stack = autoFrame({ name: "Text", gap: 1 });
+      markFill(stack);
+      stack.appendChild(text(row.title, { size: 14, color: COLOR.textPrimary }));
+      if (row.description) {
+        stack.appendChild(text(row.description, { size: 12.5, color: COLOR.textSecondary }));
+      }
+      r.appendChild(stack);
+      // The radio: a ring, so it reads as unselected like the real sheet.
+      const radio = figma.createEllipse();
+      radio.name = "radio";
+      radio.resize(17, 17);
+      radio.fills = [];
+      radio.strokes = [fill(COLOR.placeholder)];
+      radio.strokeWeight = 1.5;
+      r.appendChild(radio);
+      sheet.appendChild(r);
+    }
+  }
+  return sheet;
+}
+
 /** Split messages into runs of consecutive same-direction messages. */
 function runs(messages: Message[]): Message[][] {
   const out: Message[][] = [];
@@ -329,6 +378,13 @@ export function buildThread(thread: Thread): FrameNode {
     body.appendChild(group);
   }
   frame.appendChild(body);
+
+  // Same docking as the preview: over the bottom of the thread, above the input bar.
+  const openList = thread.messages
+    .map((m) => m.interactive)
+    .find((i): i is Extract<Interactive, { kind: "list" }> =>
+      !!i && i.kind === "list" && !!i.sheetOpen);
+  if (openList) frame.appendChild(listSheet(openList));
 
   frame.appendChild(inputBar());
   return frame;

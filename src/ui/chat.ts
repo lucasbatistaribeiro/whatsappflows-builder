@@ -287,13 +287,14 @@ export function renderChat(thread: Thread, host: HTMLElement): void {
   });
   phone.appendChild(body);
 
-  // A list message has two states, and both are worth mocking. The open sheet is
-  // docked over the bottom of the thread so the state is actually visible; once
-  // the composer exists it should become a toggle rather than always-on.
-  const firstList = thread.messages
+  // The open sheet is a state you author per message, not something the preview
+  // forces on. Only one can be open at a time — it's an overlay — so the first
+  // message asking for it wins.
+  const openList = thread.messages
     .map((m) => m.interactive)
-    .find((i): i is Extract<Interactive, { kind: "list" }> => !!i && i.kind === "list");
-  if (firstList) phone.appendChild(listSheet(firstList));
+    .find((i): i is Extract<Interactive, { kind: "list" }> =>
+      !!i && i.kind === "list" && !!i.sheetOpen);
+  if (openList) phone.appendChild(listSheet(openList));
 
   phone.appendChild(inputBar());
   host.appendChild(phone);
