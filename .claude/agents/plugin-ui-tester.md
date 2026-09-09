@@ -1,6 +1,6 @@
 ---
 name: plugin-ui-tester
-description: Exercises the built plugin UI in a real browser — import/export JSON, templates, Generate, validation, preview, menu prefs, card editing, i18n. Use when a UI change needs verifying end to end, or to smoke-test before shipping. Reports measured pass/fail per scenario and states plainly what can only be checked inside Figma.
+description: Exercises the built plugin UI in a real browser — both generators. Flows: import/export JSON, templates, Generate, validation, preview, menu prefs, card editing. Chat: mode switch, composer, media and interactive bubbles. Plus dropdowns and i18n. Use when a UI change needs verifying end to end, or to smoke-test before shipping. Reports measured pass/fail per scenario and states plainly what can only be checked inside Figma.
 tools: Bash, Read, Grep, Glob, mcp__Claude_Browser__preview_start, mcp__Claude_Browser__navigate, mcp__Claude_Browser__javascript_tool, mcp__Claude_Browser__read_console_messages, mcp__Claude_Browser__computer, mcp__Claude_Browser__read_page
 ---
 
@@ -90,6 +90,61 @@ collapse-all), and drag-reorder from the grip — after which the Flow JSON orde
 must match the DOM order.
 
 **i18n**: run the key flows in both `en` and `pt`.
+
+## Chat mode
+
+The plugin has **two generators**, switched by a segmented control in the top bar
+next to the hamburger (`.mode-switch .seg-item[data-mode]`). Flows and Chat have
+different models, panels and Generate payloads, so test the switch itself as well
+as what's inside.
+
+**The switch** must, per mode: show exactly **one** tab row and the right one
+(`.tabs` for Flows, `.tabs.chat-tabs` for Chat — a specificity tie once made both
+render at once, BUGFIXES); hide the screen rail and the validation badge in Chat;
+remember the tab each mode was on across a round trip; and persist via `savePrefs`
+with `prefs.mode`. A `prefs` message with `mode: "chat"` must reopen in Chat.
+
+**The validation gate is mode-scoped.** Break the flow (make every screen terminal
+with no children → errors), then check Generate is **disabled in Flows and enabled
+in Chat**, and that Chat still emits `generateChat` with a `thread`. A flow error
+must never block generating a conversation.
+
+**The composer** (`#chat-composer`, Chat → Compose) edits contact, thread options
+and the message list. Cards reuse the Flows machinery, so grip-drag, accordion,
+duplicate and delete all behave the same — and `startDrag` is now shared
+(`src/ui/drag.ts`), so **a drag regression in one generator means checking both**.
+Assert the reorder by comparing the rendered order against the cards, not by
+eyeballing.
+
+- Cards start **collapsed**; a message added from the toolbar opens; a duplicate
+  mirrors the card it came from.
+- Switching direction to Incoming clears the status and hides the Status field;
+  switching back must restore a status, or the dropdown shows "Sent" over an
+  undefined value and the preview renders no tick (this was a real bug).
+- **Every capped field takes its `maxlength` from `LIMITS`** in
+  `src/model/chatTypes.ts`, and each "add" button disables at the cap showing the
+  count. Read the expected numbers from that file, never from this doc. The one
+  worth checking by name: a reply-button label caps at **20**, a template button's
+  at **25** — conflating them is the documented trap.
+
+**The bubbles** (Chat → Preview): text, the four media types, and the interactive
+patterns.
+
+- Media: a voice note draws a play glyph, a playhead, a bar waveform of varying
+  heights, an avatar with a mic badge, and the duration; an image/video draws the
+  media (or a 4:3 placeholder) and, **when there is no caption**, an absolutely
+  positioned meta overlay inside the media with white text on a scrim. With a
+  caption the meta sits under the caption instead.
+- Run grouping decides whether a bubble has meta *at all*: only the **last message
+  of a run** carries the time and ticks. A caption-less image mid-run correctly
+  shows no overlay — don't read that as a bug (it fooled me once).
+- Interactive: reply buttons, the list CTA, the flow CTA and template buttons all
+  render as full-width accent rows; assert an action block is exactly as wide as
+  its bubble, since it cancels the bubble padding with negative margins. The list
+  also renders its open sheet docked at the bottom.
+
+Both themes matter here: every chat colour resolves through a `--wa-*` token, so
+switch WhatsApp theme to Dark and confirm they all change.
 
 ## Dropdowns
 
@@ -198,7 +253,8 @@ displayed, say that the visual check was not possible instead of implying you ey
 
 `src/main/*` (the Figma generator) **cannot be tested here at all**: there is no
 `figma` API in the browser. Frames, the dated section, the embedded-JSON layer,
-prototype wiring, fonts and the step-progress bar are Figma-only. Never imply you
+prototype wiring, fonts and the step-progress bar are Figma-only — and so is
+everything `src/main/thread.ts` draws for chat mode. Never imply you
 verified them; list them as needing a manual run (Import
 `plugin/manifest.json` → Generate).
 
