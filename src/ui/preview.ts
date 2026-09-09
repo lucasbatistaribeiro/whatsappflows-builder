@@ -25,6 +25,13 @@ export function applyThemeVars(): void {
     "--wa-chip-sel-border": COLOR.chipSelectedBorder,
     "--wa-status": COLOR.statusBar,
     "--wa-placeholder": COLOR.placeholder,
+    // chat mode
+    "--wa-bubble-in": COLOR.bubbleIn,
+    "--wa-bubble-out": COLOR.bubbleOut,
+    "--wa-wallpaper": COLOR.wallpaper,
+    "--wa-tick": COLOR.tick,
+    "--wa-chat-header": COLOR.chatHeader,
+    "--wa-system-pill": COLOR.systemPill,
   };
   for (const k in map) root.setProperty(k, map[k]);
 }
@@ -147,7 +154,9 @@ const STATUS_ICONS =
   '<rect x="3" y="3" width="16" height="6" rx="1.5" fill="currentColor"/>' +
   '<path d="M25 4.2a2 2 0 0 1 0 3.6z" fill="currentColor" fill-opacity=".4"/></svg>';
 
-function statusBar(): HTMLElement {
+// Exported so chat mode reuses the same status bar instead of duplicating it
+// (single source, same rule as the theme tokens).
+export function statusBar(): HTMLElement {
   const bar = el("div", "wa-status");
   bar.appendChild(el("span", "wa-status-time", "9:41"));
   const icons = el("div", "wa-status-icons");

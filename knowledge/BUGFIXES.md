@@ -5,6 +5,28 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Both tab rows rendered at once in Flows mode
+
+**Symptom.** Chat mode got its own `Compose / Preview` tab row. In Flows mode both
+rows showed — the Flows tabs *and* the chat tabs, stacked.
+
+**Root cause.** A specificity tie decided by source order. The rule hiding the
+chat row was `.chat-tabs { display: none }`, written next to the other top-bar
+rules near the top of the stylesheet. `.tabs { display: flex }` comes further down
+and matches the same element (`class="tabs chat-tabs"`). Both are 0,1,0, so the
+later one wins — `display: flex` — and the row was never hidden. In chat mode it
+looked fine, because `body.chat-mode .chat-tabs` is 0,2,0 and outranks both, which
+is exactly why the bug only showed in the *other* mode.
+
+**Fix.** Move the mode rules to sit **after** `.tabs`, so source order works in
+their favour. Bumping specificity would also work, but ordering keeps the rules
+next to what they override.
+
+**Lesson.** When a `display` rule "doesn't apply", check for another rule matching
+the same element at equal specificity before assuming the selector is wrong — and
+test the state where the override *isn't* in play, since that's where the tie
+surfaces.
+
 ## Figma fails to import the plugin on a fresh clone
 
 **Symptom.** **Plugins → Development → Import plugin from manifest…** errors out

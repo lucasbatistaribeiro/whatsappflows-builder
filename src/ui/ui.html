@@ -72,6 +72,29 @@
   .btn.primary:hover { filter: brightness(1.05); border-color: transparent; }
   .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
   #menu-btn { width: 34px; height: 34px; }
+  /* The mode switch sits next to the hamburger and never shrinks. */
+  .mode-switch { flex: none; }
+  .mode-switch .seg-item { padding: 4px 10px; font-size: 13px; }
+  /* Chat mode has one view so far, so the Flows tab row and screen rail go away
+     entirely rather than sitting there empty. The validation badge goes too: it
+     reports Flow JSON problems, which say nothing about a conversation, so
+     leaving it up in chat mode just misleads. */
+  body.chat-mode #val-badge { display: none; }
+
+  /* Composer: rows of fields beside a delete button, and stacked pairs. */
+  .chat-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 6px; }
+  .chat-row > input, .chat-row > .chat-stack { flex: 1; min-width: 0; }
+  .chat-stack { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .chat-sub { margin: 6px 0 2px; padding: 8px 10px; border-radius: 8px;
+    background: var(--panel); display: flex; flex-direction: column; gap: 2px; }
+  .chat-area { font: inherit; font-size: 14px; width: 100%; resize: vertical;
+    padding: 6px 8px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--elev); color: inherit; }
+  .chat-summary { color: var(--dim); font-size: 13px; font-weight: 400;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .chat-list { display: flex; flex-direction: column; gap: 8px; position: relative; }
+  .add-row { font-size: 13px; }
+  .add-row:disabled { opacity: .45; cursor: not-allowed; }
   #generate { padding: 9px 16px; font-size: 15px; }
   #generate svg { width: 16px; height: 16px; }
   /* Generate feedback: spinner while the main thread builds, then a check that
@@ -110,6 +133,14 @@
     transition: color .12s, border-color .12s; }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+  /* Each mode shows only its own tab row, and the screen rail is Flows-only.
+     These must come AFTER `.tabs { display: flex }`: `.chat-tabs` ties it at
+     0,1,0 specificity, so source order is what decides. Earlier, both rows
+     rendered at once in Flows mode. */
+  .chat-tabs { display: none; }
+  body.chat-mode .chat-tabs { display: flex; }
+  body.chat-mode .tabs:not(.chat-tabs), body.chat-mode #screens { display: none; }
 
   /* Screens rail */
   .screens { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
@@ -243,6 +274,175 @@
     box-shadow: 0 6px 24px rgba(0,0,0,.18); color: var(--wa-text, #111);
   }
   .wa-phone.has-error { border-color: #d33; }
+
+  /* ---- Chat mode (knowledge/CHAT_UI.md) -------------------------------------
+     Real WhatsApp sizes/colours, like the rest of wa-*: the 14px plugin-chrome
+     minimum does NOT apply here. Every colour comes from a --wa-* var so the
+     light/dark toggle drives this for free. Values are unconfirmed until
+     calibrated against a real screenshot. */
+  .wa-c-phone { background: var(--wa-wallpaper, #efeae2); }
+  .wa-c-header { display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    background: var(--wa-chat-header, #f0f2f5); color: var(--wa-text); flex: none; }
+  .wa-c-header svg { flex: none; color: var(--wa-text2); }
+  .wa-c-avatar { width: 30px; height: 30px; border-radius: 50%; flex: none;
+    object-fit: cover; background: var(--wa-chip); }
+  .wa-c-monogram { display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: var(--wa-text2); }
+  .wa-c-names { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .wa-c-name { font-size: 14px; font-weight: 600; line-height: 1.25;
+    display: flex; align-items: center; gap: 3px; min-width: 0; }
+  .wa-c-name > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wa-c-name svg { flex: none; color: var(--wa-link); }
+  .wa-c-presence { font-size: 11px; color: var(--wa-text2); line-height: 1.2; }
+  .wa-c-actions { display: flex; align-items: center; gap: 12px; flex: none; }
+
+  /* Messages sit at the BOTTOM of the thread, like the real app: a short
+     conversation leaves the empty wallpaper above it, not below. `margin-top:auto`
+     on the first child does this without breaking scrolling, which
+     justify-content:flex-end would (it clips overflow at the top). */
+  .wa-c-thread { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 7px;
+    display: flex; flex-direction: column; gap: 8px;
+    background: var(--wa-wallpaper, #efeae2); }
+  .wa-c-thread > :first-child { margin-top: auto; }
+  .wa-c-pill-row { display: flex; justify-content: center; }
+  .wa-c-pill { font-size: 11px; padding: 5px 9px; border-radius: 7px;
+    color: var(--wa-text2); box-shadow: 0 1px 0 rgba(0,0,0,.05);
+    max-width: 85%; text-align: center; }
+  /* Only the encryption notice is the yellow-ish system pill; the date divider is
+     neutral, like a bubble. Painting both yellow was wrong. */
+  .wa-c-date { background: var(--wa-bubble-in, #fff);
+    text-transform: uppercase; letter-spacing: .3px; font-weight: 500; }
+  .wa-c-notice { background: var(--wa-system-pill, #ffeecc);
+    display: inline-flex; align-items: center; gap: 4px; line-height: 1.35;
+    text-align: left; }
+  .wa-c-notice svg { flex: none; margin-top: 1px; align-self: flex-start; }
+
+  .wa-c-row { display: flex; }
+  .wa-c-row.in  { justify-content: flex-start; }
+  .wa-c-row.out { justify-content: flex-end; }
+  /* Grouped runs sit tighter than the 8px thread gap. */
+  .wa-c-row.grouped { margin-top: -6px; }
+
+  .wa-c-bubble { position: relative; max-width: 75%; padding: 6px 8px;
+    border-radius: 8px; background: var(--wa-bubble-in, #fff);
+    box-shadow: 0 1px .5px rgba(11,20,26,.13); }
+  .wa-c-row.out .wa-c-bubble { background: var(--wa-bubble-out, #d9fdd3); }
+  /* The tail is a notch, which border-radius can't express: square that one
+     corner and hang a small triangle off it. The generator will do the same with
+     a vector node (BUGFIXES #37/#38 pattern). */
+  .wa-c-row.in  .wa-c-bubble.tail { border-top-left-radius: 0; }
+  .wa-c-row.out .wa-c-bubble.tail { border-top-right-radius: 0; }
+  .wa-c-bubble.tail::before { content: ""; position: absolute; top: 0;
+    border-top: 8px solid var(--wa-bubble-in, #fff); width: 0; height: 0; }
+  .wa-c-row.in .wa-c-bubble.tail::before { left: -7px; border-left: 7px solid transparent; }
+  .wa-c-row.out .wa-c-bubble.tail::before { right: -7px; border-right: 7px solid transparent;
+    border-top-color: var(--wa-bubble-out, #d9fdd3); }
+
+  .wa-c-text { font-size: 14.2px; line-height: 19px; color: var(--wa-text);
+    white-space: pre-wrap; overflow-wrap: anywhere; }
+  /* Own row, not inline with the text — see the trade-off in CHAT_UI.md. */
+  .wa-c-meta { display: flex; align-items: center; justify-content: flex-end;
+    gap: 3px; margin-top: 1px; }
+  .wa-c-time { font-size: 11px; color: var(--wa-text2); }
+  .wa-c-ticks { display: inline-flex; color: var(--wa-text2); }
+  .wa-c-ticks.read { color: var(--wa-tick, #53bdeb); }
+  .wa-c-ticks svg { display: block; }
+
+  /* Interactive patterns (knowledge/CHAT_PATTERNS.md). The payload limits are
+     official; this LAYOUT is inferred — no official screenshot of reply buttons,
+     the list sheet or template buttons was found, so treat it as a first pass. */
+  .wa-c-tpl-header { font-size: 15px; font-weight: 600; color: var(--wa-text);
+    line-height: 20px; margin-bottom: 1px; }
+  .wa-c-tpl-footer { font-size: 12.5px; color: var(--wa-text2); line-height: 17px;
+    margin-top: 2px; }
+  /* Full-bleed inside the bubble: negative margins cancel the bubble's 8px
+     padding so the dividers reach both edges, as WhatsApp draws them. */
+  .wa-c-actions-box { margin: 4px -8px -6px; border-top: 1px solid var(--wa-divider);
+    display: flex; flex-direction: column; }
+  .wa-c-action { display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 8px 10px; font-size: 14px; font-weight: 500;
+    color: var(--wa-link); text-align: center; }
+  .wa-c-action + .wa-c-action { border-top: 1px solid var(--wa-divider); }
+  .wa-c-action svg { flex: none; }
+
+  /* Media bubbles. Grounded on the official conversation screenshot: the media
+     nearly fills the bubble and the meta is overlaid on it, bottom-right, over a
+     scrim — not on a row underneath. */
+  .wa-c-bubble.media { padding: 3px; }
+  .wa-c-media { position: relative; border-radius: 6px; overflow: hidden;
+    width: 100%; min-width: 190px; }
+  .wa-c-media-img { display: block; width: 100%; height: auto; }
+  .wa-c-media-ph { aspect-ratio: 4 / 3; display: flex; align-items: center;
+    justify-content: center; background: var(--wa-chip); color: var(--wa-placeholder); }
+  .wa-c-play { position: absolute; inset: 0; margin: auto; width: 40px; height: 40px;
+    border-radius: 50%; background: rgba(11,20,26,.45); color: #fff;
+    display: flex; align-items: center; justify-content: center; }
+  .wa-c-dur { position: absolute; top: 6px; left: 6px; font-size: 11px; color: #fff;
+    background: rgba(11,20,26,.45); border-radius: 4px; padding: 1px 5px; }
+  /* Overlaid meta: white on a scrim, since it sits on arbitrary imagery. */
+  .wa-c-meta.over { position: absolute; right: 6px; bottom: 5px; margin: 0;
+    background: rgba(11,20,26,.42); border-radius: 8px; padding: 1px 6px; }
+  .wa-c-meta.over .wa-c-time { color: #fff; }
+  .wa-c-meta.over .wa-c-ticks { color: #fff; }
+  .wa-c-meta.over .wa-c-ticks.read { color: #9ce7ff; }
+  .wa-c-caption { padding: 4px 5px 1px; }
+
+  /* Voice note: play glyph, waveform, avatar; duration + meta on the row below. */
+  .wa-c-audio-wrap { min-width: 200px; }
+  .wa-c-audio { display: flex; align-items: center; gap: 8px; }
+  .wa-c-audio > svg { flex: none; color: var(--wa-text2); }
+  .wa-c-wave { flex: 1; min-width: 0; display: flex; align-items: center; gap: 1.5px; }
+  .wa-c-playhead { flex: none; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--wa-primary); margin-right: 3px; }
+  .wa-c-bar { flex: none; width: 2px; border-radius: 1px; background: var(--wa-placeholder); }
+  .wa-c-audio-av { position: relative; flex: none; }
+  .wa-c-mic-badge { position: absolute; right: -1px; bottom: -1px; width: 13px; height: 13px;
+    border-radius: 50%; background: var(--wa-primary); color: var(--wa-on-primary);
+    display: flex; align-items: center; justify-content: center; }
+  .wa-c-audio-foot { display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-top: 2px; }
+  .wa-c-audio-foot .wa-c-meta { margin-top: 0; }
+
+  /* Document — inferred, no reference screenshot. */
+  .wa-c-doc { display: flex; align-items: center; gap: 8px; min-width: 180px;
+    padding: 6px 8px; border-radius: 6px; background: var(--wa-chip); }
+  .wa-c-doc > svg { flex: none; color: var(--wa-text2); }
+  .wa-c-doc-text { flex: 1; min-width: 0; }
+  .wa-c-doc-name { font-size: 13.5px; color: var(--wa-text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wa-c-doc-size { font-size: 11px; color: var(--wa-text2); }
+
+  /* The list menu's bottom sheet — the second state a list message has. */
+  .wa-c-sheet { background: var(--wa-surface); border-radius: 12px 12px 0 0;
+    padding: 10px 0 4px; box-shadow: 0 -2px 12px rgba(11,20,26,.16); }
+  .wa-c-sheet-title { font-size: 15px; font-weight: 600; color: var(--wa-text);
+    padding: 4px 16px 10px; }
+  .wa-c-sheet-section { font-size: 12px; font-weight: 600; color: var(--wa-primary);
+    padding: 8px 16px 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .wa-c-sheet-row { display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px; border-top: 1px solid var(--wa-divider); }
+  .wa-c-sheet-text { flex: 1; min-width: 0; }
+  .wa-c-sheet-row-title { font-size: 14px; color: var(--wa-text); }
+  .wa-c-sheet-desc { font-size: 12.5px; color: var(--wa-text2); }
+  .wa-c-radio { flex: none; width: 17px; height: 17px; border-radius: 50%;
+    border: 1.5px solid var(--wa-placeholder); }
+
+  .wa-c-quote { border-left: 3px solid var(--wa-primary); border-radius: 4px;
+    padding: 3px 6px; margin-bottom: 3px; background: rgba(11,20,26,.06); }
+  .wa-c-quote-author { font-size: 12px; font-weight: 600; color: var(--wa-primary); }
+  .wa-c-quote-text { font-size: 12px; color: var(--wa-text2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .wa-c-input { display: flex; align-items: center; gap: 6px; padding: 6px 7px;
+    background: var(--wa-chat-header, #f0f2f5); flex: none; }
+  .wa-c-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px;
+    padding: 7px 9px; border-radius: 18px; background: var(--wa-surface, #fff);
+    color: var(--wa-text2); }
+  .wa-c-field svg { flex: none; }
+  .wa-c-field-ph { flex: 1; min-width: 0; font-size: 13px; color: var(--wa-placeholder); }
+  .wa-c-mic { flex: none; width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--wa-primary); color: var(--wa-on-primary); }
   .wa-status { display: flex; justify-content: space-between; align-items: center;
     padding: 9px 16px 5px; background: var(--wa-status, #f7f8fa); color: var(--wa-text); }
   .wa-status-time { font-weight: 600; font-size: 13px; letter-spacing: .2px; }
@@ -520,6 +720,12 @@
     <button id="menu-btn" class="icon-btn" title="Menu" aria-label="Menu">
       <span class="ic" data-icon="menu" data-size="24"></span>
     </button>
+    <!-- Which generator is active. Chat is a mode, not a tab: it has its own
+         model, panels and Generate payload (knowledge/CHAT_UI.md). -->
+    <div class="seg mode-switch" role="tablist" aria-label="Generator">
+      <button class="seg-item active" role="tab" aria-selected="true" data-mode="flows" data-i18n="modeFlows">Flows</button>
+      <button class="seg-item" role="tab" aria-selected="false" data-mode="chat" data-i18n="modeChat">Chat</button>
+    </div>
     <span id="val-badge" class="badge"></span>
     <span class="spacer"></span>
     <button id="generate" class="btn primary" title="Generate the screens in Figma">
@@ -617,6 +823,11 @@
           <button class="tab" role="tab" aria-selected="false" data-tab="preview" data-i18n="preview">Preview</button>
           <button class="tab" role="tab" aria-selected="false" data-tab="json" data-i18n="flowJson">Flow JSON</button>
         </div>
+        <!-- Chat mode's own tab row: it has two views, so it needs one. -->
+        <div class="tabs chat-tabs" role="tablist">
+          <button class="tab active" role="tab" aria-selected="true" data-chat-tab="compose" data-i18n="chatCompose">Compose</button>
+          <button class="tab" role="tab" aria-selected="false" data-chat-tab="preview" data-i18n="chatPreviewTab">Preview</button>
+        </div>
         <div class="screens" id="screens"></div>
       </div>
 
@@ -648,6 +859,15 @@
           <textarea id="json" spellcheck="false"></textarea>
           <div class="json-status ok" id="json-status">Valid</div>
           <div class="hint" data-i18n="jsonHint">Edits here sync back to the Build tab when valid.</div>
+        </div>
+
+        <!-- Chat mode (knowledge/CHAT_UI.md): phase 1 renders a sample thread so
+             fidelity can be calibrated before the composer exists. -->
+        <div class="panel" id="panel-chat-compose">
+          <div id="chat-composer"></div>
+        </div>
+        <div class="panel" id="panel-chat-preview">
+          <div id="chat-preview"></div>
         </div>
       </div>
     </section>

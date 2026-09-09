@@ -9,7 +9,10 @@ project with changes to Meta's WhatsApp Flows spec (new components, limits,
 versions, validation rules), follow `knowledge/META_SYNC.md` — it maps each Meta doc
 to the exact code and gives a step-by-step routine. Accepted-but-unstarted work
 lives in `knowledge/BACKLOG.md` — check it before planning something new, and add
-an entry there instead of dropping an idea.
+an entry there instead of dropping an idea. `knowledge/CHAT_UI.md` is the design
+spec for chat mode (generating WhatsApp conversation screens), in progress, and
+`knowledge/CHAT_PATTERNS.md` documents the interactive message types (reply
+buttons, the list menu, flows, templates) with their official shapes and limits.
 
 ## Commands
 
@@ -103,7 +106,8 @@ src/
   main/        theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
   ui/          ui.html, ui.ts, preview, propEditor, dropdown, icons, i18n       (plugin UI)
 build/         esbuild.mjs (paths resolve from the file, not the cwd), tsconfig.json
-knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md, BACKLOG.md
+knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md, BACKLOG.md,
+               CHAT_UI.md, CHAT_PATTERNS.md
 .claude/agents/ runnable subagent definitions — not docs (see plugin-ui-tester)
 CLAUDE.md      root pointer here (agent tooling looks for it there); AGENTS.md too
 ```

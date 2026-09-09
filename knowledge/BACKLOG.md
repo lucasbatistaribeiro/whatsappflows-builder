@@ -11,7 +11,7 @@ Status: **idea** (no design yet) · **ready** (approach settled) · **blocked**.
 
 ## Chat UI: generate WhatsApp conversation screens
 
-**Status:** ready · raised 2026-08-05
+**Status:** in progress on `feat/chat-mode` · raised 2026-08-05 · design spec: `CHAT_UI.md`
 
 Same idea as the Flows generator, but for the **WhatsApp chat interface**: compose
 a conversation in the plugin (bubbles in/out, header, input bar) and Generate it as
@@ -89,6 +89,27 @@ embedded JSON, Generate feedback, and the `plugin-ui-tester` subagent.
 2. Media, quoted reply, audio.
 3. Optional: template-accurate bubbles, using the OpenAPI specs above for button
    types and limits.
+
+---
+
+## Chat list screen (chat mode, later phase)
+
+**Status:** idea · raised 2026-09-08
+
+Chat mode renders a conversation. The **chat list** — the screen you land on — is a
+second screen type worth having: it's the reference Lucas actually had on hand, and
+mockups often need the inbox as well as a thread.
+
+Structure (from that reference and the official Play Store screenshots): a white
+header with the wordmark and camera/overflow icons, a search pill, filter chips
+(All / Unread / Groups), then rows of avatar + name + message preview + time, with
+an unread count badge, a pin glyph, and a media-type prefix icon on the preview
+("Video", "Sticker", "GIF"). A green FAB, and bottom navigation
+(Chats / Updates / Communities / Calls).
+
+Note the design era: the older layout had a **green top bar**; the current one is
+white with a green wordmark and bottom navigation. Pick one deliberately — the
+palette in `CHAT_UI.md` is measured from the current Android design.
 
 ---
 

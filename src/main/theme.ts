@@ -15,6 +15,11 @@ export interface Palette {
   divider: string; primary: string; onPrimary: string; link: string;
   inputBorder: string; inputBg: string; chipBg: string; chipSelectedBg: string;
   chipSelectedBorder: string; statusBar: string; placeholder: string;
+  // Chat mode (see knowledge/CHAT_UI.md). Sampled from WhatsApp LLC's own Play
+  // Store screenshots — Android, which is what this mocks. The earlier guesses
+  // were WhatsApp *Web* values, which is why they were consistently off.
+  bubbleIn: string; bubbleOut: string; wallpaper: string; tick: string;
+  chatHeader: string; systemPill: string;
 }
 
 export const COLOR_LIGHT: Palette = {
@@ -33,6 +38,12 @@ export const COLOR_LIGHT: Palette = {
   chipSelectedBorder: "#008069",
   statusBar: "#F7F8FA",
   placeholder: "#8696A0",
+  bubbleIn: "#FFFFFF",
+  bubbleOut: "#CFFFCF",
+  wallpaper: "#F4F1E9",
+  tick: "#53BDEB",
+  chatHeader: "#FFFFFF", // same as an incoming bubble; the shadow separates them
+  systemPill: "#FFEFD1",
 };
 
 // WhatsApp dark theme (curated approximations of the real tokens).
@@ -52,6 +63,12 @@ export const COLOR_DARK: Palette = {
   chipSelectedBorder: "#00A884",
   statusBar: "#1F2C34",
   placeholder: "#8696A0",
+  bubbleIn: "#1D272B",
+  bubbleOut: "#004F37",
+  wallpaper: "#091015",
+  tick: "#53BDEB", // the read tick keeps the same blue in both themes
+  chatHeader: "#091015", // measured the same as the wallpaper (edge-to-edge header)
+  systemPill: "#182229", // not visible in the sampled screenshot — still a guess
 };
 
 let active: Palette = COLOR_LIGHT; // light is always the default

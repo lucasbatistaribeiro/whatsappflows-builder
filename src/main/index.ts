@@ -1,12 +1,14 @@
 // Plugin main thread (Figma sandbox). Receives a Flow JSON from the UI and
 // renders navigable WhatsApp-styled screens on the canvas.
 import type { FlowJSON } from "../model/flowTypes";
+import type { Thread } from "../model/chatTypes";
 import type { UIToMain, Prefs, GenOptions } from "../shared/messages";
 import { SCREEN_HEIGHTS, setPalette, fill } from "./theme";
 import { applyFills } from "./nodes";
 import { loadFonts } from "./fonts";
 import { setBusiness } from "./chrome";
 import { buildScreen, type BuiltScreen } from "./screen";
+import { buildThread } from "./thread";
 import { wireNavigation } from "./routing";
 
 const GAP = 56;
@@ -19,6 +21,7 @@ const SECTION_RADIUS = 24;
 
 const PREFS_KEY = "flows-builder-prefs";
 const DEFAULT_PREFS: Prefs = {
+  mode: "flows",
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
   sectionName: "", sectionColor: SECTION_BG, sectionRadius: SECTION_RADIUS,
@@ -49,6 +52,9 @@ figma.ui.onmessage = async (msg: UIToMain) => {
     }
     if (msg.type === "generate") {
       await generate(msg.flow, msg.options);
+    }
+    if (msg.type === "generateChat") {
+      await generateChat(msg.thread, msg.options);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -103,10 +109,17 @@ function nextSectionY(): number {
 }
 
 function embedFlowJson(section: SectionNode, flow: FlowJSON): void {
+  embedPayload(section, flow);
+}
+
+// The hidden, locked TEXT node carrying whatever produced this section. Flow mode
+// writes the Flow JSON unchanged (so sections generated before chat mode existed
+// still re-import); chat mode writes a `mode`-tagged object.
+function embedPayload(section: SectionNode, payload: unknown): void {
   const t = figma.createText();
   t.name = JSON_NODE_NAME;
   t.fontSize = 8;
-  t.characters = JSON.stringify(flow);
+  t.characters = JSON.stringify(payload);
   section.appendChild(t);
   t.x = SECTION_PAD;
   t.y = SECTION_PAD;
@@ -160,6 +173,38 @@ function enforceMinHeight(frame: FrameNode, minH: number): void {
   if (body) { try { (body as SceneNode & { layoutSizingVertical?: string }).layoutSizingVertical = "FILL"; } catch { /* not fillable */ } }
 }
 
+// Wrap a run of frames in the dated section: laid out in a row, "fill container"
+// sizing resolved, given the standard phone height, then sized around the result.
+// Shared by both modes so the section looks identical whichever one produced it.
+function placeInSection(frames: FrameNode[], options: GenOptions): SectionNode {
+  const sectionY = nextSectionY(); // measure the page before adding the section
+  const section = figma.createSection();
+  section.name = sectionLabel(options.sectionName);
+  section.fills = [fill(safeColor(options.sectionColor))];
+  section.strokes = [];        // no border around the generated group
+  section.cornerRadius = safeRadius(options.sectionRadius);
+  figma.currentPage.appendChild(section);
+
+  const minH = SCREEN_HEIGHTS[options.size] ?? SCREEN_HEIGHTS.md;
+  let cursorX = SECTION_PAD;
+  for (const frame of frames) {
+    section.appendChild(frame);
+    frame.x = cursorX;
+    frame.y = SECTION_PAD;
+    // Resolve "fill container" sizing now the frame is in the document tree.
+    applyFills(frame);
+    enforceMinHeight(frame, minH);
+    cursorX += frame.width + GAP;
+  }
+
+  const contentW = cursorX - GAP;
+  const contentH = frames.reduce((h, f) => Math.max(h, f.height), 0);
+  section.resizeWithoutConstraints(contentW + SECTION_PAD, contentH + SECTION_PAD * 2);
+  section.x = 0;
+  section.y = sectionY;
+  return section;
+}
+
 async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): Promise<void> {
   if (!flow || !Array.isArray(flow.screens) || flow.screens.length === 0) {
     throw new Error("Flow has no screens.");
@@ -173,34 +218,7 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
 
   const built: BuiltScreen[] = flow.screens.map((s, i) => buildScreen(s, i, flow.screens.length));
 
-  // Wrap this run in a dated section, padded on all sides.
-  const sectionY = nextSectionY(); // measure the page before adding the section
-  const section = figma.createSection();
-  section.name = sectionLabel(options.sectionName);
-  section.fills = [fill(safeColor(options.sectionColor))];
-  section.strokes = [];        // no border around the generated group
-  section.cornerRadius = safeRadius(options.sectionRadius);
-  figma.currentPage.appendChild(section);
-
-  // Lay the screens out in a row inside the section.
-  const minH = SCREEN_HEIGHTS[options.size] ?? SCREEN_HEIGHTS.md;
-  let cursorX = SECTION_PAD;
-  built.forEach((b) => {
-    section.appendChild(b.frame);
-    b.frame.x = cursorX;
-    b.frame.y = SECTION_PAD;
-    // Resolve "fill container" sizing now the frame is in the document tree.
-    applyFills(b.frame);
-    enforceMinHeight(b.frame, minH); // standard phone height for short screens
-    cursorX += b.frame.width + GAP;
-  });
-
-  // Size the section around the final frame geometry, then park it on the page.
-  const contentW = cursorX - GAP;
-  const contentH = built.reduce((h, b) => Math.max(h, b.frame.height), 0);
-  section.resizeWithoutConstraints(contentW + SECTION_PAD, contentH + SECTION_PAD * 2);
-  section.x = 0;
-  section.y = sectionY;
+  const section = placeInSection(built.map((b) => b.frame), options);
 
   embedFlowJson(section, flow); // hidden JSON so this section can be re-imported
 
@@ -218,6 +236,31 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
   figma.viewport.scrollAndZoomIntoView([section]);
   figma.notify(`Generated ${built.length} screen${built.length > 1 ? "s" : ""} in "${section.name}".`);
   figma.ui.postMessage({ type: "generated", screenCount: built.length });
+}
+
+// Chat mode (knowledge/CHAT_UI.md): one frame per thread, in the same dated
+// section. No prototype wiring — a conversation has nothing to navigate — and no
+// re-import offer yet, so the embedded payload is tagged with its mode for a
+// future importer to recognise. The existing flow reader requires a screens[]
+// array, so it already declines a chat section instead of mis-importing it.
+async function generateChat(thread: Thread, options: GenOptions = DEFAULT_OPTIONS): Promise<void> {
+  if (!thread || !Array.isArray(thread.messages) || thread.messages.length === 0) {
+    throw new Error("Conversation has no messages.");
+  }
+
+  await loadFonts();
+  await figma.loadAllPagesAsync();
+  setPalette(options.theme); // switch the active palette before building any node
+
+  const frame = buildThread(thread);
+  const section = placeInSection([frame], options);
+  embedPayload(section, { mode: "chat", thread });
+
+  figma.currentPage.selection = [frame];
+  figma.viewport.scrollAndZoomIntoView([section]);
+  const n = thread.messages.length;
+  figma.notify(`Generated a conversation with ${n} message${n > 1 ? "s" : ""} in "${section.name}".`);
+  figma.ui.postMessage({ type: "generated", screenCount: 1 });
 }
 
 // Entry = a screen that is never a navigation target; fall back to the first.
