@@ -3,8 +3,8 @@
 //
 // Colours come from the --wa-* CSS vars that preview.ts pushes from theme.ts, so
 // light/dark works without this file knowing about either palette.
-import type { Message, Thread } from "../model/chatTypes";
-import { startsRun } from "../model/chatTypes";
+import type { Interactive, Message, TemplateButtonType, Thread } from "../model/chatTypes";
+import { startsRun, endsRun } from "../model/chatTypes";
 import { iconEl } from "./icons";
 import { statusBar } from "./preview";
 
@@ -36,7 +36,10 @@ function header(thread: Thread): HTMLElement {
   bar.appendChild(avatar(thread.contact.name, thread.contact.avatar));
 
   const names = el("div", "wa-c-names");
-  names.appendChild(el("div", "wa-c-name", thread.contact.name));
+  const nameRow = el("div", "wa-c-name");
+  nameRow.appendChild(el("span", undefined, thread.contact.name));
+  if (thread.contact.verified) nameRow.appendChild(iconEl("badge-check", 13));
+  names.appendChild(nameRow);
   if (thread.contact.presence) {
     names.appendChild(el("div", "wa-c-presence", thread.contact.presence));
   }
@@ -80,12 +83,78 @@ function quoted(reply: NonNullable<Message["replyTo"]>): HTMLElement {
   return box;
 }
 
-function bubble(msg: Message, tail: boolean): HTMLElement {
+/** Leading glyph per template button type. */
+const TEMPLATE_BUTTON_ICON: Record<TemplateButtonType, string> = {
+  QUICK_REPLY: "reply", URL: "external-link", PHONE_NUMBER: "phone",
+  COPY_CODE: "copy", FLOW: "layout-list", MPM: "shopping-bag",
+  CATALOG: "shopping-bag", OTP: "copy",
+};
+
+/**
+ * One full-width action row: a centred, accent-coloured label with an optional
+ * leading glyph. Reply buttons, the list CTA, the flow CTA and template buttons
+ * all render this way in WhatsApp, so they share one builder instead of four
+ * near-identical ones.
+ *
+ * INFERRED, not calibrated: no official screenshot of any of these was found
+ * (knowledge/CHAT_PATTERNS.md). The payload limits are official; this layout is
+ * our reading of it.
+ */
+function actionRow(label: string, icon?: string): HTMLElement {
+  const row = el("div", "wa-c-action");
+  if (icon) row.appendChild(iconEl(icon, 15));
+  row.appendChild(el("span", undefined, label));
+  return row;
+}
+
+/** The list menu's bottom sheet — the second state a list message has. */
+function listSheet(inter: Extract<Interactive, { kind: "list" }>): HTMLElement {
+  const sheet = el("div", "wa-c-sheet");
+  sheet.appendChild(el("div", "wa-c-sheet-title", inter.cta));
+  for (const section of inter.sections) {
+    if (section.title) sheet.appendChild(el("div", "wa-c-sheet-section", section.title));
+    for (const row of section.rows) {
+      const r = el("div", "wa-c-sheet-row");
+      const txt = el("div", "wa-c-sheet-text");
+      txt.appendChild(el("div", "wa-c-sheet-row-title", row.title));
+      if (row.description) txt.appendChild(el("div", "wa-c-sheet-desc", row.description));
+      r.appendChild(txt);
+      r.appendChild(el("span", "wa-c-radio"));
+      sheet.appendChild(r);
+    }
+  }
+  return sheet;
+}
+
+/** The interactive part that hangs under a bubble's text. */
+function interactive(inter: Interactive): HTMLElement {
+  const box = el("div", "wa-c-actions-box");
+  if (inter.kind === "buttons") {
+    for (const b of inter.buttons) box.appendChild(actionRow(b.title));
+  } else if (inter.kind === "list") {
+    box.appendChild(actionRow(inter.cta, "list"));
+  } else if (inter.kind === "flow") {
+    box.appendChild(actionRow(inter.cta, "layout-list"));
+  } else {
+    for (const b of inter.buttons) box.appendChild(actionRow(b.text, TEMPLATE_BUTTON_ICON[b.type]));
+  }
+  return box;
+}
+
+function bubble(msg: Message, tail: boolean, showMeta: boolean): HTMLElement {
   const row = el("div", "wa-c-row " + (msg.direction === "out" ? "out" : "in"));
   const b = el("div", "wa-c-bubble" + (tail ? " tail" : ""));
+  const tpl = msg.interactive?.kind === "template" ? msg.interactive : null;
+
   if (msg.replyTo) b.appendChild(quoted(msg.replyTo));
+  if (tpl?.header) b.appendChild(el("div", "wa-c-tpl-header", tpl.header));
   if (msg.text) b.appendChild(el("div", "wa-c-text", msg.text));
-  b.appendChild(metaRow(msg));
+  if (tpl?.footer) b.appendChild(el("div", "wa-c-tpl-footer", tpl.footer));
+  if (showMeta) b.appendChild(metaRow(msg));
+  // The action block sits below the meta, spanning the bubble's full width, so
+  // its dividers reach both edges — hence the negative margins in the CSS.
+  if (msg.interactive) b.appendChild(interactive(msg.interactive));
+
   row.appendChild(b);
   return row;
 }
@@ -121,11 +190,20 @@ export function renderChat(thread: Thread, host: HTMLElement): void {
   }
   thread.messages.forEach((msg, i) => {
     const first = startsRun(thread.messages, i);
-    const row = bubble(msg, first);
+    // Time + ticks only on the last message of a run, as the real app does.
+    const row = bubble(msg, first, endsRun(thread.messages, i));
     if (!first) row.classList.add("grouped");
     body.appendChild(row);
   });
   phone.appendChild(body);
+
+  // A list message has two states, and both are worth mocking. The open sheet is
+  // docked over the bottom of the thread so the state is actually visible; once
+  // the composer exists it should become a toggle rather than always-on.
+  const firstList = thread.messages
+    .map((m) => m.interactive)
+    .find((i): i is Extract<Interactive, { kind: "list" }> => !!i && i.kind === "list");
+  if (firstList) phone.appendChild(listSheet(firstList));
 
   phone.appendChild(inputBar());
   host.appendChild(phone);

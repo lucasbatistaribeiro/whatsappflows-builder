@@ -4,11 +4,11 @@
 //
 // Only verifiable inside Figma: typecheck + build says nothing about how this
 // renders on the canvas.
-import type { Message, Thread } from "../model/chatTypes";
+import type { Interactive, Message, Thread } from "../model/chatTypes";
 import { startsRun } from "../model/chatTypes";
 import { COLOR, DEVICE } from "./theme";
 import { FONT } from "./fonts";
-import { autoFrame, markFill, markFillV, text } from "./nodes";
+import { autoFrame, divider, markFill, markFillV, text } from "./nodes";
 import { statusBar } from "./chrome";
 
 // Mirrors the .wa-c-* CSS in ui.html. Unconfirmed until calibrated (CHAT_UI.md).
@@ -44,7 +44,14 @@ function header(thread: Thread): FrameNode {
 
   const names = autoFrame({ name: "Names", gap: 1 });
   markFill(names);
-  names.appendChild(text(thread.contact.name, { size: 14, font: FONT.semibold, color: COLOR.textPrimary }));
+  const nameRow = autoFrame({ name: "Name", axis: "HORIZONTAL", gap: 3, counterAlign: "CENTER" });
+  nameRow.appendChild(text(thread.contact.name, { size: 14, font: FONT.semibold, color: COLOR.textPrimary }));
+  if (thread.contact.verified) {
+    // A glyph rather than an SVG: the status-bar icons need createNodeFromSvg for
+    // their exact shapes, but a badge reads fine as text and can't fail silently.
+    nameRow.appendChild(text("✓", { size: 11, font: FONT.semibold, color: COLOR.link }));
+  }
+  names.appendChild(nameRow);
   if (thread.contact.presence) {
     names.appendChild(text(thread.contact.presence, { size: 11, color: COLOR.textSecondary }));
   }
@@ -110,22 +117,78 @@ function addTail(bubble: FrameNode, out: boolean, colour: string): void {
   }
 }
 
-function bubble(msg: Message, tail: boolean): FrameNode {
+/**
+ * One full-width action row. Reply buttons, the list CTA, the flow CTA and
+ * template buttons all look like this, so they share one builder.
+ *
+ * INFERRED layout — no official screenshot of these patterns was found; the
+ * payload limits in CHAT_PATTERNS.md are official, this drawing is not.
+ */
+function actionRow(label: string): FrameNode {
+  const row = autoFrame({ name: "Action", axis: "HORIZONTAL", align: "CENTER",
+    counterAlign: "CENTER", padding: [8, 10, 8, 10] });
+  markFill(row);
+  row.appendChild(text(label, { size: 14, font: FONT.medium, color: COLOR.link }));
+  return row;
+}
+
+/**
+ * The action block under a bubble's text. Unlike the CSS side, which cancels the
+ * bubble padding with negative margins, here the bubble carries no padding at all
+ * and this block is a full-width sibling of a padded content frame — Figma has no
+ * negative margins.
+ */
+function interactiveBlock(inter: Interactive): FrameNode {
+  const box = autoFrame({ name: "Actions" });
+  markFill(box);
+  box.appendChild(divider());
+  const labels = inter.kind === "buttons" ? inter.buttons.map((b) => b.title)
+    : inter.kind === "template" ? inter.buttons.map((b) => b.text)
+    : [inter.cta];
+  labels.forEach((label, i) => {
+    if (i > 0) box.appendChild(divider());
+    box.appendChild(actionRow(label));
+  });
+  return box;
+}
+
+function bubble(msg: Message, tail: boolean, showMeta: boolean): FrameNode {
   const out = msg.direction === "out";
   const row = autoFrame({ name: out ? "Out" : "In", axis: "HORIZONTAL", align: out ? "MAX" : "MIN" });
   markFill(row);
 
   const colour = out ? COLOR.bubbleOut : COLOR.bubbleIn;
-  const b = autoFrame({ name: "Bubble", gap: 1, padding: [6, 8, 6, 8], bg: colour, radius: BUBBLE_RADIUS });
+  // The bubble itself is unpadded so an action block can span its full width; the
+  // text lives in a padded child instead.
+  const b = autoFrame({ name: "Bubble", bg: colour, radius: BUBBLE_RADIUS });
+  const content = autoFrame({ name: "Content", gap: 1, padding: [6, 8, 6, 8] });
+  markFill(content);
+
+  const tpl = msg.interactive && msg.interactive.kind === "template" ? msg.interactive : null;
   if (msg.replyTo) {
     const q = autoFrame({ name: "Quote", gap: 1, padding: [3, 6, 3, 6], bg: COLOR.chipBg, radius: 4 });
     q.appendChild(text(msg.replyTo.author, { size: 12, font: FONT.semibold, color: COLOR.primary }));
     q.appendChild(text(msg.replyTo.text, { size: 12, color: COLOR.textSecondary, width: MAX_TEXT_W }));
-    b.appendChild(q);
+    content.appendChild(q);
   }
-  if (msg.text) b.appendChild(bubbleText(msg.text));
-  const meta = metaRow(msg);
-  if (meta) b.appendChild(meta);
+  if (tpl && tpl.header) {
+    content.appendChild(text(tpl.header, { size: 15, font: FONT.semibold, lineHeight: 20, color: COLOR.textPrimary }));
+  }
+  if (msg.text) content.appendChild(bubbleText(msg.text));
+  if (tpl && tpl.footer) {
+    content.appendChild(text(tpl.footer, { size: 12.5, lineHeight: 17, color: COLOR.textSecondary }));
+  }
+  const meta = showMeta ? metaRow(msg) : null;
+  if (meta) content.appendChild(meta);
+  b.appendChild(content);
+
+  if (msg.interactive) {
+    // A bubble with actions takes the full width cap: the rows need the room, and
+    // that is how the real app draws them.
+    b.appendChild(interactiveBlock(msg.interactive));
+    b.counterAxisSizingMode = "FIXED";
+    b.resize(MAX_BUBBLE_W, b.height);
+  }
 
   row.appendChild(b);
   if (tail) addTail(b, out, colour);
@@ -194,7 +257,11 @@ export function buildThread(thread: Thread): FrameNode {
   for (const run of runs(thread.messages)) {
     const group = autoFrame({ name: "Run", gap: GROUPED_GAP });
     markFill(group);
-    run.forEach((msg, i) => group.appendChild(bubble(msg, i === 0)));
+    run.forEach((msg, i) => {
+      // Time + ticks only on the last of a run, as the real app does.
+      const last = i === run.length - 1;
+      group.appendChild(bubble(msg, i === 0, last));
+    });
     body.appendChild(group);
   }
   frame.appendChild(body);

@@ -71,9 +71,9 @@ Up to three tappable buttons under the message. The most common "pick one" patte
 | `reply.id` | **256** — no leading/trailing spaces |
 | `buttons[].type` | only `reply` |
 
-**Renders as:** the body text, then buttons stacked full-width below it, inside or
-attached under the bubble. *No reference screenshot yet — the split between
-"inside the bubble" and "attached below it" needs checking.*
+**Renders as:** the body text, then full-width rows below it, inside the bubble,
+divided by hairlines. *Built. The split between "inside the bubble" and "attached
+below it" is still unverified — we chose inside.*
 
 ## 2. List message — `type: "list"` — **the menu**
 
@@ -110,7 +110,7 @@ meant by "menu".
 2. **the open sheet** — a bottom sheet listing section titles and rows, each row a
    title over an optional description, with a radio on the right.
 
-*No reference screenshot yet for either state.*
+*Both built; neither calibrated.*
 
 ## 3. Flow — `type: "flow"`
 
@@ -210,10 +210,10 @@ The Template API OpenAPI carries **zero** length constraints (checked: no
 Note the button labels are **25** for templates but **20** for session reply
 buttons — an easy detail to get wrong in a validator.
 
-**Renders as:** header (text or media), body, footer in a smaller muted style, then
+**Renders as:** header in a bold 15px line, body, footer smaller and muted, then
 buttons as full-width rows divided by hairlines, each with a leading glyph for its
-type (arrow for URL, phone for PHONE_NUMBER, copy for COPY_CODE). *Inferred; not
-yet checked against a screenshot.*
+type (external-link for URL, phone for PHONE_NUMBER, copy for COPY_CODE/OTP,
+reply for QUICK_REPLY, bag for MPM/CATALOG). *Built; the glyph choices are ours.*
 
 ---
 
@@ -249,17 +249,54 @@ Everything above in one place, for whatever validator eventually gets written:
 
 - **Any rendering detail.** No sizes, colours, spacing, or glyphs. That comes from
   screenshots, the same way the chrome was calibrated (`CHAT_UI.md` → Provenance).
-- **No screenshots of these patterns.** The one official conversation screenshot
-  found so far shows text, audio and image bubbles only. Reply buttons, the list
-  sheet and template buttons have **no visual reference yet** — so every "renders
-  as" note above is an inference, and is labelled as one.
+- **No screenshots of these patterns.** Searched twice: the consumer WhatsApp
+  listing and the **WhatsApp Business** listing (24 images, 8 unique). Both only
+  ever show text, audio and image bubbles — no reply buttons, no list sheet, no
+  template buttons. Don't spend time re-searching those two.
 
-## Suggested model growth (draft)
+## Implementation status
 
-`Message.type` currently covers `text | image | video | document | audio`. These
-patterns are a second axis — a message is text *or* media *and* may carry an
-interactive part — so they belong in their own optional field rather than as more
-`type` values:
+All four are **built** — preview (`src/ui/chat.ts`) and Figma generator
+(`src/main/thread.ts`) — but the *layout* is still our reading, not calibrated
+against anything. The payload limits are official; the drawing is not.
+
+They share one `actionRow` builder, because in WhatsApp reply buttons, the list
+CTA, the flow CTA and template buttons all read as the same thing: a full-width,
+centred, accent-coloured row divided by hairlines. Four near-identical builders
+would have been worse.
+
+The list's **open sheet** is built too, and docked over the bottom of the thread so
+the state is visible. Once the composer exists that should become a toggle rather
+than always-on.
+
+### Two structural differences between the two renderers
+
+- **Full-bleed action rows.** CSS cancels the bubble's padding with negative
+  margins. Figma has no negative margins, so there the bubble carries *no* padding
+  and the text lives in a padded `Content` child, with the action block as its
+  full-width sibling.
+- **A bubble with actions takes the full width cap** rather than hugging. The rows
+  need the room, and it matches how the real app draws them.
+
+### Two details found while hunting for references
+
+Both came from WhatsApp LLC's own Business screenshots, and both are implemented:
+
+- **Only the last message of a run shows the time and ticks.** Two consecutive
+  outgoing bubbles: the first carries no meta at all. This also makes the
+  "meta on its own row" trade-off much cheaper, since far fewer bubbles pay for
+  the extra row (`endsRun` in `chatTypes.ts`).
+- **A business account header** shows a verified badge after the name and
+  "Business account" as the presence line.
+
+## The model (implemented)
+
+`Message.type` covers `text | image | video | document | audio`. These patterns are
+a second axis — a message is text *or* media *and* may carry an interactive part —
+so they live in their own optional field rather than as more `type` values.
+`src/model/chatTypes.ts` has the real shape; the sketch below is the idea, and the
+limits above are exported from that file as `LIMITS` so the renderers and any
+future validator read one source:
 
 ```ts
 type Interactive =

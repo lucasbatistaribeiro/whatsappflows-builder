@@ -190,10 +190,9 @@ a string keeps the model free of timezone questions.
    (drag-reorder + accordion) rather than inventing an interaction.
 4. **Media and extras** — image/video/document/audio bubbles, quoted replies.
 5. **Interactive patterns** — reply buttons, the list menu, flows and template
-   bubbles. Every shape and limit is already documented in `CHAT_PATTERNS.md`,
-   extracted from Meta's OpenAPI specs; what's missing is the *rendering*, which
-   has no reference screenshot yet. Promoted from "optional": these are what makes
-   a business conversation look like one.
+   bubbles. *Built, in both renderers.* Shapes and limits are official
+   (`CHAT_PATTERNS.md`); the layout is our reading, since no screenshot of these
+   patterns exists in either official listing.
 
 Phase 1 first and on its own: if the bubbles do not look right, nothing downstream
 matters.

@@ -259,7 +259,9 @@
     font-size: 12px; font-weight: 600; color: var(--wa-text2); }
   .wa-c-names { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   .wa-c-name { font-size: 14px; font-weight: 600; line-height: 1.25;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    display: flex; align-items: center; gap: 3px; min-width: 0; }
+  .wa-c-name > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wa-c-name svg { flex: none; color: var(--wa-link); }
   .wa-c-presence { font-size: 11px; color: var(--wa-text2); line-height: 1.2; }
   .wa-c-actions { display: flex; align-items: center; gap: 12px; flex: none; }
 
@@ -314,6 +316,38 @@
   .wa-c-ticks { display: inline-flex; color: var(--wa-text2); }
   .wa-c-ticks.read { color: var(--wa-tick, #53bdeb); }
   .wa-c-ticks svg { display: block; }
+
+  /* Interactive patterns (knowledge/CHAT_PATTERNS.md). The payload limits are
+     official; this LAYOUT is inferred — no official screenshot of reply buttons,
+     the list sheet or template buttons was found, so treat it as a first pass. */
+  .wa-c-tpl-header { font-size: 15px; font-weight: 600; color: var(--wa-text);
+    line-height: 20px; margin-bottom: 1px; }
+  .wa-c-tpl-footer { font-size: 12.5px; color: var(--wa-text2); line-height: 17px;
+    margin-top: 2px; }
+  /* Full-bleed inside the bubble: negative margins cancel the bubble's 8px
+     padding so the dividers reach both edges, as WhatsApp draws them. */
+  .wa-c-actions-box { margin: 4px -8px -6px; border-top: 1px solid var(--wa-divider);
+    display: flex; flex-direction: column; }
+  .wa-c-action { display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 8px 10px; font-size: 14px; font-weight: 500;
+    color: var(--wa-link); text-align: center; }
+  .wa-c-action + .wa-c-action { border-top: 1px solid var(--wa-divider); }
+  .wa-c-action svg { flex: none; }
+
+  /* The list menu's bottom sheet — the second state a list message has. */
+  .wa-c-sheet { background: var(--wa-surface); border-radius: 12px 12px 0 0;
+    padding: 10px 0 4px; box-shadow: 0 -2px 12px rgba(11,20,26,.16); }
+  .wa-c-sheet-title { font-size: 15px; font-weight: 600; color: var(--wa-text);
+    padding: 4px 16px 10px; }
+  .wa-c-sheet-section { font-size: 12px; font-weight: 600; color: var(--wa-primary);
+    padding: 8px 16px 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .wa-c-sheet-row { display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px; border-top: 1px solid var(--wa-divider); }
+  .wa-c-sheet-text { flex: 1; min-width: 0; }
+  .wa-c-sheet-row-title { font-size: 14px; color: var(--wa-text); }
+  .wa-c-sheet-desc { font-size: 12.5px; color: var(--wa-text2); }
+  .wa-c-radio { flex: none; width: 17px; height: 17px; border-radius: 50%;
+    border: 1.5px solid var(--wa-placeholder); }
 
   .wa-c-quote { border-left: 3px solid var(--wa-primary); border-radius: 4px;
     padding: 3px 6px; margin-bottom: 3px; background: rgba(11,20,26,.06); }
