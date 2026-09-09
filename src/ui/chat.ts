@@ -117,7 +117,7 @@ export function renderChat(thread: Thread, host: HTMLElement): void {
     body.appendChild(pill(thread.dateLabel, "wa-c-date"));
   }
   if (thread.showEncryptionNotice) {
-    body.appendChild(pill("Messages are end-to-end encrypted", "wa-c-notice"));
+    body.appendChild(pill("Messages are end-to-end encrypted", "wa-c-notice", "lock"));
   }
   thread.messages.forEach((msg, i) => {
     const first = startsRun(thread.messages, i);
@@ -131,8 +131,11 @@ export function renderChat(thread: Thread, host: HTMLElement): void {
   host.appendChild(phone);
 }
 
-function pill(text: string, cls: string): HTMLElement {
+function pill(text: string, cls: string, icon?: string): HTMLElement {
   const wrap = el("div", "wa-c-pill-row");
-  wrap.appendChild(el("div", "wa-c-pill " + cls, text));
+  const p = el("div", "wa-c-pill " + cls);
+  if (icon) p.appendChild(iconEl(icon, 11));
+  p.appendChild(el("span", undefined, text));
+  wrap.appendChild(p);
   return wrap;
 }

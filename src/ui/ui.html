@@ -273,9 +273,16 @@
   .wa-c-thread > :first-child { margin-top: auto; }
   .wa-c-pill-row { display: flex; justify-content: center; }
   .wa-c-pill { font-size: 11px; padding: 5px 9px; border-radius: 7px;
-    color: var(--wa-text2); background: var(--wa-system-pill, #ffeecc);
-    box-shadow: 0 1px 0 rgba(0,0,0,.05); max-width: 85%; text-align: center; }
-  .wa-c-date { text-transform: uppercase; letter-spacing: .3px; font-weight: 500; }
+    color: var(--wa-text2); box-shadow: 0 1px 0 rgba(0,0,0,.05);
+    max-width: 85%; text-align: center; }
+  /* Only the encryption notice is the yellow-ish system pill; the date divider is
+     neutral, like a bubble. Painting both yellow was wrong. */
+  .wa-c-date { background: var(--wa-bubble-in, #fff);
+    text-transform: uppercase; letter-spacing: .3px; font-weight: 500; }
+  .wa-c-notice { background: var(--wa-system-pill, #ffeecc);
+    display: inline-flex; align-items: center; gap: 4px; line-height: 1.35;
+    text-align: left; }
+  .wa-c-notice svg { flex: none; margin-top: 1px; align-self: flex-start; }
 
   .wa-c-row { display: flex; }
   .wa-c-row.in  { justify-content: flex-start; }
