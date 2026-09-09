@@ -44,22 +44,49 @@ vars. New tokens go into that map — never hardcoded in CSS.
 
 ## Palette additions
 
-`Palette` already carries the two colours that are hardest to guess, and they are
-already correct: `chipSelectedBg` is `#D9FDD3` — the outgoing bubble green — and
-dark `link` is `#53BDEB`, the read-tick blue. Chat mode needs six more per theme:
+Chat mode adds six tokens per theme. These are **measured**, not guessed —
+sampled from WhatsApp LLC's own Play Store screenshots (see Provenance below):
 
 | token | light | dark | use |
 |---|---|---|---|
-| `bubbleIn` | `#FFFFFF` | `#202C33` | incoming bubble |
-| `bubbleOut` | `#D9FDD3` | `#005C4B` | outgoing bubble |
-| `wallpaper` | `#EFEAE2` | `#0B141A` | thread background |
+| `bubbleIn` | `#FFFFFF` | `#1D272B` | incoming bubble |
+| `bubbleOut` | `#CFFFCF` | `#004F37` | outgoing bubble |
+| `wallpaper` | `#F4F1E9` | `#091015` | thread background |
 | `tick` | `#53BDEB` | `#53BDEB` | read receipt (same in both themes) |
-| `chatHeader` | `#F0F2F5` | `#202C33` | conversation header + input bar |
-| `systemPill` | `#FFEECC` | `#182229` | encryption / date notices |
+| `chatHeader` | `#FFFFFF` | `#091015` | conversation header + input bar |
+| `systemPill` | `#FFEFD1` | `#182229` ¹ | encryption / date notices |
 
-Treat these as **starting values to calibrate**, not as spec — curated
-approximations, in the same spirit as the existing `COLOR_DARK` comment. The
-calibration step below is how they get confirmed.
+¹ the only one still a guess — no encryption pill was visible in the dark
+screenshot that was sampled.
+
+In light mode the header measures the **same white as an incoming bubble**; the
+bubble's shadow is what separates them. In dark mode the header measures the same
+as the wallpaper (an edge-to-edge header).
+
+### Provenance, and why the first guesses were wrong
+
+The first pass used `#EFEAE2` (wallpaper) and `#F0F2F5` (header). Both are
+WhatsApp **Web** values — and this mocks **Android** (`DEVICE` is 360×780 with
+Android screen heights), which is why they were consistently off rather than
+randomly off. Worth remembering the next time a colour "looks nearly right".
+
+Meta publishes no UI kit and no measurable UI screenshots in its developer docs —
+checked twice; the only real image on the components page is the brand logo, whose
+greens (`#2CB741`–`#54CE61`) are the logo gradient, not UI tokens. What *is*
+official and measurable: **the app's own Play Store listing**, published by
+WhatsApp LLC. Those screenshots serve with permissive CORS, so they can be drawn
+to a canvas and sampled.
+
+To re-measure: open `play.google.com/store/apps/details?id=com.whatsapp`, take a
+portrait screenshot's URL, request it at `=w1080`, find the phone's horizontal
+bounds by scanning a row for where the marketing background ends (it was
+`#FDF5EA`, x 145→935 of 1080), then sample a 5×5 patch and take its median so an
+antialiased edge can't skew the reading.
+
+**Caveat that has to stay attached to these numbers:** they come from *marketing*
+screenshots, which may be colour-graded, and were served resized. Several
+independent samples agreed, which is reassuring but not proof. A screenshot taken
+on a real device would still beat this.
 
 ## Anatomy
 
@@ -92,7 +119,9 @@ Top to bottom, inside the existing `.wa-phone` frame:
 
 ## Decided trade-offs
 
-**1. The timestamp does not sit inline with the text.**
+**1. The timestamp does not sit inline with the text.** *(Confirmed as a real
+divergence: the official screenshot clearly shows the time and blue double-tick
+sitting inline at the bottom-right of the last text line.)*
 Real WhatsApp embeds the time bottom-right *inside* the last text line, reserving
 space so the text reflows around it. Neither CSS nor Figma auto-layout can do that —
 it needs shape-aware text flow. We put the meta row on **its own row**,
@@ -153,8 +182,8 @@ a string keeps the model free of timezone questions.
 1. **Preview fidelity** — the thread rendered in the plugin's HTML preview: header,
    text bubbles both directions, tail, meta row with ticks, date and encryption
    pills, input bar, light and dark. Verifiable in a browser, so this is where
-   calibration happens. *Built (structure + geometry verified); the colour and
-   spacing calibration below is still open.*
+   calibration happens. *Built; colours calibrated from official screenshots.
+   Spacing and type sizes are still uncalibrated.*
 2. **Figma generator** — the same thread as frames, reusing `markFill`/`applyFills`
    and the dated-section round-trip. *Built; only verifiable inside Figma.*
 3. **Composer** — the authoring UI, reusing the existing card machinery

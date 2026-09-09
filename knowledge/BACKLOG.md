@@ -92,6 +92,27 @@ embedded JSON, Generate feedback, and the `plugin-ui-tester` subagent.
 
 ---
 
+## Chat list screen (chat mode, later phase)
+
+**Status:** idea · raised 2026-09-08
+
+Chat mode renders a conversation. The **chat list** — the screen you land on — is a
+second screen type worth having: it's the reference Lucas actually had on hand, and
+mockups often need the inbox as well as a thread.
+
+Structure (from that reference and the official Play Store screenshots): a white
+header with the wordmark and camera/overflow icons, a search pill, filter chips
+(All / Unread / Groups), then rows of avatar + name + message preview + time, with
+an unread count badge, a pin glyph, and a media-type prefix icon on the preview
+("Video", "Sticker", "GIF"). A green FAB, and bottom navigation
+(Chats / Updates / Communities / Calls).
+
+Note the design era: the older layout had a **green top bar**; the current one is
+white with a green wordmark and bottom navigation. Pick one deliberately — the
+palette in `CHAT_UI.md` is measured from the current Android design.
+
+---
+
 ## Phase 3 of Playground parity: Android vs iOS chrome
 
 **Status:** ready · planned 2026-08-04, never started
