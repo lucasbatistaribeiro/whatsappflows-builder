@@ -5,7 +5,7 @@ import { screenChildren } from "../model/flowTypes";
 import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW } from "../model/sample";
 import { TEMPLATES } from "../model/templates";
-import { postToMain } from "../shared/messages";
+import { postToMain } from "./bridge";
 import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme, setPreviewBusiness } from "./preview";
 import { renderChat } from "./chat";
 import { renderComposer } from "./chatComposer";

@@ -1,0 +1,13 @@
+{
+  // The Figma sandbox: the `figma` API, no DOM. `lib` deliberately omits "DOM",
+  // so a stray `document.*` / `window.*` in src/main is a compile error rather
+  // than a runtime crash inside the plugin (knowledge/CLAUDE.md, "Two runtime
+  // contexts"). src/model and src/shared are included because both sides use
+  // them — and that is what proves they stay pure.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2019"],
+    "types": ["plugin-typings"]
+  },
+  "include": ["../src/main/**/*.ts", "../src/model/**/*.ts", "../src/shared/**/*.ts"]
+}
