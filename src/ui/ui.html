@@ -537,6 +537,15 @@
   .badge.ok { background: var(--accent-weak); color: var(--accent); }
   .badge.warn { background: rgba(183,121,31,.18); color: var(--warn); }
   .badge.err { background: rgba(229,72,77,.15); color: var(--danger); }
+  /* The "this flow updates a section on the canvas" chip. Hidden until linked. */
+  #linked { display: none; align-items: center; gap: 4px; max-width: 190px;
+            font-size: 14px; padding: 3px 4px 3px 8px; border-radius: 20px;
+            background: var(--accent-weak); color: var(--accent); }
+  #linked.open { display: inline-flex; }
+  #linked-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  #linked-unlink { display: inline-flex; align-items: center; padding: 2px; border: 0;
+                   border-radius: 50%; background: none; color: inherit; cursor: pointer; opacity: .7; }
+  #linked-unlink:hover { opacity: 1; background: rgba(0,0,0,.08); }
   #validation { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
   #validation:empty { display: none; }
   .val-item { display: flex; gap: 6px; font-size: 14px; padding: 6px 8px; border-radius: 6px; cursor: pointer; align-items: center; }
@@ -733,6 +742,15 @@
       <button class="seg-item active" role="tab" aria-selected="true" data-mode="flows" data-i18n="modeFlows">Flows</button>
       <button class="seg-item" role="tab" aria-selected="false" data-mode="chat" data-i18n="modeChat">Chat</button>
     </div>
+    <!-- Shown when the flow was imported from a generated section: Generate
+         updates that section instead of making a second one. The x unlinks. -->
+    <span id="linked" data-i18n-title="linkedTitle" title="Generate updates this section in Figma">
+      <span class="ic" data-icon="link" data-size="14"></span>
+      <span id="linked-name"></span>
+      <button id="linked-unlink" type="button" data-i18n-title="unlink" title="Unlink">
+        <span class="ic" data-icon="x" data-size="14"></span>
+      </button>
+    </span>
     <span id="val-badge" class="badge"></span>
     <span class="spacer"></span>
     <button id="generate" class="btn primary" title="Generate the screens in Figma">

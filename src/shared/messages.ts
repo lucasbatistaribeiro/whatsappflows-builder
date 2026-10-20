@@ -46,7 +46,10 @@ export interface Prefs {
 
 // UI -> main
 export type UIToMain =
-  | { type: "generate"; flow: FlowJSON; options: GenOptions }
+  // `replaceSectionId` links this run to a section already on the canvas (the
+  // one the flow was imported from): the generator rebuilds that section in
+  // place instead of dropping a second copy below it. Absent = a fresh run.
+  | { type: "generate"; flow: FlowJSON; options: GenOptions; replaceSectionId?: string }
   // Chat mode (knowledge/CHAT_UI.md). Separate from `generate` because the
   // payload and the renderer are different, but it reuses the same options.
   | { type: "generateChat"; thread: Thread; options: GenOptions }
@@ -56,11 +59,16 @@ export type UIToMain =
 
 // main -> UI
 export type MainToUI =
-  | { type: "generated"; screenCount: number }
+  // `sectionId` is the section this run produced. The UI keeps it so the next
+  // Generate updates the same section — including after an update, which
+  // creates a new node with a new id.
+  | { type: "generated"; screenCount: number; sectionId?: string; replaced?: boolean }
   | { type: "error"; message: string }
   | { type: "prefs"; prefs: Prefs }
   // The user clicked a generated section that carries an embedded Flow JSON —
   // offer to load it back into the builder.
-  | { type: "importOffer"; name: string; flow: FlowJSON }
+  // `sectionId` lets the UI remember where the flow came from, so editing it
+  // can update that section rather than generating a duplicate.
+  | { type: "importOffer"; name: string; flow: FlowJSON; sectionId: string }
   // Selection moved off that section (or onto nothing) — withdraw the offer.
   | { type: "importOfferEnd" };

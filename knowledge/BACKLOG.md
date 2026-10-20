@@ -36,6 +36,25 @@ from a second branch would have clobbered that work. Fold it in once that lands.
 
 ---
 
+## Chat mode: re-import and update a generated conversation
+
+**Status:** idea · raised 2026-10-20
+
+Flows mode now round-trips: a section generated from a flow can be selected on
+the canvas, loaded back into the builder, and — since the linked-section work —
+**updated in place** instead of leaving the old screens behind.
+
+Chat mode has neither half. `generateChat` already embeds its payload under the
+same marker node, tagged `{ mode: "chat", thread }`, and `readEmbeddedFlow`
+recognises that tag and declines it quietly. What is missing is the chat-side
+reader (parse the thread, offer it, load it into the composer) — after which the
+section link costs almost nothing: `sectionToReplace` / `placeInSection(at)` in
+`src/main/index.ts` are mode-agnostic, and the UI's `linkedSectionId` is
+deliberately gated on `mode !== "chat"` in `isLinked()`, which is the one line
+that would open up.
+
+---
+
 ## Chat UI: generate WhatsApp conversation screens
 
 **Status:** in progress on `feat/chat-mode` · raised 2026-08-05 · design spec: `CHAT_UI.md`
