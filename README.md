@@ -96,6 +96,7 @@ whatsappflows-builder/
 ├─ src/                    código-fonte (TypeScript)
 │  │
 │  ├─ model/               puro: sem `figma`, sem DOM — importado pelos dois runtimes
+│  │  ├─ CLAUDE.md         as regras desta camada (nunca importar de ui/ ou main/)
 │  │  ├─ flowTypes.ts      tipos do Flow JSON + helpers (screenChildren, dataSourceOf, isBinding)
 │  │  ├─ validate.ts       as regras da spec; devolve chaves de mensagem, não texto traduzido
 │  │  ├─ palette.ts        catálogo "Adicionar componente" e a instância padrão de cada um
@@ -109,6 +110,7 @@ whatsappflows-builder/
 │  │  └─ messages.ts       o contrato tipado UI <-> sandbox (só tipos, sem DOM nem `figma`)
 │  │
 │  ├─ main/                sandbox do Figma: API `figma`, sem DOM  ->  code.js
+│  │  ├─ CLAUDE.md         as armadilhas daqui (auto-layout, paleta, SVG, dynamic-page)
 │  │  ├─ index.ts          entrada: mensagens, preferências, section datada, JSON embutido, substituição
 │  │  ├─ screen.ts         monta uma tela (chrome + corpo + footer) e reporta os destinos de navegação
 │  │  ├─ components.ts     um renderizador por componente do Flow JSON
@@ -120,6 +122,7 @@ whatsappflows-builder/
 │  │  └─ thread.ts         modo Chat: monta a conversa inteira como um frame
 │  │
 │  └─ ui/                  iframe do plugin: DOM, sem API `figma`  ->  ui.html
+│     ├─ CLAUDE.md         as regras daqui (como verificar, 14px, wa-*, foco, i18n)
 │     ├─ ui.html           markup + CSS (tokens --figma-color-*) e o ponto onde o bundle entra
 │     ├─ ui.ts             orquestra tudo: telas, abas, menu, preferências, validação, Gerar
 │     ├─ bridge.ts         o postMessage da UI para o sandbox
@@ -146,8 +149,12 @@ whatsappflows-builder/
 │  ├─ CHAT_UI.md           a spec de design do modo Chat
 │  └─ CHAT_PATTERNS.md     os tipos de mensagem interativa e seus limites oficiais
 │
-├─ .claude/agents/
-│  └─ plugin-ui-tester.md  subagente que exercita a UI no navegador (executável, não é doc)
+├─ .claude/
+│  ├─ agents/
+│  │  └─ plugin-ui-tester.md  subagente que exercita a UI no navegador (executável)
+│  └─ skills/              procedimentos invocáveis
+│     ├─ release/          cortar uma release e conferir o zip publicado
+│     └─ meta-sync/        reconciliar o projeto com a spec da Meta
 │
 ├─ README.md               este arquivo
 ├─ CLAUDE.md               ponteiro para knowledge/CLAUDE.md (é onde o tooling procura)
@@ -267,6 +274,7 @@ whatsappflows-builder/
 ├─ src/                    source (TypeScript)
 │  │
 │  ├─ model/               pure: no `figma`, no DOM — imported by both runtimes
+│  │  ├─ CLAUDE.md         this layer's rules (never import from ui/ or main/)
 │  │  ├─ flowTypes.ts      Flow JSON types + helpers (screenChildren, dataSourceOf, isBinding)
 │  │  ├─ validate.ts       the spec's rules; returns message keys, not translated text
 │  │  ├─ palette.ts        the "Add component" catalogue and each one's default instance
@@ -280,6 +288,7 @@ whatsappflows-builder/
 │  │  └─ messages.ts       the typed UI <-> sandbox contract (types only, no DOM, no `figma`)
 │  │
 │  ├─ main/                the Figma sandbox: `figma` API, no DOM  ->  code.js
+│  │  ├─ CLAUDE.md         the traps here (auto-layout, palette, SVG, dynamic-page)
 │  │  ├─ index.ts          entry: messages, prefs, the dated section, embedded JSON, replacement
 │  │  ├─ screen.ts         assembles one screen (chrome + body + footer) and reports nav targets
 │  │  ├─ components.ts     one renderer per Flow JSON component
@@ -291,6 +300,7 @@ whatsappflows-builder/
 │  │  └─ thread.ts         chat mode: builds the whole conversation as one frame
 │  │
 │  └─ ui/                  the plugin iframe: DOM, no `figma` API  ->  ui.html
+│     ├─ CLAUDE.md         the rules here (how to verify, 14px, wa-*, focus, i18n)
 │     ├─ ui.html           markup + CSS (--figma-color-* tokens) and where the bundle lands
 │     ├─ ui.ts             orchestrates everything: screens, tabs, menu, prefs, validation, Generate
 │     ├─ bridge.ts         the UI's postMessage to the sandbox
@@ -317,8 +327,12 @@ whatsappflows-builder/
 │  ├─ CHAT_UI.md           chat mode's design spec
 │  └─ CHAT_PATTERNS.md     the interactive message types and their official limits
 │
-├─ .claude/agents/
-│  └─ plugin-ui-tester.md  subagent that drives the UI in a browser (runnable, not a doc)
+├─ .claude/
+│  ├─ agents/
+│  │  └─ plugin-ui-tester.md  subagent that drives the UI in a browser (runnable)
+│  └─ skills/              invocable procedures
+│     ├─ release/          cut a tagged release and verify the published zip
+│     └─ meta-sync/        reconcile the project with Meta's spec
 │
 ├─ README.md               this file
 ├─ CLAUDE.md               pointer to knowledge/CLAUDE.md (where agent tooling looks)
