@@ -9,6 +9,33 @@ Status: **idea** (no design yet) · **ready** (approach settled) · **blocked**.
 
 ---
 
+## Validate: flag duplicate ids inside a data-source / list-items
+
+**Status:** ready · raised 2026-10-20
+
+`validate.ts` catches duplicate *screen* ids (`vDupScreenId`) and duplicate input
+*names* (`vDupName`), but nothing looks at the ids inside one component. Two
+options with the same `id` in a `data-source`, or two `list-items` entries sharing
+one, make the selection ambiguous at runtime and are rejected on import.
+
+The editor no longer *creates* duplicates — `nextSlot` in `propEditor.ts` counts
+from the ids in use rather than from `items.length` — but an imported flow, a
+hand-edited Flow JSON, or a duplicated component can still carry them, and today
+nothing says so.
+
+**Approach (settled).** In `validateComponent`, for the four `data-source`
+components, count the ids of a static (non-binding) `data-source` and push an
+**error** per repeated id; same for `list-items` inside the NavigationList loop
+in `validateScreen`. Two keys in `i18n.ts` (en + pt), modelled on `vDupName`:
+`vDupOptionId` (params: id, component type) and `vDupNavItemId` (param: id).
+
+**Why it isn't done yet.** It was in scope for the PR that fixed the id
+generation, but `validate.ts` and `i18n.ts` were being rewritten at the same time
+by the META_SYNC pass in a shared checkout — landing a rule into those two files
+from a second branch would have clobbered that work. Fold it in once that lands.
+
+---
+
 ## Chat UI: generate WhatsApp conversation screens
 
 **Status:** in progress on `feat/chat-mode` · raised 2026-08-05 · design spec: `CHAT_UI.md`
