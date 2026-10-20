@@ -23,6 +23,25 @@ and is declined in silence.
 
 ---
 
+## NavigationList rows didn't navigate in the generated prototype
+
+**Symptom.** With "Interactive" on, every generated screen was clickable except
+a NavigationList: its rows were inert frames.
+
+**Root cause.** `buildScreen` read navigation targets with `navTargetOf(c)`,
+which only looks at the component's own `on-click-action`. A NavigationList
+doesn't work that way — the editor (`navItemsEditor`) and the validator both put
+one `on-click-action` on each entry of `list-items`. So the component had no
+target, no reaction was created, and nothing was wired.
+
+**Fix.** `renderComponent` takes an optional `NodeLink[]` collector; the
+NavigationList renderer pushes one `{ node: row, target }` per item, since only
+it knows which Figma node a row became. `buildScreen` adds those to its
+`navTargets` alongside the component-level one, and `wireNavigation` gives each
+row its own reaction. The collector is threaded through If/Switch branches too.
+
+---
+
 ## Chat composer lost focus on every keystroke
 
 **Symptom.** Typing in any field of a message card in the chat composer (text /

@@ -6,7 +6,7 @@ import { COLOR, DEVICE, RADIUS, SPACE } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, text, divider, markFill } from "./nodes";
 import { statusBar, header, progressBar } from "./chrome";
-import { renderComponent } from "./components";
+import { renderComponent, type NodeLink } from "./components";
 
 // Captions for footer actions that a Figma prototype can't execute.
 const ACTION_NOTE: Record<string, string> = {
@@ -26,6 +26,8 @@ export interface BuiltScreen {
   navTargets: NavTarget[];
 }
 
+// The component-level target. A NavigationList usually has none: its rows carry
+// one `on-click-action` each, and the renderer reports those as NodeLinks.
 function navTargetOf(c: Component): string | undefined {
   const a = c["on-click-action"];
   if (a && a.name === "navigate" && a.next && a.next.type === "screen") {
@@ -72,11 +74,14 @@ export function buildScreen(screen: Screen, index = 0, total = 1): BuiltScreen {
 
   for (const c of children) {
     if (c.type === "Footer") continue;
-    const node = renderComponent(c);
+    const links: NodeLink[] = [];
+    const node = renderComponent(c, links);
     if (!node) continue;
     body.appendChild(node);
     const t = navTargetOf(c);
     if (t) navTargets.push({ node, target: t });
+    // Per-item targets (NavigationList rows): one reaction per row, not per list.
+    for (const link of links) navTargets.push(link);
   }
 
   if (footer) {
