@@ -1,6 +1,6 @@
 // Renders a single Flow JSON component into a WhatsApp-styled Figma node.
 // Footer is handled by the screen assembler, not here.
-import type { Component } from "../model/flowTypes";
+import type { Component, Action } from "../model/flowTypes";
 import { dataSourceOf } from "../model/flowTypes";
 import { COLOR, RADIUS, SPACE, fill } from "./theme";
 import { FONT } from "./fonts";
@@ -130,10 +130,28 @@ function imagePlaceholder(c: Component): FrameNode {
   return box;
 }
 
-function renderChildren(children: Component[]): SceneNode[] {
+/**
+ * A node that should navigate to a screen, reported by the renderer because the
+ * caller can't work it out from the component alone: a NavigationList's rows
+ * each carry their own `on-click-action`, and only the renderer knows which
+ * Figma node a given row became.
+ */
+export interface NodeLink {
+  node: SceneNode;
+  target: string; // destination screen id
+}
+
+// The screen id an `on-click-action` navigates to, if it navigates at all.
+function navTargetOf(action: unknown): string | undefined {
+  const a = action as Action | undefined;
+  if (a && a.name === "navigate" && a.next && a.next.type === "screen") return a.next.name || undefined;
+  return undefined;
+}
+
+function renderChildren(children: Component[], links?: NodeLink[]): SceneNode[] {
   const out: SceneNode[] = [];
   for (const child of children) {
-    const n = renderComponent(child);
+    const n = renderComponent(child, links);
     if (n) out.push(n);
   }
   return out;
@@ -141,7 +159,7 @@ function renderChildren(children: Component[]): SceneNode[] {
 
 // Dashed, labelled container used to make If/Switch branches visible in the
 // static mockup (Figma can't evaluate the condition, so we show one branch).
-function conditionalBox(caption: string, children: Component[]): FrameNode {
+function conditionalBox(caption: string, children: Component[], links?: NodeLink[]): FrameNode {
   const box = strokedBox({
     radius: RADIUS.card, strokeColor: COLOR.primary,
     padding: SPACE.gap, gap: SPACE.gapSm,
@@ -150,7 +168,7 @@ function conditionalBox(caption: string, children: Component[]): FrameNode {
   stretch(box);
   const tag = para(caption, { size: 12, color: COLOR.primary, font: FONT.medium });
   box.appendChild(tag);
-  for (const child of renderChildren(children)) box.appendChild(child);
+  for (const child of renderChildren(children, links)) box.appendChild(child);
   return box;
 }
 
@@ -168,7 +186,7 @@ function uploader(labelText: string, description: string, icon: string): FrameNo
   return box;
 }
 
-function navigationList(c: Component): FrameNode {
+function navigationList(c: Component, links?: NodeLink[]): FrameNode {
   const wrap = autoFrame({ gap: SPACE.gapSm });
   stretch(wrap);
   const items = (c["list-items"] as Array<Record<string, unknown>>) ?? [];
@@ -186,11 +204,20 @@ function navigationList(c: Component): FrameNode {
     row.appendChild(texts);
     row.appendChild(text("›", { size: 20, color: COLOR.textSecondary }));
     wrap.appendChild(row);
+    // The destination lives on the item, not on the list (that's what the editor
+    // and the validator author), so the row is what has to carry the reaction.
+    const target = navTargetOf(it["on-click-action"]);
+    if (target && links) links.push({ node: row, target });
   }
   return wrap;
 }
 
-export function renderComponent(c: Component): SceneNode | null {
+/**
+ * Build the Figma node for one component. `links` collects nodes that navigate
+ * on their own (NavigationList rows) so the caller can wire them up — the
+ * component-level `on-click-action` is the caller's business.
+ */
+export function renderComponent(c: Component, links?: NodeLink[]): SceneNode | null {
   switch (c.type) {
     case "TextHeading":
       return para(c.text ?? "", { font: FONT.bold, size: 22, lineHeight: 28 });
@@ -244,16 +271,17 @@ export function renderComponent(c: Component): SceneNode | null {
       return uploader(c.label ?? "Add documents", String(c.description ?? ""), "📎");
 
     case "NavigationList":
-      return navigationList(c);
+      return navigationList(c, links);
 
     case "If":
-      return conditionalBox(`If  ${String(c.condition ?? "")}`, (c.then as Component[]) ?? []);
+      return conditionalBox(`If  ${String(c.condition ?? "")}`, (c.then as Component[]) ?? [], links);
     case "Switch": {
       const cases = (c.cases as Record<string, Component[]>) ?? {};
       const firstKey = Object.keys(cases)[0];
       return conditionalBox(
         `Switch ${String(c.value ?? "")} → "${firstKey ?? ""}"`,
         firstKey ? cases[firstKey] : [],
+        links,
       );
     }
 

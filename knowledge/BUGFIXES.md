@@ -5,6 +5,67 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Selecting a generated conversation cried "invalid Flow JSON"
+
+**Symptom.** Clicking a section produced by chat mode popped an error toast:
+*This section's embedded Flow JSON is invalid.* Nothing was wrong with it.
+
+**Root cause.** Both modes embed their payload in a hidden TEXT node with the
+same name (`flow.json - do not delete`), so `readEmbeddedFlow` picked up the
+chat payload too. `JSON.parse` succeeded, `screens[]` was missing — and the
+reader fell through to the "invalid" branch meant for a hand-mangled flow. It
+declined the section correctly; it just shouted while doing it.
+
+**Fix.** Separate the three outcomes: a parse failure or a shapeless object is
+still an error, a `screens[]` array is still imported, and a payload carrying a
+`mode` tag (chat mode writes `{ mode: "chat", thread }`) is another generator's
+and is declined in silence.
+
+---
+
+## NavigationList rows didn't navigate in the generated prototype
+
+**Symptom.** With "Interactive" on, every generated screen was clickable except
+a NavigationList: its rows were inert frames.
+
+**Root cause.** `buildScreen` read navigation targets with `navTargetOf(c)`,
+which only looks at the component's own `on-click-action`. A NavigationList
+doesn't work that way — the editor (`navItemsEditor`) and the validator both put
+one `on-click-action` on each entry of `list-items`. So the component had no
+target, no reaction was created, and nothing was wired.
+
+**Fix.** `renderComponent` takes an optional `NodeLink[]` collector; the
+NavigationList renderer pushes one `{ node: row, target }` per item, since only
+it knows which Figma node a row became. `buildScreen` adds those to its
+`navTargets` alongside the component-level one, and `wireNavigation` gives each
+row its own reaction. The collector is threaded through If/Switch branches too.
+
+---
+
+## Chat composer lost focus on every keystroke
+
+**Symptom.** Typing in any field of a message card in the chat composer (text /
+caption, button label, list CTA, row title or description, time, the media
+fields, the quoted reply) accepted exactly one character: the caret jumped to
+`<body>` and the next keystroke went nowhere.
+
+**Root cause.** Every editor in `chatComposer.ts` was handed a single `redraw`
+callback and called it from `oninput`. `redraw` is `renderComposer(...)`, which
+starts with `host.innerHTML = ""` — so each character tore down the focused
+input and built a new one. The Flows side had already solved this: `ui.ts`
+splits `softSync` (sync + preview, keeps the DOM) from `structuralSync`
+(rebuild the cards), and the composer's own contact fields were correct because
+they called `onChange` rather than `redraw`.
+
+**Fix.** The same split, as a `ComposerSync { soft, structural }` threaded
+through the editors. Value edits call `soft` (preview only); only edits that add
+or remove fields — add/remove button or row, message type, direction,
+interactive kind, the quoted-reply and sheet-open toggles — call `structural`.
+The collapsed card summary used to refresh for free with the re-render, so each
+card wraps `soft` to patch its own `.chat-summary` in place.
+
+---
+
 ## Chat cards never actually collapsed
 
 **Symptom.** A message card in the chat composer looked collapsible — the

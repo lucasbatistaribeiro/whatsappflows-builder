@@ -129,6 +129,22 @@ function actionEditor(c: Component, screenIds: string[], cb: EditorCallbacks, ac
   return wrap;
 }
 
+// ---- generated ids -------------------------------------------------------
+
+/**
+ * The next unused slot for a generated option/item. Deriving it from the array
+ * length reuses an id that is still in use: options 0,1,2 minus the middle one,
+ * then "Add", produced a second "2" (and a second "Option 3"). Duplicate ids in
+ * a data-source break selection at runtime, so count from what's taken instead.
+ */
+function nextSlot(taken: Array<{ id?: string; title?: string }>, label: string): { id: string; title: string } {
+  const ids = new Set(taken.map((t) => t.id).filter((v): v is string => v !== undefined));
+  const titles = new Set(taken.map((t) => t.title).filter((v): v is string => v !== undefined));
+  let n = 0;
+  while (ids.has(String(n)) || titles.has(`${label} ${n + 1}`)) n++;
+  return { id: String(n), title: `${label} ${n + 1}` };
+}
+
 // ---- data-source sub-editor ---------------------------------------------
 
 function dataSourceEditor(c: Component, cb: EditorCallbacks): HTMLElement {
@@ -145,7 +161,7 @@ function dataSourceEditor(c: Component, cb: EditorCallbacks): HTMLElement {
   head.appendChild(spanText("Options"));
   head.appendChild(addButton(() => {
     const items = (Array.isArray(c["data-source"]) ? c["data-source"] : (c["data-source"] = [])) as DataSourceItem[];
-    items.push({ id: String(items.length), title: `Option ${items.length + 1}` });
+    items.push(nextSlot(items, "Option"));
     cb.structural();
   }));
   wrap.appendChild(head);
@@ -175,7 +191,8 @@ function navItemsEditor(c: Component, screenIds: string[], cb: EditorCallbacks):
   head.appendChild(spanText("Items"));
   head.appendChild(addButton(() => {
     const items = ((c["list-items"] as NavItem[]) ??= []);
-    items.push({ id: String(items.length), "main-content": { title: `Item ${items.length + 1}`, description: "Description" }, "on-click-action": navAction() });
+    const slot = nextSlot(items.map((it) => ({ id: it.id, title: it["main-content"]?.title })), "Item");
+    items.push({ id: slot.id, "main-content": { title: slot.title, description: "Description" }, "on-click-action": navAction() });
     cb.structural();
   }));
   wrap.appendChild(head);

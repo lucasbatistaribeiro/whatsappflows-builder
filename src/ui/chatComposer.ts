@@ -18,6 +18,19 @@ import { t } from "./i18n";
 type Rerender = () => void;
 
 /**
+ * Two kinds of edit, same split the Flows side uses (`softSync` / `structuralSync`
+ * in ui.ts). A value edit must NOT rebuild the cards: `renderComposer` empties the
+ * host, so re-rendering on every keystroke removes the focused input from the DOM
+ * and the caret lands on `<body>` — you could only type one character at a time.
+ */
+export interface ComposerSync {
+  /** A value changed: refresh the preview (and the card's collapsed summary). */
+  soft: () => void;
+  /** Fields appeared/disappeared (add/remove/kind/type/direction): rebuild cards. */
+  structural: Rerender;
+}
+
+/**
  * The thread being composed. Set at the top of every render — the list editor
  * needs it to clear `sheetOpen` on sibling messages, and threading it through
  * four editor signatures for that one case is worse.
@@ -102,23 +115,23 @@ function addBtn(text: string, count: number, max: number, onClick: () => void): 
 
 // ---- interactive editors --------------------------------------------------
 
-function buttonsEditor(inter: Extract<Interactive, { kind: "buttons" }>, redraw: Rerender): HTMLElement {
+function buttonsEditor(inter: Extract<Interactive, { kind: "buttons" }>, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
   inter.buttons.forEach((b, i) => {
     const row = el("div", "chat-row");
-    row.appendChild(field(b.title, LIMITS.replyButtonTitle, (v) => { b.title = v; redraw(); }, t("chatButtonLabel")));
-    row.appendChild(iconBtn("trash-2", () => { inter.buttons.splice(i, 1); redraw(); }, t("remove")));
+    row.appendChild(field(b.title, LIMITS.replyButtonTitle, (v) => { b.title = v; sync.soft(); }, t("chatButtonLabel")));
+    row.appendChild(iconBtn("trash-2", () => { inter.buttons.splice(i, 1); sync.structural(); }, t("remove")));
     box.appendChild(row);
   });
   box.appendChild(addBtn(t("chatAddButton"), inter.buttons.length, LIMITS.replyButtons,
-    () => { inter.buttons.push({ title: "" }); redraw(); }));
+    () => { inter.buttons.push({ title: "" }); sync.structural(); }));
   return box;
 }
 
-function listEditor(inter: Extract<Interactive, { kind: "list" }>, redraw: Rerender): HTMLElement {
+function listEditor(inter: Extract<Interactive, { kind: "list" }>, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
   box.appendChild(label(t("chatListCta")));
-  box.appendChild(field(inter.cta, LIMITS.listCta, (v) => { inter.cta = v; redraw(); }));
+  box.appendChild(field(inter.cta, LIMITS.listCta, (v) => { inter.cta = v; sync.soft(); }));
 
   // The model supports up to 10 sections; the editor exposes the first one only.
   // Multi-section authoring is a deliberate gap, not an oversight — see CHAT_UI.md.
@@ -126,20 +139,20 @@ function listEditor(inter: Extract<Interactive, { kind: "list" }>, redraw: Reren
   if (!inter.sections.length) inter.sections.push(section);
 
   box.appendChild(label(t("chatSectionTitle")));
-  box.appendChild(field(section.title ?? "", LIMITS.listSectionTitle, (v) => { section.title = v || undefined; redraw(); }));
+  box.appendChild(field(section.title ?? "", LIMITS.listSectionTitle, (v) => { section.title = v || undefined; sync.soft(); }));
 
   section.rows.forEach((r, i) => {
     const row = el("div", "chat-row");
     const stack = el("div", "chat-stack");
-    stack.appendChild(field(r.title, LIMITS.listRowTitle, (v) => { r.title = v; redraw(); }, t("chatRowTitle")));
+    stack.appendChild(field(r.title, LIMITS.listRowTitle, (v) => { r.title = v; sync.soft(); }, t("chatRowTitle")));
     stack.appendChild(field(r.description ?? "", LIMITS.listRowDescription,
-      (v) => { r.description = v || undefined; redraw(); }, t("chatRowDesc")));
+      (v) => { r.description = v || undefined; sync.soft(); }, t("chatRowDesc")));
     row.appendChild(stack);
-    row.appendChild(iconBtn("trash-2", () => { section.rows.splice(i, 1); redraw(); }, t("remove")));
+    row.appendChild(iconBtn("trash-2", () => { section.rows.splice(i, 1); sync.structural(); }, t("remove")));
     box.appendChild(row);
   });
   box.appendChild(addBtn(t("chatAddRow"), section.rows.length, LIMITS.listRows,
-    () => { section.rows.push({ title: "" }); redraw(); }));
+    () => { section.rows.push({ title: "" }); sync.structural(); }));
 
   // Which of the list's two states to mock. Only one sheet can be open at a time,
   // so turning this on clears it on every other list message.
@@ -148,7 +161,7 @@ function listEditor(inter: Extract<Interactive, { kind: "list" }>, redraw: Reren
       if (m.interactive && m.interactive.kind === "list") m.interactive.sheetOpen = undefined;
     }
     inter.sheetOpen = on || undefined;
-    redraw();
+    sync.structural(); // the sibling toggles just changed too
   }));
   return box;
 }
@@ -156,66 +169,67 @@ function listEditor(inter: Extract<Interactive, { kind: "list" }>, redraw: Reren
 const TEMPLATE_BUTTON_TYPES: TemplateButtonType[] =
   ["QUICK_REPLY", "URL", "PHONE_NUMBER", "COPY_CODE", "FLOW", "MPM", "CATALOG", "OTP"];
 
-function templateEditor(inter: Extract<Interactive, { kind: "template" }>, redraw: Rerender): HTMLElement {
+function templateEditor(inter: Extract<Interactive, { kind: "template" }>, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
   box.appendChild(label(t("chatTplHeader")));
-  box.appendChild(field(inter.header ?? "", LIMITS.headerText, (v) => { inter.header = v || undefined; redraw(); }));
+  box.appendChild(field(inter.header ?? "", LIMITS.headerText, (v) => { inter.header = v || undefined; sync.soft(); }));
   box.appendChild(label(t("chatTplFooter")));
-  box.appendChild(field(inter.footer ?? "", LIMITS.footerText, (v) => { inter.footer = v || undefined; redraw(); }));
+  box.appendChild(field(inter.footer ?? "", LIMITS.footerText, (v) => { inter.footer = v || undefined; sync.soft(); }));
 
   inter.buttons.forEach((b: TemplateButton, i) => {
     const row = el("div", "chat-row");
     // Types stay in English: they mirror the spec, like Flows component names.
+    // A type swap changes no fields, so it's a value edit like the text beside it.
     row.appendChild(dropdown(b.type, TEMPLATE_BUTTON_TYPES.map((v) => ({ value: v, label: v })),
-      (v) => { b.type = v as TemplateButtonType; redraw(); }));
-    row.appendChild(field(b.text, LIMITS.templateButtonText, (v) => { b.text = v; redraw(); }, t("chatButtonLabel")));
-    row.appendChild(iconBtn("trash-2", () => { inter.buttons.splice(i, 1); redraw(); }, t("remove")));
+      (v) => { b.type = v as TemplateButtonType; sync.soft(); }));
+    row.appendChild(field(b.text, LIMITS.templateButtonText, (v) => { b.text = v; sync.soft(); }, t("chatButtonLabel")));
+    row.appendChild(iconBtn("trash-2", () => { inter.buttons.splice(i, 1); sync.structural(); }, t("remove")));
     box.appendChild(row);
   });
   box.appendChild(addBtn(t("chatAddButton"), inter.buttons.length, LIMITS.templateButtons,
-    () => { inter.buttons.push({ type: "QUICK_REPLY", text: "" }); redraw(); }));
+    () => { inter.buttons.push({ type: "QUICK_REPLY", text: "" }); sync.structural(); }));
   return box;
 }
 
-function flowEditor(inter: Extract<Interactive, { kind: "flow" }>, redraw: Rerender): HTMLElement {
+function flowEditor(inter: Extract<Interactive, { kind: "flow" }>, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
   box.appendChild(label(t("chatFlowCta")));
-  box.appendChild(field(inter.cta, LIMITS.flowCta, (v) => { inter.cta = v; redraw(); }));
+  box.appendChild(field(inter.cta, LIMITS.flowCta, (v) => { inter.cta = v; sync.soft(); }));
   return box;
 }
 
 const MESSAGE_TYPES: MessageType[] = ["text", "image", "video", "document", "audio"];
 
 /** Fields that only make sense for the chosen media type. */
-function mediaEditor(msg: Message, redraw: Rerender): HTMLElement {
+function mediaEditor(msg: Message, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
   const media = msg.media ?? (msg.media = {});
   if (msg.type === "image" || msg.type === "video") {
     box.appendChild(label(t("chatMediaSrc")));
     // Long base64 belongs in a textarea; the cap is generous, not spec-derived.
-    box.appendChild(area(media.src ?? "", 2_000_000, (v) => { media.src = v.trim() || undefined; redraw(); }));
+    box.appendChild(area(media.src ?? "", 2_000_000, (v) => { media.src = v.trim() || undefined; sync.soft(); }));
   }
   if (msg.type === "document") {
     box.appendChild(label(t("chatFileName")));
-    box.appendChild(field(media.name ?? "", 80, (v) => { media.name = v || undefined; redraw(); }, "invoice.pdf"));
+    box.appendChild(field(media.name ?? "", 80, (v) => { media.name = v || undefined; sync.soft(); }, "invoice.pdf"));
     box.appendChild(label(t("chatFileSize")));
-    box.appendChild(field(media.size ?? "", 20, (v) => { media.size = v || undefined; redraw(); }, "1.2 MB"));
+    box.appendChild(field(media.size ?? "", 20, (v) => { media.size = v || undefined; sync.soft(); }, "1.2 MB"));
   }
   if (msg.type === "audio" || msg.type === "video") {
     box.appendChild(label(t("chatDuration")));
-    box.appendChild(field(media.duration ?? "", 10, (v) => { media.duration = v || undefined; redraw(); }, "0:35"));
+    box.appendChild(field(media.duration ?? "", 10, (v) => { media.duration = v || undefined; sync.soft(); }, "0:35"));
   }
   return box;
 }
 
 /** The quoted-reply block: author plus one line of quoted text. */
-function replyEditor(msg: Message, redraw: Rerender): HTMLElement {
+function replyEditor(msg: Message, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
   const reply = msg.replyTo!;
   box.appendChild(label(t("chatReplyAuthor")));
-  box.appendChild(field(reply.author, 40, (v) => { reply.author = v; redraw(); }));
+  box.appendChild(field(reply.author, 40, (v) => { reply.author = v; sync.soft(); }));
   box.appendChild(label(t("chatReplyText")));
-  box.appendChild(field(reply.text, 120, (v) => { reply.text = v; redraw(); }));
+  box.appendChild(field(reply.text, 120, (v) => { reply.text = v; sync.soft(); }));
   return box;
 }
 
@@ -266,7 +280,8 @@ function collapseIfNew(msg: Message): void {
   collapsed.add(msg);
 }
 
-function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement, redraw: Rerender): HTMLElement {
+function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement, sync: ComposerSync): HTMLElement {
+  const redraw = sync.structural;
   collapseIfNew(msg);
   const isCollapsed = collapsed.has(msg);
   const card = el("div", "comp" + (isCollapsed ? " collapsed" : ""));
@@ -279,7 +294,15 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
 
   const head = el("div", "comp-head");
   head.appendChild(el("span", "type", msg.direction === "out" ? t("chatOut") : t("chatIn")));
-  head.appendChild(el("span", "chat-summary", summary(msg)));
+  // The collapsed summary used to refresh for free, because every keystroke
+  // re-rendered the whole composer. Value edits no longer do, so patch it here.
+  const summaryEl = el("span", "chat-summary", summary(msg));
+  head.appendChild(summaryEl);
+
+  const cardSync: ComposerSync = {
+    soft: () => { summaryEl.textContent = summary(msg); sync.soft(); },
+    structural: sync.structural,
+  };
 
   const chev = el("span", "comp-chev");
   chev.appendChild(iconEl(isCollapsed ? "chevron-down" : "chevron-up", 16));
@@ -316,23 +339,23 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
 
   body.appendChild(label(t("chatType")));
   body.appendChild(dropdown(msg.type, MESSAGE_TYPES.map((v) => ({ value: v, label: t("chatType_" + v) })),
-    (v) => { msg.type = v as MessageType; redraw(); }));
-  if (msg.type !== "text") body.appendChild(mediaEditor(msg, redraw));
+    (v) => { msg.type = v as MessageType; redraw(); })); // swaps the media fields
+  if (msg.type !== "text") body.appendChild(mediaEditor(msg, cardSync));
 
   // For media the text is the caption, which the spec caps the same as a body.
   body.appendChild(label(msg.type === "text" ? t("chatText") : t("chatCaption")));
-  body.appendChild(area(msg.text ?? "", LIMITS.bodyText, (v) => { msg.text = v; redraw(); }));
+  body.appendChild(area(msg.text ?? "", LIMITS.bodyText, (v) => { msg.text = v; cardSync.soft(); }));
 
   body.appendChild(toggle(t("chatQuoted"), !!msg.replyTo, (on) => {
     msg.replyTo = on ? { author: thread.contact.name, text: "" } : undefined;
-    redraw();
+    redraw(); // the reply sub-editor appears/disappears
   }));
-  if (msg.replyTo) body.appendChild(replyEditor(msg, redraw));
+  if (msg.replyTo) body.appendChild(replyEditor(msg, cardSync));
 
   const meta = el("div", "chat-row");
   const timeBox = el("div", "chat-stack");
   timeBox.appendChild(label(t("chatTime")));
-  timeBox.appendChild(field(msg.time ?? "", 8, (v) => { msg.time = v || undefined; redraw(); }, "09:41"));
+  timeBox.appendChild(field(msg.time ?? "", 8, (v) => { msg.time = v || undefined; cardSync.soft(); }, "09:41"));
   meta.appendChild(timeBox);
   if (msg.direction === "out") {
     const statusBox = el("div", "chat-stack");
@@ -340,7 +363,7 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
     statusBox.appendChild(dropdown(msg.status ?? "sent",
       [{ value: "sent", label: t("chatSent") }, { value: "delivered", label: t("chatDelivered") },
        { value: "read", label: t("chatRead") }],
-      (v) => { msg.status = v as Message["status"]; redraw(); }));
+      (v) => { msg.status = v as Message["status"]; cardSync.soft(); }));
     meta.appendChild(statusBox);
   }
   body.appendChild(meta);
@@ -348,14 +371,14 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
   body.appendChild(label(t("chatInteractive")));
   body.appendChild(dropdown(msg.interactive?.kind ?? "none",
     KINDS.map((k) => ({ value: k, label: k === "none" ? t("chatNone") : k })),
-    (v) => { msg.interactive = freshInteractive(v); redraw(); }));
+    (v) => { msg.interactive = freshInteractive(v); redraw(); })); // swaps the sub-editor
 
   const inter = msg.interactive;
   if (inter) {
-    if (inter.kind === "buttons") body.appendChild(buttonsEditor(inter, redraw));
-    else if (inter.kind === "list") body.appendChild(listEditor(inter, redraw));
-    else if (inter.kind === "flow") body.appendChild(flowEditor(inter, redraw));
-    else body.appendChild(templateEditor(inter, redraw));
+    if (inter.kind === "buttons") body.appendChild(buttonsEditor(inter, cardSync));
+    else if (inter.kind === "list") body.appendChild(listEditor(inter, cardSync));
+    else if (inter.kind === "flow") body.appendChild(flowEditor(inter, cardSync));
+    else body.appendChild(templateEditor(inter, cardSync));
   }
 
   const actions = el("div", "comp-actions");
@@ -384,6 +407,8 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
 /** Render the composer for `thread` into `host`. `onChange` refreshes the preview. */
 export function renderComposer(thread: Thread, host: HTMLElement, onChange: Rerender): void {
   const redraw = (): void => { renderComposer(thread, host, onChange); onChange(); };
+  // Value edits keep the DOM (and the caret); only structural ones rebuild it.
+  const sync: ComposerSync = { soft: onChange, structural: redraw };
   currentThread = thread;
   host.innerHTML = "";
 
@@ -423,7 +448,7 @@ export function renderComposer(thread: Thread, host: HTMLElement, onChange: Rere
 
   cardToggles.length = 0; // rebuilt below, one per card
   const list = el("div", "chat-list");
-  thread.messages.forEach((msg, i) => list.appendChild(messageCard(msg, i, thread, list, redraw)));
+  thread.messages.forEach((msg, i) => list.appendChild(messageCard(msg, i, thread, list, sync)));
   paintCollapseAll();
   if (!thread.messages.length) list.appendChild(el("div", "empty", t("chatNoMessages")));
   host.appendChild(list);
