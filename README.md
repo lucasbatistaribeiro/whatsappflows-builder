@@ -20,7 +20,8 @@ render navigable, WhatsApp-styled mockups on the canvas.
   navigate targets exist, per-component limits…). Errors block generation and
   highlight the offending screen.
 - **Import & templates** — load a Flow JSON from file or start from a built-in
-  template; **Copy JSON** exports a flow ready for WhatsApp Manager.
+  template, **written in the plugin's language** (English or Portuguese);
+  **Copy JSON** exports a flow ready for WhatsApp Manager.
 - **Generate in Figma** — draws one phone-sized frame per screen (status bar,
   header, body, footer) with WhatsApp visual tokens and wires `navigate` actions
   into **prototype reactions** (clickable prototype, entry screen = starting

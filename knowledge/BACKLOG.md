@@ -36,6 +36,25 @@ from a second branch would have clobbered that work. Fold it in once that lands.
 
 ---
 
+## Chat mode: localize the sample conversation and the palette defaults
+
+**Status:** idea · raised 2026-10-20
+
+Flows templates and the sample flow now follow the plugin's language
+(`templates(lang)` / `sampleFlow(lang)`, locale type in `src/model/lang.ts`).
+Chat mode doesn't: `sampleThread()` in `src/model/chatTypes.ts` is English
+("Your order #4127 is ready for pickup"), as are the default texts the entries
+in `src/model/chatPalette.ts` produce and their labels ("Incoming text",
+"Reply buttons").
+
+The same shape applies — a copy bundle per locale beside the data, selected by
+`lang` — but there is one decision first: the palette **labels** are plugin
+chrome, so they belong in `i18n.ts`, while the message **text** each entry
+produces is authored content and belongs beside the palette. Splitting them is
+the whole job; the mechanism is already proven on the Flows side.
+
+---
+
 ## Chat mode: re-import and update a generated conversation
 
 **Status:** idea · raised 2026-10-20

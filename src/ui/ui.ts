@@ -3,8 +3,8 @@
 import type { FlowJSON, Screen, Component } from "../model/flowTypes";
 import { screenChildren } from "../model/flowTypes";
 import { PALETTE } from "../model/palette";
-import { SAMPLE_FLOW } from "../model/sample";
-import { TEMPLATES } from "../model/templates";
+import { SAMPLE_FLOW, sampleFlow } from "../model/sample";
+import { templates } from "../model/templates";
 import { postToMain } from "./bridge";
 import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme, setPreviewBusiness } from "./preview";
 import { renderChat } from "./chat";
@@ -531,15 +531,18 @@ function loadFlow(parsed: unknown, sourceName: string, linkTo?: string): void {
 function buildTemplateDropdown(): void {
   const host = $("#template");
   host.innerHTML = "";
+  // Templates are authored content, so they come in the plugin's language.
+  // applyLang() rebuilds this picker, which is what re-reads them.
+  const list = templates(prefs.lang);
   host.appendChild(createDropdown({
     value: "",
     placeholder: t("templatePlaceholder"),
-    options: TEMPLATES.map((tpl, i) => ({ value: String(i), label: tpl.name })),
+    options: list.map((tpl, i) => ({ value: String(i), label: tpl.name })),
     resetAfterSelect: true,
     size: "mini",
     onChange: (v) => {
       const i = Number(v);
-      if (TEMPLATES[i]) loadFlow(clone(TEMPLATES[i].flow), TEMPLATES[i].name);
+      if (list[i]) loadFlow(clone(list[i].flow), list[i].name);
       closeMenu();
     },
   }));
@@ -693,8 +696,21 @@ function buildMenuDropdowns(): void {
     (v) => { if (v !== prefs.lang) { prefs = { ...prefs, lang: v as Lang }; applyLang(prefs.lang); savePrefs(); } });
 }
 
+// The editor boots on the English sample, before the saved language is known.
+// Once it arrives, swap in the localized sample — but only while the flow is
+// still byte-identical to what we loaded, so this can never discard an edit or
+// a flow the user imported in the meantime.
+function localizeInitialFlow(lang: Lang): void {
+  if (JSON.stringify(flow) !== JSON.stringify(SAMPLE_FLOW)) return;
+  flow = clone(sampleFlow(lang));
+  current = 0;
+  collapseAllCards(flow);
+  syncJson(); // applyLang's renderAll doesn't rewrite the JSON tab
+}
+
 function applyPrefs(p: Prefs): void {
   prefs = { ...prefs, ...p };
+  localizeInitialFlow(prefs.lang); // before applyLang, which re-renders
   applyTheme(prefs.theme);
   applyLang(prefs.lang); // also (re)builds the menu combo boxes from prefs
   applyInteractive(prefs.interactive);

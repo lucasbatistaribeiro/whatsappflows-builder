@@ -83,10 +83,20 @@ then `npm run build`.
 - **Theme:** tokens in `ui.html` map to `--figma-color-*` with light/dark fallbacks;
   a manual toggle sets `:root[data-theme="light|dark"]`. The generator's own tokens
   live in `src/main/theme.ts` and also feed the preview via CSS vars (single source).
-- **i18n (`src/ui/i18n.ts`):** static text uses `data-i18n` / `data-i18n-ph`
-  (filled by `applyI18n`); JS-built text uses `t(key, params)` with `{n}` slots.
-  The validator emits `{key, params}` and the UI translates it. **Component type
-  names stay in English** (they mirror the Flow JSON spec). English is the source.
+- **i18n (`src/ui/i18n.ts`):** static text uses `data-i18n` / `data-i18n-ph` /
+  `data-i18n-title` (filled by `applyI18n`); JS-built text uses `t(key, params)`
+  with `{n}` slots. The validator emits `{key, params}` and the UI translates it.
+  **Component type names stay in English** (they mirror the Flow JSON spec).
+  English is the source.
+- **Authored content follows the language too** — `templates(lang)` and
+  `sampleFlow(lang)` (`src/model/*`, locale type in `src/model/lang.ts`) return
+  the starter flows written in the plugin's language; the picker rebuilds on a
+  language change. Their copy lives beside them, not in `i18n.ts`, which is the
+  chrome's dictionary. **What is never translated is anything the Flow JSON
+  refers to by name**: screen ids, input `name`s, `data-source` ids, `data`
+  schema keys and `${form.*}` / `${data.*}` bindings. Translating those breaks
+  the references and changes nothing anyone reads — the regression test is that
+  the en and pt flows are byte-identical once the copy is stripped.
 - **Custom dropdown (`src/ui/dropdown.ts`)** replaces native `<select>` for full
   theming. It must stay `position: fixed` in CSS (a static popup causes a transient
   scrollbar that mis-measures width — BUGFIXES #28). Width is matched to the trigger;
@@ -107,7 +117,7 @@ then `npm run build`.
 ```
 plugin/        manifest.json + code.js + ui.html (the last two generated, gitignored)
 src/
-  model/       flowTypes, palette, templates, sample, validate   (pure, shared)
+  model/       flowTypes, palette, templates, sample, validate, lang (pure, shared)
   shared/      messages                                          (UI <-> main contract)
   main/        theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
   ui/          ui.html, ui.ts, bridge, preview, propEditor, dropdown, icons, i18n (plugin UI)
