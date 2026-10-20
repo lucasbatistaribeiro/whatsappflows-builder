@@ -5,6 +5,30 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Chat composer lost focus on every keystroke
+
+**Symptom.** Typing in any field of a message card in the chat composer (text /
+caption, button label, list CTA, row title or description, time, the media
+fields, the quoted reply) accepted exactly one character: the caret jumped to
+`<body>` and the next keystroke went nowhere.
+
+**Root cause.** Every editor in `chatComposer.ts` was handed a single `redraw`
+callback and called it from `oninput`. `redraw` is `renderComposer(...)`, which
+starts with `host.innerHTML = ""` — so each character tore down the focused
+input and built a new one. The Flows side had already solved this: `ui.ts`
+splits `softSync` (sync + preview, keeps the DOM) from `structuralSync`
+(rebuild the cards), and the composer's own contact fields were correct because
+they called `onChange` rather than `redraw`.
+
+**Fix.** The same split, as a `ComposerSync { soft, structural }` threaded
+through the editors. Value edits call `soft` (preview only); only edits that add
+or remove fields — add/remove button or row, message type, direction,
+interactive kind, the quoted-reply and sheet-open toggles — call `structural`.
+The collapsed card summary used to refresh for free with the re-render, so each
+card wraps `soft` to patch its own `.chat-summary` in place.
+
+---
+
 ## Chat cards never actually collapsed
 
 **Symptom.** A message card in the chat composer looked collapsible — the
