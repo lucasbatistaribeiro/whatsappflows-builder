@@ -1,4 +1,7 @@
 // Message contract between the plugin UI (iframe) and the main thread (Figma sandbox).
+// Types only: this module is imported by both sides, so it must compile with
+// neither the DOM nor the Figma globals. The UI's send helper lives in
+// src/ui/bridge.ts, where `parent` exists.
 import type { FlowJSON } from "../model/flowTypes";
 import type { Thread } from "../model/chatTypes";
 
@@ -61,7 +64,3 @@ export type MainToUI =
   | { type: "importOffer"; name: string; flow: FlowJSON }
   // Selection moved off that section (or onto nothing) — withdraw the offer.
   | { type: "importOfferEnd" };
-
-export function postToMain(msg: UIToMain): void {
-  parent.postMessage({ pluginMessage: msg }, "*");
-}

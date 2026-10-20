@@ -87,8 +87,16 @@ export const RADIUS = { input: 8, button: 24, chip: 16, card: 12 };
 
 export const SPACE = { screenPad: 16, gap: 16, gapSm: 8, gapXs: 4 };
 
+// Figma's RGB / SolidPaint named structurally rather than through the plugin
+// typings. The preview imports this module for the palette (one source of
+// tokens for the generator and the mockup), and the UI compiles without the
+// Figma globals — see build/tsconfig.ui.json. Both shapes are assignable to the
+// real `RGB` / `Paint`, so `node.fills = [fill(x)]` still typechecks in src/main.
+export interface Rgb { r: number; g: number; b: number }
+export interface SolidFill { type: "SOLID"; color: Rgb }
+
 // hex "#RRGGBB" -> Figma RGB (0..1)
-export function rgb(hex: string): RGB {
+export function rgb(hex: string): Rgb {
   const h = hex.replace("#", "");
   return {
     r: parseInt(h.slice(0, 2), 16) / 255,
@@ -97,6 +105,6 @@ export function rgb(hex: string): RGB {
   };
 }
 
-export function fill(hex: string): SolidPaint {
+export function fill(hex: string): SolidFill {
   return { type: "SOLID", color: rgb(hex) };
 }

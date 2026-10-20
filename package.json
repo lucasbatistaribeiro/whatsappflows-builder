@@ -6,7 +6,9 @@
   "scripts": {
     "build": "node build/esbuild.mjs",
     "watch": "node build/esbuild.mjs --watch",
-    "typecheck": "tsc --noEmit --project build/tsconfig.json"
+    "typecheck": "npm run typecheck:main && npm run typecheck:ui",
+    "typecheck:main": "tsc --project build/tsconfig.main.json",
+    "typecheck:ui": "tsc --project build/tsconfig.ui.json"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.100.0",

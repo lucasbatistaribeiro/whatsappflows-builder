@@ -1,0 +1,21 @@
+{
+  // The plugin UI (an iframe): the DOM, no `figma` API. `types: []` keeps the
+  // Figma globals out, so `figma.*` in src/ui is a compile error — the mirror
+  // of what tsconfig.main.json does for the DOM.
+  //
+  // src/main/theme.ts is in here on purpose: the preview reads the generator's
+  // palette so both agree on the tokens (one source, knowledge/CLAUDE.md). That
+  // file is pure — it names Figma's paint shapes structurally instead of using
+  // the plugin typings — which is what lets it be shared.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2019", "DOM"],
+    "types": []
+  },
+  "include": [
+    "../src/ui/**/*.ts",
+    "../src/model/**/*.ts",
+    "../src/shared/**/*.ts",
+    "../src/main/theme.ts"
+  ]
+}

@@ -75,9 +75,10 @@ src/              source
   shared/         UI <-> main message contract
   main/           Figma sandbox: theme tokens, node helpers, chrome,
                   per-component renderers, screen assembly, prototype routing
-  ui/             Plugin UI (playground): palette, screen manager, property
+  ui/             Plugin UI (playground): message bridge, palette, screen manager, property
                   editor, live preview, live JSON editor
-build/            esbuild.mjs (bundler) + tsconfig.json (typecheck)
+build/            esbuild.mjs (bundler) + one tsconfig per runtime context:
+                  tsconfig.main.json (no DOM), tsconfig.ui.json (no figma)
 knowledge/        docs to read: CLAUDE.md (working guide), BUGFIXES.md (bug log),
                   META_SYNC.md (Meta spec sync playbook), BACKLOG.md (deferred
                   work), CHAT_UI.md (chat-mode design spec),

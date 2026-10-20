@@ -20,7 +20,7 @@ buttons, the list menu, flows, templates) with their official shapes and limits.
 npm install
 npm run build      # build/esbuild.mjs -> plugin/code.js (main) + plugin/ui.html (UI inlined)
 npm run watch      # rebuild main on change (re-run for UI changes)
-npm run typecheck  # tsc --noEmit (strict; noUnusedLocals)
+npm run typecheck  # both projects: typecheck:main + typecheck:ui (strict)
 ```
 
 `plugin/` is the deliverable: after a build it holds only `manifest.json`,
@@ -36,7 +36,13 @@ then `npm run build`.
   `plugin/code.js`. Builds the generated screens.
 - **`src/ui/*` = the plugin UI** (an iframe: DOM, no `figma` API). Bundled and
   inlined into `plugin/ui.html`. This is the builder interface.
-- They talk only via `postMessage`; the typed contract is `src/shared/messages.ts`.
+- They talk only via `postMessage`; the typed contract is `src/shared/messages.ts`
+  (**types only** — the UI's send helper is `src/ui/bridge.ts`, where `parent` exists).
+- **The split is enforced by the compiler, not by discipline.** `build/tsconfig.main.json`
+  omits the `DOM` lib, so `document.*` in `src/main` fails to compile;
+  `build/tsconfig.ui.json` sets `types: []`, so `figma.*` in `src/ui` fails to
+  compile. `npm run typecheck` runs both. Both include `src/model` and
+  `src/shared`, which is what keeps those two layers pure.
 - `src/model/*` is pure (no `figma`, no DOM) and imported by both sides — keep it
   that way (e.g. `validate.ts` returns message *keys*, not translated strings).
 
@@ -104,8 +110,9 @@ src/
   model/       flowTypes, palette, templates, sample, validate   (pure, shared)
   shared/      messages                                          (UI <-> main contract)
   main/        theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
-  ui/          ui.html, ui.ts, preview, propEditor, dropdown, icons, i18n       (plugin UI)
-build/         esbuild.mjs (paths resolve from the file, not the cwd), tsconfig.json
+  ui/          ui.html, ui.ts, bridge, preview, propEditor, dropdown, icons, i18n (plugin UI)
+build/         esbuild.mjs (paths resolve from the file, not the cwd) + three
+               tsconfigs: base, main (no DOM), ui (no figma)
 knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md, BACKLOG.md,
                CHAT_UI.md, CHAT_PATTERNS.md
 .claude/agents/ runnable subagent definitions — not docs (see plugin-ui-tester)
