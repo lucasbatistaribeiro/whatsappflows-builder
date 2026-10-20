@@ -128,18 +128,29 @@ function embedPayload(section: SectionNode, payload: unknown): void {
 }
 
 // Read the flow embedded in a section, or null when there's none. Only warns
-// when a marker node exists but its contents can't be used.
+// when a marker node exists but its contents really are broken — a payload from
+// another generator is declined in silence.
 function readEmbeddedFlow(section: SectionNode): FlowJSON | null {
   const node = section.findChild(
     (n) => n.type === "TEXT" && n.name.indexOf(JSON_MARKER) >= 0,
   ) as TextNode | null;
   if (!node) return null;
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(node.characters) as FlowJSON;
-    if (parsed && typeof parsed === "object" && Array.isArray(parsed.screens) && parsed.screens.length) {
-      return parsed;
-    }
-  } catch { /* hand-edited into invalid JSON */ }
+    parsed = JSON.parse(node.characters);
+  } catch {
+    figma.notify("This section's embedded Flow JSON is invalid.", { error: true });
+    return null; // hand-edited into invalid JSON
+  }
+  if (parsed && typeof parsed === "object") {
+    const payload = parsed as { mode?: unknown; screens?: unknown };
+    if (Array.isArray(payload.screens) && payload.screens.length) return parsed as FlowJSON;
+    // Chat mode writes `{ mode: "chat", thread }` under the same marker name.
+    // It parses fine and has no screens[], which used to land on the "invalid"
+    // toast — selecting a generated conversation shouted an error at the user.
+    // It's another mode's payload, not a corrupted flow: decline it quietly.
+    if (typeof payload.mode === "string") return null;
+  }
   figma.notify("This section's embedded Flow JSON is invalid.", { error: true });
   return null;
 }
@@ -241,8 +252,8 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
 // Chat mode (knowledge/CHAT_UI.md): one frame per thread, in the same dated
 // section. No prototype wiring — a conversation has nothing to navigate — and no
 // re-import offer yet, so the embedded payload is tagged with its mode for a
-// future importer to recognise. The existing flow reader requires a screens[]
-// array, so it already declines a chat section instead of mis-importing it.
+// future importer to recognise. The flow reader recognises that `mode` tag and
+// declines a chat section quietly, instead of mis-importing it or warning.
 async function generateChat(thread: Thread, options: GenOptions = DEFAULT_OPTIONS): Promise<void> {
   if (!thread || !Array.isArray(thread.messages) || thread.messages.length === 0) {
     throw new Error("Conversation has no messages.");

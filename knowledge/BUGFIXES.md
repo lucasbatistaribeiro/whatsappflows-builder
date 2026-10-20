@@ -5,6 +5,24 @@ fix for each. Newest first. Links point to the merged PR.
 
 ---
 
+## Selecting a generated conversation cried "invalid Flow JSON"
+
+**Symptom.** Clicking a section produced by chat mode popped an error toast:
+*This section's embedded Flow JSON is invalid.* Nothing was wrong with it.
+
+**Root cause.** Both modes embed their payload in a hidden TEXT node with the
+same name (`flow.json - do not delete`), so `readEmbeddedFlow` picked up the
+chat payload too. `JSON.parse` succeeded, `screens[]` was missing — and the
+reader fell through to the "invalid" branch meant for a hand-mangled flow. It
+declined the section correctly; it just shouted while doing it.
+
+**Fix.** Separate the three outcomes: a parse failure or a shapeless object is
+still an error, a `screens[]` array is still imported, and a payload carrying a
+`mode` tag (chat mode writes `{ mode: "chat", thread }`) is another generator's
+and is declined in silence.
+
+---
+
 ## Chat composer lost focus on every keystroke
 
 **Symptom.** Typing in any field of a message card in the chat composer (text /
