@@ -28,6 +28,10 @@ render navigable, WhatsApp-styled mockups on the canvas.
 - **Round-trip from the canvas** — every generated section carries its Flow JSON
   in an invisible, locked text layer. With the plugin open, click that section in
   Figma and it offers to load the flow back into the builder.
+- **Edit updates the section it came from** — a flow loaded that way stays linked
+  to its section: the top bar shows which one, and **Generate** becomes **Update**,
+  rebuilding that section in place instead of leaving the old screens behind.
+  Unlink (the x on the chip) to generate a separate section instead.
 
 ## Component coverage
 

@@ -51,7 +51,7 @@ figma.ui.onmessage = async (msg: UIToMain) => {
       return;
     }
     if (msg.type === "generate") {
-      await generate(msg.flow, msg.options);
+      await generate(msg.flow, msg.options, msg.replaceSectionId);
     }
     if (msg.type === "generateChat") {
       await generateChat(msg.thread, msg.options);
@@ -96,6 +96,28 @@ function safeColor(hex: unknown): string {
 }
 function safeRadius(n: unknown): number {
   return typeof n === "number" && isFinite(n) && n >= 0 ? Math.min(n, 200) : SECTION_RADIUS;
+}
+
+// Where a replaced section sat, so its update takes the same spot.
+interface Anchor { x: number; y: number }
+
+/**
+ * The section a generate run should replace, or null to append a new one.
+ *
+ * The id comes from the UI, which got it with the import offer — so it is only
+ * ever a section this plugin generated and the user then imported. It can have
+ * been deleted, or stop being a section, in between: treat anything unexpected
+ * as "no link" and fall back to appending, rather than failing the run.
+ *
+ * `getNodeByIdAsync` (not `getNodeById`) because the manifest declares
+ * `documentAccess: "dynamic-page"`, where the sync getter throws.
+ */
+async function sectionToReplace(id: string | undefined): Promise<SectionNode | null> {
+  if (!id) return null;
+  const node = await figma.getNodeByIdAsync(id);
+  if (!node || node.type !== "SECTION" || node.removed) return null;
+  // Only replace something on the page we are generating into.
+  return node.parent === figma.currentPage ? node : null;
 }
 
 // Drop the new section below whatever is already on the page.
@@ -170,7 +192,7 @@ figma.on("selectionchange", () => {
   const flow = readEmbeddedFlow(section);
   if (!flow) { endOffer(); return; }
   lastOfferedSectionId = section.id;
-  figma.ui.postMessage({ type: "importOffer", name: section.name, flow });
+  figma.ui.postMessage({ type: "importOffer", name: section.name, flow, sectionId: section.id });
 });
 
 // Give a short screen a standard phone height: fix the frame height and let the
@@ -187,8 +209,10 @@ function enforceMinHeight(frame: FrameNode, minH: number): void {
 // Wrap a run of frames in the dated section: laid out in a row, "fill container"
 // sizing resolved, given the standard phone height, then sized around the result.
 // Shared by both modes so the section looks identical whichever one produced it.
-function placeInSection(frames: FrameNode[], options: GenOptions): SectionNode {
-  const sectionY = nextSectionY(); // measure the page before adding the section
+function placeInSection(frames: FrameNode[], options: GenOptions, at?: Anchor): SectionNode {
+  // Reuse the replaced section's spot when there is one, so an update lands
+  // where the user left it instead of jumping to the bottom of the page.
+  const sectionY = at ? at.y : nextSectionY(); // measure the page before adding the section
   const section = figma.createSection();
   section.name = sectionLabel(options.sectionName);
   section.fills = [fill(safeColor(options.sectionColor))];
@@ -211,12 +235,12 @@ function placeInSection(frames: FrameNode[], options: GenOptions): SectionNode {
   const contentW = cursorX - GAP;
   const contentH = frames.reduce((h, f) => Math.max(h, f.height), 0);
   section.resizeWithoutConstraints(contentW + SECTION_PAD, contentH + SECTION_PAD * 2);
-  section.x = 0;
+  section.x = at ? at.x : 0;
   section.y = sectionY;
   return section;
 }
 
-async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): Promise<void> {
+async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS, replaceSectionId?: string): Promise<void> {
   if (!flow || !Array.isArray(flow.screens) || flow.screens.length === 0) {
     throw new Error("Flow has no screens.");
   }
@@ -229,7 +253,16 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
 
   const built: BuiltScreen[] = flow.screens.map((s, i) => buildScreen(s, i, flow.screens.length));
 
-  const section = placeInSection(built.map((b) => b.frame), options);
+  // Updating a section the user imported from: build the replacement at the old
+  // one's spot, then remove it. Built first so a failure mid-build leaves the
+  // original standing rather than deleting it and producing nothing.
+  const old = await sectionToReplace(replaceSectionId);
+  const section = placeInSection(
+    built.map((b) => b.frame),
+    options,
+    old ? { x: old.x, y: old.y } : undefined,
+  );
+  if (old) old.remove();
 
   embedFlowJson(section, flow); // hidden JSON so this section can be re-imported
 
@@ -245,8 +278,18 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS): 
   // re-import what was just generated.
   figma.currentPage.selection = built.map((b) => b.frame);
   figma.viewport.scrollAndZoomIntoView([section]);
-  figma.notify(`Generated ${built.length} screen${built.length > 1 ? "s" : ""} in "${section.name}".`);
-  figma.ui.postMessage({ type: "generated", screenCount: built.length });
+  const n = built.length;
+  const screens = `${n} screen${n > 1 ? "s" : ""}`;
+  // Say which it was: the user asked for an update, and silently appending a
+  // second copy because the section had been deleted would be a surprise.
+  figma.notify(old
+    ? `Updated "${section.name}" with ${screens}.`
+    : replaceSectionId
+      ? `The linked section is gone — generated ${screens} in "${section.name}".`
+      : `Generated ${screens} in "${section.name}".`);
+  // The replacement is a new node with a new id: hand it back so the UI stays
+  // linked and the next Generate updates this section too.
+  figma.ui.postMessage({ type: "generated", screenCount: n, sectionId: section.id, replaced: !!old });
 }
 
 // Chat mode (knowledge/CHAT_UI.md): one frame per thread, in the same dated

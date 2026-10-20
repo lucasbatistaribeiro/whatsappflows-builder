@@ -414,9 +414,23 @@ function setGenState(state: "idle" | "busy" | "done"): void {
   // Don't clobber the validation gate when returning to idle.
   const errors = validateFlow(flow).filter((i) => i.level === "error").length;
   btn.disabled = state === "busy" || errors > 0;
-  if (icon) icon.replaceChildren(iconEl(state === "busy" ? "loader-circle" : state === "done" ? "check" : "sparkles", 16));
-  if (label) label.textContent = t(state === "busy" ? "generating" : state === "done" ? "genDone" : "generate");
+  const linked = isLinked();
+  if (icon) icon.replaceChildren(iconEl(
+    state === "busy" ? "loader-circle" : state === "done" ? "check" : linked ? "refresh-cw" : "sparkles", 16));
+  if (label) label.textContent = t(
+    state === "busy" ? "generating" : state === "done" ? "genDone" : linked ? "update" : "generate");
   if (state === "done") genResetTimer = window.setTimeout(() => setGenState("idle"), 2200);
+}
+
+// Flows mode with a section to update. Chat mode generates its own sections and
+// has no re-import yet, so the link never applies there.
+function isLinked(): boolean { return mode !== "chat" && !!linkedSectionId; }
+
+// Repaint the Generate button's idle face without disturbing a run in progress
+// (setGenState("idle") would drop the busy bar before its minimum time).
+function repaintGenerate(): void {
+  const btn = $("#generate");
+  if (!btn.classList.contains("busy") && !btn.classList.contains("done")) setGenState("idle");
 }
 
 function issueRow(issue: Issue): HTMLElement {
@@ -493,8 +507,12 @@ function uniqueId(base: string): string {
 
 // ---- Import & templates -------------------------------------------------
 
-// Validate structure and load a flow from a template or file.
-function loadFlow(parsed: unknown, sourceName: string): void {
+// Validate structure and load a flow from a template or file. `linkTo` is the
+// id of the generated section the flow came from, when it came from one — see
+// the linked-section block below. Everything else (template, file, new flow)
+// leaves it out, which unlinks: generating those must not overwrite a section
+// that has nothing to do with them.
+function loadFlow(parsed: unknown, sourceName: string, linkTo?: string): void {
   const normalized = normalizeFlow(parsed);
   if (!normalized) {
     postToMain({ type: "notify", message: `${sourceName}: not a valid Flow (needs a non-empty screens[] array).` });
@@ -503,6 +521,7 @@ function loadFlow(parsed: unknown, sourceName: string): void {
   flow = normalized;
   current = 0;
   jsonScope = FLOW_SCOPE; // a new flow has different screens — don't keep a stale scope
+  setLinkedSection(linkTo, linkTo ? sourceName : "");
   collapseAllCards(flow);
   syncAndRender();
   const errors = validateFlow(flow).filter((i) => i.level === "error").length;
@@ -600,6 +619,7 @@ function applyLang(lang: Lang): void {
   jsonScopeSig = ""; // force the JSON scope picker to rebuild with the new locale
   buildJsonScopeDropdown();
   if (offered) $("#offer-title").textContent = t("offerTitle", [offeredName]); // JS-built text
+  repaintGenerate(); // applyI18n just reset the button to the "generate" label
   renderAll();
 }
 
@@ -749,14 +769,38 @@ $("#section-radius").addEventListener("input", (e) => {
 });
 $("#section-radius").addEventListener("change", () => { applySection(prefs); savePrefs(); });
 
+// ---- Linked section ------------------------------------------------------
+// A flow imported from a generated section stays linked to it, so Generate
+// updates that section instead of dropping a second copy on the canvas. The
+// link is deliberately visible and escapable: an update deletes frames the user
+// may have annotated, so it should never be a silent side effect.
+
+let linkedSectionId: string | null = null;
+
+function setLinkedSection(id: string | undefined, name: string): void {
+  linkedSectionId = id ?? null;
+  const chip = $("#linked");
+  chip.classList.toggle("open", !!id);
+  if (id) $("#linked-name").textContent = name;
+  repaintGenerate(); // the button reads "Update" while linked
+}
+
+// The name shown on the chip, so a re-link after a run keeps its label.
+function linkedName(): string { return $("#linked-name").textContent ?? ""; }
+
+// Unlink: the next Generate produces a new section and leaves the old one alone.
+$("#linked-unlink").addEventListener("click", () => setLinkedSection(undefined, ""));
+
 // ---- Import offer (user clicked a generated section in Figma) -------------
 
 let offered: FlowJSON | null = null;
 let offeredName = "";
+let offeredSectionId = "";
 
-function showOffer(name: string, f: FlowJSON): void {
+function showOffer(name: string, f: FlowJSON, sectionId: string): void {
   offered = f;
   offeredName = name;
+  offeredSectionId = sectionId;
   $("#offer-title").textContent = t("offerTitle", [name]);
   $("#offer").classList.add("open");
 }
@@ -768,19 +812,27 @@ $("#offer-cancel").addEventListener("click", hideOffer);
 $("#offer-import").addEventListener("click", () => {
   const f = offered;
   const name = offeredName;
+  const sectionId = offeredSectionId;
   hideOffer();
-  if (f) loadFlow(f, name); // replaces the current flow, same path as file import
+  // Replaces the current flow, same path as a file import — but linked, so
+  // editing it updates the section it came from.
+  if (f) loadFlow(f, name, sectionId);
 });
 
 // Messages from the main thread: saved prefs on startup, import offers on click.
 window.addEventListener("message", (e: MessageEvent) => {
   const msg = (e.data && (e.data as { pluginMessage?: unknown }).pluginMessage) as
-    { type?: string; prefs?: Prefs; name?: string; flow?: FlowJSON } | undefined;
+    { type?: string; prefs?: Prefs; name?: string; flow?: FlowJSON; sectionId?: string } | undefined;
   if (!msg) return;
   if (msg.type === "prefs" && msg.prefs) applyPrefs(msg.prefs);
-  else if (msg.type === "importOffer" && msg.flow) showOffer(msg.name ?? "Figma", msg.flow);
+  else if (msg.type === "importOffer" && msg.flow) showOffer(msg.name ?? "Figma", msg.flow, msg.sectionId ?? "");
   else if (msg.type === "importOfferEnd") hideOffer(); // selection left the section
-  else if (msg.type === "generated") finishGenerate(); // honours the minimum busy time
+  else if (msg.type === "generated") {
+    // A run replaces the section with a new node, so re-link to what it just
+    // made — otherwise the second Generate would append instead of updating.
+    if (mode !== "chat" && msg.sectionId) setLinkedSection(msg.sectionId, linkedName());
+    finishGenerate(); // honours the minimum busy time
+  }
   else if (msg.type === "error") setGenState("idle");  // failures surface right away
 });
 
@@ -837,6 +889,8 @@ function applyMode(m: Mode): void {
   $("#panel-chat-preview").classList.toggle("active", m === "chat" && chatTab === "preview");
   if (m === "chat") renderChatAll();
   else if (activeTab === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
+  $("#linked").classList.toggle("open", isLinked());
+  repaintGenerate(); // "Update" is a Flows-only state
   renderValidation(); // the Generate gate depends on the mode
 }
 
@@ -875,7 +929,7 @@ document.querySelectorAll<HTMLElement>(".mode-switch .seg-item").forEach((b) => 
 $("#generate").addEventListener("click", () => {
   setGenState("busy");
   if (mode === "chat") postToMain({ type: "generateChat", thread, options: genOptions() });
-  else postToMain({ type: "generate", flow, options: genOptions() });
+  else postToMain({ type: "generate", flow, options: genOptions(), replaceSectionId: linkedSectionId ?? undefined });
 });
 
 $("#copy").addEventListener("click", () => {

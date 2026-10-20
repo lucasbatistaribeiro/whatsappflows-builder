@@ -68,6 +68,10 @@ const DICT: Record<string, Entry> = {
   generate: { en: "Generate", pt: "Gerar" },
   generating: { en: "Generating…", pt: "Gerando…" },
   genDone: { en: "Generated!", pt: "Gerado!" },
+  // Linked to a generated section: Generate updates it in place.
+  update: { en: "Update", pt: "Atualizar" },
+  linkedTitle: { en: "Generate updates this section in Figma", pt: "Gerar atualiza esta section no Figma" },
+  unlink: { en: "Unlink — generate a new section instead", pt: "Desvincular — gerar uma nova section" },
   // menu
   menuTitle: { en: "Menu", pt: "Menu" },
   groupPreview: { en: "Preview", pt: "Prévia" },
@@ -196,7 +200,8 @@ export function t(key: string, params?: (string | number)[]): string {
   return s;
 }
 
-// Fill [data-i18n] textContent and [data-i18n-ph] placeholders from the dictionary.
+// Fill [data-i18n] textContent, [data-i18n-ph] placeholders and [data-i18n-title]
+// tooltips from the dictionary.
 export function applyI18n(root: ParentNode): void {
   root.querySelectorAll<HTMLElement>("[data-i18n]").forEach((el) => {
     const k = el.dataset.i18n;
@@ -205,5 +210,9 @@ export function applyI18n(root: ParentNode): void {
   root.querySelectorAll<HTMLElement>("[data-i18n-ph]").forEach((el) => {
     const k = el.dataset.i18nPh;
     if (k) (el as HTMLInputElement).placeholder = t(k);
+  });
+  root.querySelectorAll<HTMLElement>("[data-i18n-title]").forEach((el) => {
+    const k = el.dataset.i18nTitle;
+    if (k) el.title = t(k);
   });
 }
