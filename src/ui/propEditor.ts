@@ -15,7 +15,9 @@ export interface EditorCallbacks {
 const INPUT_TYPES = ["text", "number", "email", "password", "passcode", "phone"];
 // `complete` is Footer-only in the Flow JSON spec; EmbeddedLink can't use it.
 const FOOTER_ACTIONS: ActionName[] = ["navigate", "complete", "data_exchange"];
-const LINK_ACTIONS: ActionName[] = ["navigate", "data_exchange"];
+// EmbeddedLink and OptIn take the same set, and `open_url` joined it in Flow
+// JSON 6.0 — below that version it's rejected, but the builder emits 7.3.
+const LINK_ACTIONS: ActionName[] = ["navigate", "data_exchange", "open_url"];
 
 export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCallbacks): HTMLElement {
   const form = div("pe-form");
@@ -82,6 +84,8 @@ export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCal
     case "OptIn":
       form.appendChild(text("Label", str(c.label), (v) => { set("label", v); cb.soft(); }));
       form.appendChild(text("Name", str(c.name), (v) => { set("name", v); cb.soft(); }));
+      // Optional: the "Read more" affordance only appears when an action is set.
+      form.appendChild(actionEditor(c, screenIds, cb, LINK_ACTIONS, true));
       break;
 
     case "EmbeddedLink":
@@ -96,8 +100,10 @@ export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCal
     case "Footer":
       form.appendChild(text("Label", str(c.label), (v) => { set("label", v); cb.soft(); }));
       form.appendChild(actionEditor(c, screenIds, cb, FOOTER_ACTIONS));
+      // Captions come in two shapes: left + right, or center alone (validate.ts).
       form.appendChild(text("Left caption", str(c["left-caption"]), (v) => { set("left-caption", v || undefined); cb.soft(); }));
       form.appendChild(text("Right caption", str(c["right-caption"]), (v) => { set("right-caption", v || undefined); cb.soft(); }));
+      form.appendChild(text("Center caption", str(c["center-caption"]), (v) => { set("center-caption", v || undefined); cb.soft(); }));
       break;
   }
   return form;
@@ -105,18 +111,25 @@ export function buildPropEditor(c: Component, screenIds: string[], cb: EditorCal
 
 // ---- Action sub-editor --------------------------------------------------
 
-function actionEditor(c: Component, screenIds: string[], cb: EditorCallbacks, actions: ActionName[] = FOOTER_ACTIONS): HTMLElement {
+// `optional` components (OptIn) may carry no action at all — then the picker
+// gets an empty entry, and choosing it drops `on-click-action` from the JSON.
+function actionEditor(c: Component, screenIds: string[], cb: EditorCallbacks, actions: ActionName[] = FOOTER_ACTIONS, optional = false): HTMLElement {
   const wrap = div("pe-sub");
   let action = c["on-click-action"];
-  if (!action) { action = { name: "navigate", next: { type: "screen", name: "" }, payload: {} }; c["on-click-action"] = action; }
-  const a = action;
+  if (!action && !optional) { action = { name: "navigate", next: { type: "screen", name: "" }, payload: {} }; c["on-click-action"] = action; }
 
-  wrap.appendChild(select("Action", a.name, actions, (v) => {
-    a.name = v as ActionName;
-    if (a.name === "navigate") { if (!a.next) a.next = { type: "screen", name: "" }; }
-    else delete a.next; // keep JSON clean: only navigate carries a target
-    cb.structural(); // navigate target field appears/disappears
-  }));
+  wrap.appendChild(select("Action", action?.name ?? "", optional ? ["", ...actions] : actions, (v) => {
+    if (!v) { delete c["on-click-action"]; cb.structural(); return; }
+    const next = c["on-click-action"] ?? (c["on-click-action"] = { name: v as ActionName, payload: {} });
+    next.name = v as ActionName;
+    if (next.name === "navigate") { if (!next.next) next.next = { type: "screen", name: "" }; }
+    else delete next.next; // keep JSON clean: only navigate carries a target
+    if (next.name !== "open_url") delete next.url;
+    cb.structural(); // target / URL field appears/disappears
+  }, "(none)"));
+
+  const a = action;
+  if (!a) return wrap;
 
   if (a.name === "navigate") {
     const options = ["", ...screenIds];
@@ -125,6 +138,9 @@ function actionEditor(c: Component, screenIds: string[], cb: EditorCallbacks, ac
       a.next = { type: "screen", name: v };
       cb.soft();
     }, "(choose screen)"));
+  }
+  if (a.name === "open_url") {
+    wrap.appendChild(text("URL", str(a.url), (v) => { a.url = v || undefined; cb.soft(); }, "https://…"));
   }
   return wrap;
 }

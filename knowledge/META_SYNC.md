@@ -27,21 +27,29 @@ Use the current URLs.
 | Best practices (rationale for limits, UX) | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/bestpractices |
 | **Changelog** (Flow JSON versions — check this first) | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/changelogs |
 | Playground | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/playground |
+| **Index of every Flows doc** (title + one-line summary + `.md` link each) | https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/llms.txt |
 
 > ⚠️ **Fetching gotcha.** The HTML pages return **HTTP 500 to `WebFetch`** (bot
-> protection), so the **in-app browser MCP** (`mcp__Claude_Browser__navigate` →
-> `get_page_text` / `javascript_tool`) stays the authoritative way to read them.
-> They render in the reader's locale, so search both the English term and the
-> Portuguese one (`maximum` / `máximo`) — and note that section headings are
-> translated too (`NavigationList` appears as *"Lista de navegação"*).
+> protection). **Append `.md` to the page path and fetch it with plain `curl`** —
+> that returns clean markdown and is the fastest, most greppable way in:
 >
-> **A faster first pass:** appending `.md` to a page path returns clean markdown
-> over plain `curl` (e.g. `…/flows/guides/components.md`). Handy for grepping —
-> but **it can be incomplete, so never trust it alone for a spec check.** Measured
-> on 2026-08-05: `components.md` carried 23 sections while the rendered page had
-> **26**, silently missing `NavigationList`, `ChipsSelector` and `ImageCarousel`.
-> Available for `guides/*` pages (`components`, `flowjson`, `bestpractices`,
-> `media_upload`); **not** for `changelogs` or `reference/error-codes`.
+> ```bash
+> curl -sS -L -o components.md \
+>   https://developers.facebook.com/documentation/business-messaging/whatsapp/flows/guides/components.md
+> ```
+>
+> Re-measured **2026-10-20**: this now works for **every** page — `guides/*`, and
+> also `changelogs` and `reference/error-codes`, which used to be HTML-only. And
+> `components.md` is no longer truncated: it carries all **26** sections, including
+> `NavigationList`, `ChipsSelector` and `ImageCarousel` (the 2026-08-05 note about
+> 23 of 26 sections is obsolete). `llms.txt` above lists every page's `.md` URL.
+>
+> Keep the **in-app browser MCP** (`mcp__Claude_Browser__navigate` →
+> `get_page_text` / `javascript_tool`) as the fallback when a `.md` looks thin or
+> you want to confirm against the rendered page. It renders in the reader's
+> locale, so search both the English term and the Portuguese one (`maximum` /
+> `máximo`) — section headings are translated too (`NavigationList` appears as
+> *"Lista de navegação"*). The `.md` is always English.
 >
 > Both specs for *conversation* messaging (not Flows) publish official **OpenAPI
 > 3.1** that downloads with plain `curl` — see `BACKLOG.md` if that's ever needed.
@@ -76,8 +84,16 @@ these (keep them in step):
 
 ### 3. Limits, constraints & static-validation rules
 - **`src/model/validate.ts`** — the single source of truth for rules. Numeric
-  limits are constants at the top: `MAX_COMPONENTS`, `FOOTER_LABEL_MAX`,
-  `HEADING_MAX`, `LINK_TEXT_MAX`. Each rule `push()`es a message **key**.
+  limits are constants at the top (`MAX_SCREENS`, `MAX_COMPONENTS`, `MAX_OPT_IN`,
+  `FOOTER_LABEL_MAX`, `LINK_TEXT_MAX`, the `*_CAROUSEL_*` counts), plus four
+  lookup tables for the per-component limits that are too numerous to name one by
+  one: `TEXT_MAX` (text-component `text`), `PROP_MAX` (other string props, keyed
+  by Flow JSON property name), `OPTIONS_MIN` / `OPTIONS_MAX` (data-source option
+  counts). Each rule `push()`es a message **key**.
+- **Severity convention** (errors block Generate/Copy in the UI): **error** for
+  what the error-codes reference rejects on import and for the per-screen /
+  per-flow component *counts*; **warning** for *character* limits — Meta has no
+  max-chars static error, the renderer truncates or drops the overflow.
 - **`src/ui/i18n.ts`** — the `v*` keys hold the en/pt message text. Every rule in
   `validate.ts` must have a matching key here (English is the source).
 
@@ -96,13 +112,27 @@ If Meta's number differs from the value here, that's the edit.
 | Rule | Value in code | Constant / key | Meta source |
 |---|---|---|---|
 | Flow JSON version (default) | `7.3` | `"7.3"` literals | Changelog |
+| Max screens per Flow | `100` | `MAX_SCREENS` → `vMaxScreens` | Error codes (`MAX_SCREENS_NUMBER`) |
 | Max components per screen | `50` | `MAX_COMPONENTS` → `vMaxComponents` | Components ref: *"maximum number of components per screen is 50"* (re-confirmed 2026-08-05); rationale in Best practices `#number-of-components` |
 | Footer label max chars | `35` | `FOOTER_LABEL_MAX` → `vFooterLen` | Components ref (Footer) |
-| Heading/Subheading max chars | `80` | `HEADING_MAX` → `vHeadingLen` | Components ref (Text) |
+| Footer caption max chars | `15` each | `PROP_MAX.Footer` → `vPropLen` | Components ref (Footer) |
+| Text max chars | Heading `80`, Subheading `80`, Body `4096`, Caption `409` | `TEXT_MAX` → `vHeadingLen` | Components ref (Text) |
+| Text / EmbeddedLink blank text | rejected | `vTextBlank` | Components ref: *"Empty or Blank value is not accepted"* |
 | EmbeddedLink text max chars | `25` | `LINK_TEXT_MAX` → `vLinkLen` | Components ref (EmbeddedLink) |
-| Max EmbeddedLink per screen | `2` | `vMaxLinks` | Components ref |
-| Max Image per screen | `3` | `vMaxImages` | Components ref |
+| OptIn content max chars | `120` | `PROP_MAX.OptIn` → `vPropLen` | Components ref (OptIn) |
+| TextInput max chars | label `20`, helper-text `80`, error-message `30` | `PROP_MAX.TextInput` → `vPropLen` | Components ref (Text Entry) |
+| TextArea max chars | label `20`, helper-text `80` | `PROP_MAX.TextArea` → `vPropLen` | Components ref (Text Entry) |
+| DatePicker max chars | label `40`, helper-text `80`, error-message `80` | `PROP_MAX.DatePicker` → `vPropLen` | Components ref (DatePicker) |
+| CalendarPicker max chars | title `80`, description `300`, label `40`, helper-text `80`, error-message `80` | `PROP_MAX.CalendarPicker` → `vPropLen` | Components ref (CalendarPicker) |
+| data-source option count | Checkbox/Radio `1`–`20`, Chips `2`–`20`, Dropdown `1`–`200` (`100` when any option has an `image`) | `OPTIONS_MIN` / `OPTIONS_MAX` / `DROPDOWN_MAX_WITH_IMAGES` → `vMinOptions` / `vMaxOptions` | Components ref (each type's limits) |
+| Max EmbeddedLink per screen | `2` | `vMaxLinks` | Components ref; Error codes (`MAX_EMBEDDED_LINK_PER_SCREEN`) |
+| Max Image per screen | `3` | `vMaxImages` | Components ref; Error codes (`MAX_IMAGE_PER_SCREEN`) |
+| Max OptIn per screen | `5` | `MAX_OPT_IN` → `vMaxOptIn` | Error codes (`MAX_OPT_IN_PER_SCREEN`) |
+| ImageCarousel images | `1`–`3` | `CAROUSEL_IMAGES_MIN/MAX` → `vCarouselCount` | Components ref (ImageCarousel) |
+| Max ImageCarousel per screen / per Flow | `2` / `3` | `MAX_CAROUSEL_PER_SCREEN` / `MAX_CAROUSEL_PER_FLOW` → `vMaxCarouselScreen` / `vMaxCarouselFlow` | Components ref (ImageCarousel) |
 | Max NavigationList per screen | `2` | `vMaxNavList` | Components ref |
+| NavigationList list-items | `1`–`20` | `vNavListItems` / `NAV_ITEMS_MAX` → `vMaxNavItems` | Components ref (NavigationList) |
+| NavigationList on-click-action | list **or** items, never both | `vNavListActionBoth` | Components ref (NavigationList) |
 | PhotoPicker / DocumentPicker | 1 each, not together | `vOnePhoto` / `vOneDoc` / `vPhotoDoc` | **Media upload** ref (the components ref doesn't mention either type) |
 | Selection needs data-source | required (binding ok) | `vNeedsDataSource` | Components ref |
 | `complete` → terminal only | enforced | `vCompleteNonTerminal` | Error codes (`INVALID_COMPLETE_ACTION`) |
@@ -110,8 +140,10 @@ If Meta's number differs from the value here, that's the edit.
 | navigate self-loop | blocked | `vNavSelfLoop` | Error codes (`INVALID_NAVIGATE_ACTION_NEXT_SCREEN_NAME`) |
 | `success` → terminal only | enforced | `vSuccessNonTerminal` | Error codes (`NOT_KEYWORD_...`) |
 | Footer right-caption needs left | enforced | `vCaptionDep` | Error codes (`INVALID_DEPENDENCIES`) |
+| Footer caption combinations | left + right, **or** center alone | `vCaptionMix` | Components ref (Footer): *"not all 3 at once"* |
 | Reserved screen id `SUCCESS` | blocked | `vReservedSuccess` | Flow JSON ref |
 | Terminal screen needs a Footer | enforced | `vTerminalNoFooter` | Flow JSON ref |
+| `open_url` offered on EmbeddedLink / OptIn | yes (Flow JSON 6.0+) | `LINK_ACTIONS` in `propEditor.ts` | Components ref (EmbeddedLink, OptIn) |
 
 ---
 
@@ -179,7 +211,14 @@ These are deliberate; changing them is a product decision, not a spec-sync fix:
 - **The 50-component limit counts real components** (descending into a `Form`),
   but is a **warning** (advisory) — it does not block Generate or Copy, matching
   WhatsApp's own "don't use too many components" guidance.
+- **"NavigationList can't be combined with other components on a screen"** stays a
+  **warning** (`vNavListCombine`), re-decided 2026-10-20. The components ref states
+  it, but no static-validation error code backs it: such a flow still imports, it
+  just renders poorly. Promoting it to an error would block Generate on a mockup
+  that WhatsApp itself accepts — same reasoning as the 50-component limit.
 
 ---
 
-_Last synced against Meta docs: 2026-08-03 (Flow JSON 7.3, data_api_version 3.0/4.0)._
+_Last synced against Meta docs: 2026-10-20 (Flow JSON 7.3, data_api_version 3.0/4.0 —
+the changelog's latest entry is still 2025-11-11, Data API 4.0, so no version bump;
+this pass closed the gaps between the components / error-codes refs and `validate.ts`)._
