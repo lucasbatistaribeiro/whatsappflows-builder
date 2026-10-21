@@ -1,8 +1,21 @@
-// WhatsApp Flows visual tokens. Two palettes (light default + dark).
+// WHATSAPP's visual tokens — and nothing else. Two palettes (light + dark).
 //
-// Provenance matters here, because "close enough" greens drift: the accent and
-// the chat tokens are *measured* off WhatsApp's own surfaces (see the comments
-// on each), not picked by eye. Re-measure rather than adjust by taste.
+// This file is one half of a deliberate split:
+//
+//   WhatsApp's brand  ->  here. Consumed by the Figma generator directly, and
+//                         pushed to the UI as the `--wa-*` CSS vars by
+//                         applyThemeVars() in src/ui/preview.ts. That shared
+//                         path is what keeps the live preview and the
+//                         generated frames showing the same WhatsApp.
+//   The plugin's own  ->  the `--ui-*` tokens at the top of src/ui/ui.html.
+//
+// Never wire one to the other. Nothing here is ours to choose — these values
+// are WhatsApp's, and our only job is to copy them accurately. Equally, no
+// value here should ever end up painting the plugin's own chrome.
+//
+// Provenance matters, because "close enough" greens drift: the accent and the
+// chat tokens are *measured* off WhatsApp's own surfaces (see the comments on
+// each), not picked by eye. Re-measure rather than adjust by taste.
 // `COLOR` is a live view of the active palette — call setPalette() before a
 // render to switch. Consumers read COLOR.* at call time (never bake at load),
 // so a single proxy keeps the whole generator/preview theme-aware.
