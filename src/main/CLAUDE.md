@@ -46,10 +46,17 @@ is fine. Figma's list of what was replaced:
 ## The generated screen is a sheet over a chat
 
 A flow never opens on a blank phone — it slides up over the conversation it was
-sent in. `buildScreen` stacks status bar → `chat-header` → a wallpaper sliver →
-`flow-sheet` (rounded at the top), and the flow's own chrome goes *inside* the
+sent in. `buildScreen` stacks status bar → `chat-header` → `flow-sheet`
+(rounded at the top) → `nav-bar`, and the flow's own chrome goes *inside* the
 sheet. With `showChat: false` the sheet is the frame itself and you get the old
 bare layout.
+
+The sizes are measured off Meta's Flows artwork, not chosen: a 58px header (a
+42px photo in 8px of padding), no sliver of wallpaper — the sheet's rounded top
+sits against the header — a 40px CTA inset 9px, and a 41px nav bar, which is
+what keeps the CTA off the bottom edge. A raised sheet also dims the header
+behind it: `SHEET_SCRIM`, black at a third, as an absolutely-positioned
+rectangle so it covers the contact's photo too.
 
 **Two frame names are load-bearing**, both read back by `enforceMinHeight` in
 `index.ts` when a short screen is padded to the standard phone height:
