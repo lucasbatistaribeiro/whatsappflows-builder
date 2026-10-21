@@ -299,7 +299,7 @@
   /* ---- Live WhatsApp preview (fixed WhatsApp UI — do not restyle) ---- */
   /* The chat the flow sheet opens over. `classic` is the pre-2021 green bar,
      measured off Meta's Flows artwork; `current` follows the mockup theme. */
-  .wa-chat-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 8px 8px; flex: none; }
+  .wa-chat-head { display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 8px; flex: none; }
   .wa-chat-head.current { background: var(--wa-chat-header, #fff); color: var(--wa-text); }
   .wa-chat-head.classic { background: #005646; color: #fff; }
   .wa-chat-head.classic .wa-chat-badge { color: #008638; }
@@ -313,14 +313,26 @@
     font-size: 16px; font-weight: 600; }
   .wa-chat-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .wa-chat-badge { display: inline-flex; flex: none; }
-  /* The sliver of wallpaper the sheet doesn't cover. */
-  .wa-chat-peek { height: 10px; flex: none; background: var(--wa-wallpaper, #f4f1e9); }
   /* The flow itself: a bottom sheet, so it rounds at the top and clips. */
   .wa-sheet { flex: 1; min-height: 0; display: flex; flex-direction: column;
     background: var(--wa-bg, #fff); border-radius: 16px 16px 0 0; overflow: hidden; }
+  /* Android's navigation bar: 41px at a 360-wide screen, measured off Meta's
+     artwork. It is what keeps the CTA off the bottom edge. */
+  .wa-nav { height: 41px; flex: none; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 48px; background: var(--wa-nav, #f6f8fa); }
+  .wa-nav span { width: 13px; height: 13px; background: var(--wa-text); flex: none; }
+  .wa-nav .nav-back { clip-path: polygon(100% 0, 0 50%, 100% 100%); }
+  .wa-nav .nav-home { border-radius: 50%; background: none;
+    box-shadow: inset 0 0 0 1.5px var(--wa-text); }
+  .wa-nav .nav-recents { border-radius: 1px; }
 
+  /* The phone is laid out at the mockup's true width — DEVICE.width, 360 —
+     so a 40px CTA here is the same 40px the generator draws. `zoom` (set from
+     renderPreview) shrinks the whole thing to fit the panel, scaling layout
+     with it. Sizing the box to 300px instead, as this did, left the contents
+     at 360 and made everything inside read ~20% oversized against the phone. */
   .wa-phone {
-    width: 100%; max-width: 300px; margin: 0 auto; border-radius: 28px; overflow: hidden;
+    width: 360px; margin: 0 auto; border-radius: 28px; overflow: hidden;
     border: 9px solid #0b0b0b; background: var(--wa-bg, #fff);
     display: flex; flex-direction: column; aspect-ratio: 9 / 19; height: auto; flex: none;
     box-shadow: 0 6px 24px rgba(0,0,0,.18); color: var(--wa-text, #111);
@@ -575,9 +587,12 @@
     border: 1px solid var(--wa-divider, #e9edef); border-radius: 12px; padding: 12px 14px; }
   .wa-nav-chevron { color: var(--wa-text2); font-size: 20px; }
 
-  .wa-footer { padding: 8px 16px 16px; border-top: 1px solid var(--wa-divider); flex: none; }
-  .wa-btn { width: 100%; border: none; border-radius: 24px; padding: 13px; font-weight: 600;
-    font-size: 14px; background: var(--wa-primary, #1daa61); color: var(--wa-on-primary, #fff); cursor: pointer; }
+  /* 9px inset and a 40px pill, measured off Meta's artwork — the CTA sits
+     wider and shallower than a stock button. */
+  .wa-footer { padding: 8px 9px 12px; border-top: 1px solid var(--wa-divider); flex: none; }
+  .wa-btn { width: 100%; height: 40px; border: none; border-radius: 24px; padding: 0 13px;
+    font-weight: 600; font-size: 14px; background: var(--wa-primary, #1daa61);
+    color: var(--wa-on-primary, #fff); cursor: pointer; }
   .wa-btn.static { cursor: default; }
 
   .wa-sum-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0;

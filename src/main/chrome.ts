@@ -1,6 +1,6 @@
 // WhatsApp screen chrome: status bar and the top app bar shown above the flow body.
 import type { HeaderContact } from "../shared/messages";
-import { COLOR, DEVICE, SPACE, headerSkin, type HeaderStyle } from "./theme";
+import { COLOR, DEVICE, SPACE, NAV_BAR_H, headerSkin, type HeaderStyle } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, text, divider, markFill } from "./nodes";
 import { fill } from "./theme";
@@ -133,7 +133,8 @@ function headerAvatar(contact: HeaderContact): SceneNode {
 export function chatHeader(contact: HeaderContact, style: HeaderStyle): FrameNode {
   const skin = headerSkin(style);
   const bar = autoFrame({
-    name: "chat-header", axis: "HORIZONTAL", gap: 8, padding: [8, 12, 8, 8],
+    // 44px tall: a 30px avatar inside 7px of vertical padding, measured.
+    name: "chat-header", axis: "HORIZONTAL", gap: 8, padding: [7, 12, 7, 8],
     bg: skin.bg, counterAlign: "CENTER", width: DEVICE.width,
   });
   bar.appendChild(iconNode(backSvg(skin.ink), 20));
@@ -149,6 +150,27 @@ export function chatHeader(contact: HeaderContact, style: HeaderStyle): FrameNod
   bar.appendChild(nameRow);
 
   bar.appendChild(iconNode(moreSvg(skin.ink), 20));
+  return bar;
+}
+
+
+/**
+ * Android's navigation bar. Measured off Meta's Flows artwork: ~41px at a
+ * 360-wide screen, a light tray under the sheet. It is why the CTA in a real
+ * screenshot never sits flush with the bottom edge — leave it out and every
+ * proportion below the fold reads wrong.
+ */
+export function navBar(): FrameNode {
+  const bar = autoFrame({
+    name: "nav-bar", axis: "HORIZONTAL", height: NAV_BAR_H, bg: COLOR.navBar,
+    padding: [0, 48, 0, 48], align: "SPACE_BETWEEN" as never, counterAlign: "CENTER",
+    width: DEVICE.width,
+  });
+  bar.primaryAxisAlignItems = "SPACE_BETWEEN";
+  const glyph = (svg: string) => bar.appendChild(iconNode(svg, 14));
+  glyph(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${COLOR.textPrimary}"><path d="M16 4 6 12l10 8z"/></svg>`);
+  glyph(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${COLOR.textPrimary}" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>`);
+  glyph(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${COLOR.textPrimary}"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>`);
   return bar;
 }
 

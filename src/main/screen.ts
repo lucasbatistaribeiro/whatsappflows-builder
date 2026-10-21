@@ -5,7 +5,7 @@ import { screenChildren } from "../model/flowTypes";
 import { COLOR, DEVICE, RADIUS, SPACE } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, text, divider, markFill, markFillV } from "./nodes";
-import { statusBar, header, progressBar, chatHeader } from "./chrome";
+import { statusBar, header, progressBar, chatHeader, navBar } from "./chrome";
 import type { GenOptions } from "../shared/messages";
 import { renderComponent, type NodeLink } from "./components";
 
@@ -39,7 +39,9 @@ function navTargetOf(c: Component): string | undefined {
 
 function footerButton(c: Component): FrameNode {
   const btn = autoFrame({
-    name: "footer-button", axis: "HORIZONTAL", height: 48, radius: RADIUS.button,
+    // 40px tall with a ~9px side inset, measured off Meta's artwork — it sits
+    // wider and shallower than a stock button.
+    name: "footer-button", axis: "HORIZONTAL", height: 40, radius: RADIUS.button,
     bg: COLOR.primary, align: "CENTER", counterAlign: "CENTER",
   });
   markFill(btn);
@@ -79,10 +81,8 @@ export function buildScreen(
     const ch = chatHeader(options.contact, options.headerStyle);
     frame.appendChild(ch);
     markFill(ch);
-    // The sliver of wallpaper the sheet doesn't cover.
-    const gap = autoFrame({ name: "chat-peek", height: 10, bg: COLOR.wallpaper });
-    frame.appendChild(gap);
-    markFill(gap);
+    // No wallpaper sliver: measured off Meta's artwork, the sheet's rounded top
+    // sits directly against the header.
   }
 
   const sheet = chat
@@ -126,7 +126,7 @@ export function buildScreen(
   }
 
   if (footer) {
-    const area = autoFrame({ name: "footer", padding: [8, SPACE.screenPad, 20, SPACE.screenPad], gap: 8, bg: COLOR.bg });
+    const area = autoFrame({ name: "footer", padding: [8, SPACE.ctaInset, 12, SPACE.ctaInset], gap: 8, bg: COLOR.bg });
     markFill(area);
     area.appendChild(divider());
     const btn = footerButton(footer);
@@ -147,6 +147,14 @@ export function buildScreen(
       }
     }
     sheet.appendChild(area);
+  }
+
+  // Android's nav bar sits under the sheet, not inside it — that gap under the
+  // CTA is part of what makes a screenshot read as a phone.
+  if (chat) {
+    const nav = navBar();
+    frame.appendChild(nav);
+    markFill(nav);
   }
 
   return { id: screen.id, frame, navTargets };

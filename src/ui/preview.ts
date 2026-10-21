@@ -25,6 +25,7 @@ export function applyThemeVars(): void {
     "--wa-chip-sel": COLOR.chipSelectedBg,
     "--wa-chip-sel-border": COLOR.chipSelectedBorder,
     "--wa-status": COLOR.statusBar,
+    "--wa-nav": COLOR.navBar,
     "--wa-placeholder": COLOR.placeholder,
     // chat mode
     "--wa-bubble-in": COLOR.bubbleIn,
@@ -143,7 +144,7 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
   let sheet = phone;
   if (chat.show) {
     phone.appendChild(chatHeaderEl());
-    phone.appendChild(el("div", "wa-chat-peek"));
+    // No wallpaper sliver: the sheet's rounded top sits against the header.
     sheet = el("div", "wa-sheet");
     phone.appendChild(sheet);
   }
@@ -166,7 +167,28 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
       if (footer) sheet.appendChild(renderFooter(footer, flow));
     }
   }
+  // Android's nav bar closes the phone, under the sheet. Without it the CTA
+  // sits flush with the bottom edge, which no real screenshot does.
+  if (chat.show) {
+    const nav = el("div", "wa-nav");
+    for (const g of ["nav-back", "nav-home", "nav-recents"]) nav.appendChild(el("span", g));
+    phone.appendChild(nav);
+  }
   host.appendChild(phone);
+  fitPhone(phone, host);
+}
+
+/**
+ * Scale the phone to the panel. The mockup is laid out at DEVICE.width (360)
+ * so its internal sizes match the generator's one-for-one; `zoom` shrinks the
+ * laid-out result, unlike `transform: scale` which would leave the old box
+ * size behind and break the surrounding flow.
+ */
+const PHONE_W = 360;
+function fitPhone(phone: HTMLElement, host: HTMLElement): void {
+  const available = host.clientWidth - 8; // breathing room either side
+  const scale = Math.min(1, available / (PHONE_W + 18)); // + the bezel
+  (phone.style as CSSStyleDeclaration & { zoom?: string }).zoom = String(scale > 0 ? scale : 1);
 }
 
 // WhatsApp shows a segmented step-progress bar in the flow header for multi-screen
