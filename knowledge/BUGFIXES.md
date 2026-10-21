@@ -3,6 +3,22 @@
 A log of bugs found while hardening the plugin UI, with the root cause and the
 fix for each. Newest first. Links point to the merged PR.
 
+**Read the entries for the area you are about to touch** — several are
+non-obvious traps that cost a day to find and a line to fix. The index is by
+area so you don't have to read all of it.
+
+| Area | Entries worth reading first |
+|---|---|
+| **Figma auto-layout** (`src/main/nodes.ts`) | [full-width fills didn't apply](#generated-figma-layout-was-broken-full-width-fills-didnt-apply--36) — why `markFill`/`applyFills` exists instead of `layoutAlign` |
+| **Generated chrome** (`src/main/chrome.ts`) | [status bar ~115px tall](#generated-status-bar-was-115px-tall--38) · [broken block glyphs](#generated-status-bar-used-broken-block-glyphs--37) — SVG icons need `rescale` |
+| **Sections & round-trip** (`src/main/index.ts`) | [a generated conversation cried "invalid Flow JSON"](#selecting-a-generated-conversation-cried-invalid-flow-json) · [NavigationList rows didn't navigate](#navigationlist-rows-didnt-navigate-in-the-generated-prototype) |
+| **Re-render & focus** (`src/ui/*`) | [composer lost focus on every keystroke](#chat-composer-lost-focus-on-every-keystroke) — the `soft` / `structural` split · [cards never actually collapsed](#chat-cards-never-actually-collapsed) |
+| **Dropdown** (`src/ui/dropdown.ts`) | [list width mismatch](#dropdown-list-width-didnt-match-the-combobox--28) · [not responsive](#dropdown-not-responsive-on-narrow-windows--27) · [closed while scrolling](#dropdown-closed-when-scrolling-inside-its-list--25) |
+| **Preview fidelity** (`src/ui/preview.ts`) | [inconsistent phone size](#inconsistent-preview-phone-size-across-screens--23) · [phone proportion](#preview-phone-proportion--status-bar--22) |
+| **Spec conformance** (`src/model/validate.ts`) | [missed static-validation errors](#validator-missed-several-static-validation-errors-meta-rejects-on-publish) · [exported JSON failed to import](#exported-flow-json-could-fail-to-import-into-the-playground) · [`Form`-wrapped flows](#flows-that-wrap-components-in-a-form-werent-recognized) |
+| **Robustness** | [crashes on malformed input](#front-end-crashes-on-malformed-flow-input--12) |
+| **Setup** | [Figma won't import on a fresh clone](#figma-fails-to-import-the-plugin-on-a-fresh-clone) — it's a missing build, not a bug |
+
 ---
 
 ## Selecting a generated conversation cried "invalid Flow JSON"

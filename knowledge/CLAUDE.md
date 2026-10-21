@@ -45,6 +45,11 @@ then `npm run build`.
   `src/shared`, which is what keeps those two layers pure.
 - `src/model/*` is pure (no `figma`, no DOM) and imported by both sides — keep it
   that way (e.g. `validate.ts` returns message *keys*, not translated strings).
+  The one rule no compiler enforces: the model must never import from `src/ui`
+  or `src/main`.
+- Each of the three has a **`CLAUDE.md` of its own** — `src/main`, `src/ui`,
+  `src/model` — carrying the rules and traps specific to it. This file stays the
+  map; those are the fine print, and they load when you work in that directory.
 
 ## How to verify changes
 
@@ -121,16 +126,21 @@ src/
   shared/      messages                                          (UI <-> main contract)
   main/        theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
   ui/          ui.html, ui.ts, bridge, preview, propEditor, dropdown, icons, i18n (plugin UI)
+               each of those three carries its own CLAUDE.md with the rules
+               that bite there — the compiler-enforced split, the traps, how
+               to verify. They load when you open files in that directory.
 build/         esbuild.mjs (paths resolve from the file, not the cwd) + three
                tsconfigs: base, main (no DOM), ui (no figma)
 knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md, BACKLOG.md,
                CHAT_UI.md, CHAT_PATTERNS.md
 .claude/agents/ runnable subagent definitions — not docs (see plugin-ui-tester)
+.claude/skills/ invocable procedures: release (cut a tagged release + verify the
+               published zip), meta-sync (reconcile with Meta's spec)
 CLAUDE.md      root pointer here (agent tooling looks for it there); AGENTS.md too
 ```
 
-`knowledge/` and `.claude/agents/` are different things: the first is prose you
-read, the second holds agents you invoke. `.claude/agents/` is a fixed path — the
+`knowledge/` and `.claude/` are different things: the first is prose you read,
+the second holds things you *run* — subagents and skills. `.claude/agents/` is a fixed path — the
 runtime only discovers subagents there — so don't "tidy" it into `knowledge/`.
 
 ## Workflow
