@@ -89,7 +89,8 @@ const VERIFIED_ICON =
 
 /** The chat header the flow sheet slides up over. */
 function chatHeaderEl(): HTMLElement {
-  const bar = el("div", "wa-chat-head " + chat.style);
+  // `scrimmed` because in Flows mode the sheet is always up over this header.
+  const bar = el("div", "wa-chat-head scrimmed " + chat.style);
   bar.appendChild(hIcon(BACK_ICON));
   const av = (chat.contact.avatar ?? "").trim();
   if (av) {

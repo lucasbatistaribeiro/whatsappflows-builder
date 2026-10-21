@@ -299,16 +299,25 @@
   /* ---- Live WhatsApp preview (fixed WhatsApp UI — do not restyle) ---- */
   /* The chat the flow sheet opens over. `classic` is the pre-2021 green bar,
      measured off Meta's Flows artwork; `current` follows the mockup theme. */
-  .wa-chat-head { display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 8px; flex: none; }
+  /* A 42px photo in 8px of vertical padding -> 58px tall. Right padding 12,
+     everything else 8. The colours are the UNDIMMED ones; `.scrimmed` lays the
+     raised sheet's overlay on top, exactly as the generator does. */
+  .wa-chat-head { position: relative; display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px 8px 8px; flex: none; }
   .wa-chat-head.current { background: var(--wa-chat-header, #fff); color: var(--wa-text); }
-  .wa-chat-head.classic { background: #005646; color: #fff; }
-  .wa-chat-head.classic .wa-chat-badge { color: #008638; }
+  .wa-chat-head.classic { background: #008069; color: #fff; }
+  .wa-chat-head.classic .wa-chat-badge { color: #00c853; }
   .wa-chat-head.current .wa-chat-badge { color: var(--wa-link); }
+  /* Black at a third, measured — see SHEET_SCRIM in src/main/theme.ts. It sits
+     over the contact's photo too, which is why it is an overlay and not a
+     darker token. */
+  .wa-chat-head.scrimmed::after { content: ""; position: absolute; inset: 0;
+    background: rgba(0, 0, 0, .3333); pointer-events: none; }
   .wa-chat-head .wa-hicon svg { width: 20px; height: 20px; }
-  .wa-chat-av { width: 30px; height: 30px; border-radius: 50%; flex: none; object-fit: cover;
+  .wa-chat-av { width: 42px; height: 42px; border-radius: 50%; flex: none; object-fit: cover;
     background: var(--wa-chip, #f0f2f5); }
   .wa-chat-av.mono { display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 600; color: var(--wa-text2); }
+    font-size: 15px; font-weight: 600; color: var(--wa-text2); }
   .wa-chat-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px;
     font-size: 16px; font-weight: 600; }
   .wa-chat-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

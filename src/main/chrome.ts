@@ -1,6 +1,6 @@
 // WhatsApp screen chrome: status bar and the top app bar shown above the flow body.
 import type { HeaderContact } from "../shared/messages";
-import { COLOR, DEVICE, SPACE, NAV_BAR_H, headerSkin, type HeaderStyle } from "./theme";
+import { COLOR, DEVICE, SPACE, NAV_BAR_H, SHEET_SCRIM, headerSkin, type HeaderStyle } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, text, divider, markFill } from "./nodes";
 import { fill } from "./theme";
@@ -108,7 +108,7 @@ function initials(name: string): string {
  * falls back to the monogram rather than failing the whole generate.
  */
 function headerAvatar(contact: HeaderContact): SceneNode {
-  const size = 30;
+  const size = AVATAR;
   const src = (contact.avatar ?? "").trim();
   if (src) {
     try {
@@ -129,12 +129,24 @@ function headerAvatar(contact: HeaderContact): SceneNode {
   return f;
 }
 
-/** The chat header a flow sheet opens over: back, avatar, name (+ badge), overflow. */
-export function chatHeader(contact: HeaderContact, style: HeaderStyle): FrameNode {
+// A 42px photo in 8px of vertical padding -> a 58px bar. Right padding is 12,
+// everything else 8.
+const AVATAR = 42;
+const HEADER_PAD_Y = 8;
+export const CHAT_HEADER_H = AVATAR + HEADER_PAD_Y * 2;
+
+/**
+ * The chat header a flow sheet opens over: back, avatar, name (+ badge),
+ * overflow — with the sheet's scrim laid over the lot.
+ *
+ * `scrim` is an absolutely-positioned rectangle rather than darker colours,
+ * because it has to dim the contact's photo as well, and a token cannot.
+ */
+export function chatHeader(contact: HeaderContact, style: HeaderStyle, scrim = true): FrameNode {
   const skin = headerSkin(style);
   const bar = autoFrame({
-    // 44px tall: a 30px avatar inside 7px of vertical padding, measured.
-    name: "chat-header", axis: "HORIZONTAL", gap: 8, padding: [7, 12, 7, 8],
+    name: "chat-header", axis: "HORIZONTAL", gap: 8,
+    padding: [HEADER_PAD_Y, 12, HEADER_PAD_Y, 8],
     bg: skin.bg, counterAlign: "CENTER", width: DEVICE.width,
   });
   bar.appendChild(iconNode(backSvg(skin.ink), 20));
@@ -150,6 +162,25 @@ export function chatHeader(contact: HeaderContact, style: HeaderStyle): FrameNod
   bar.appendChild(nameRow);
 
   bar.appendChild(iconNode(moreSvg(skin.ink), 20));
+
+  if (scrim) {
+    // Absolute so auto-layout ignores it; sized to the bar, whose height the
+    // avatar and the padding fix.
+    try {
+      const veil = figma.createRectangle();
+      veil.name = "sheet-scrim";
+      veil.resize(DEVICE.width, CHAT_HEADER_H);
+      veil.fills = [fill(SHEET_SCRIM.color)];
+      veil.opacity = SHEET_SCRIM.opacity;
+      bar.appendChild(veil);
+      veil.layoutPositioning = "ABSOLUTE";
+      veil.x = 0;
+      veil.y = 0;
+      veil.constraints = { horizontal: "STRETCH", vertical: "STRETCH" };
+    } catch {
+      /* absolute positioning refused — the header just stays undimmed */
+    }
+  }
   return bar;
 }
 

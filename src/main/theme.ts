@@ -117,10 +117,10 @@ export const COLOR: Palette = new Proxy({} as Palette, {
  * lot of material people have on hand) shows the green one — so the mockup
  * offers both and the author picks.
  *
- * `classic` is measured off Meta's Flows artwork: #005646 for the bar, #008638
- * for the business's verified badge. (Not #075E54, which is the green people
- * remember and quote; the artwork is darker.) `current` is not a constant — it
- * reads the active palette, so it follows light/dark like everything else.
+ * `classic` is measured off Meta's Flows artwork — see CLASSIC below for the
+ * values and why the first reading of them was wrong. `current` is not a
+ * constant: it reads the active palette, so it follows light/dark like
+ * everything else.
  */
 export type HeaderStyle = "classic" | "current";
 
@@ -131,10 +131,22 @@ export interface HeaderSkin {
   badge: string;   // the business's verified check
 }
 
-// Measured off Meta's own Flows artwork. `inkDim` is the only value not in the
-// sample — the sheet covers the presence line there — so it is a muted tint of
-// the bar, which is what the era's header used.
-const CLASSIC: HeaderSkin = { bg: "#005646", ink: "#FFFFFF", inkDim: "#A7C3BB", badge: "#008638" };
+// Measured off Meta's Flows artwork, with the scrim taken back out.
+//
+// The artwork shows the header both ways — undimmed on the chat phone, dimmed
+// under a raised sheet on the other two — and the second is exactly the first
+// at two thirds on every channel. So the earlier #005646 / #008638 were the
+// *scrimmed* values with the overlay baked in; these are the real ones, and
+// SHEET_SCRIM below is what darkens them at draw time.
+const CLASSIC: HeaderSkin = { bg: "#008069", ink: "#FFFFFF", inkDim: "#BFD8D1", badge: "#00C853" };
+
+/**
+ * A raised sheet dims the conversation behind it: black at a third, measured
+ * off the same artwork (#008069 -> #005646 and #00C853 -> #008638, both 0.333
+ * on every non-zero channel). It is an overlay rather than darker tokens on
+ * purpose — it has to dim the contact's photo too, which no colour can.
+ */
+export const SHEET_SCRIM = { color: "#000000", opacity: 1 / 3 };
 
 /** `current` is not a constant: it reads the active palette, so it follows the theme. */
 export function headerSkin(style: HeaderStyle): HeaderSkin {
