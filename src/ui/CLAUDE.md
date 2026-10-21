@@ -25,15 +25,27 @@ to the **`plugin-ui-tester`** subagent.
 The browser cannot emulate a narrow Figma panel reliably — test responsiveness
 by reading computed styles and clamping logic, not by resizing the window.
 
-## Two visual languages, do not mix them
+## Two brands, and the prefix tells you which
 
-- **Plugin chrome** (`.comp`, `.dd`, `.topbar`, the menu…) follows Figma: tokens
-  mapped from `--figma-color-*`, and a **14px minimum** for text.
-- **`wa-*` / `wa-c-*`** is the WhatsApp mockup. It uses WhatsApp's *real* sizes
-  and colours, which are often below 14px. Never restyle it to match the plugin
-  chrome — the whole point is that it looks like WhatsApp. Its tokens come from
-  `src/main/theme.ts` via CSS vars, so the mockup and the generated frames stay
-  in step.
+The stylesheet in `ui.html` holds two identities, and every colour belongs to
+exactly one of them. The token namespace says which, at the use site:
+
+- **`--ui-*` — the plugin's own chrome** (`.comp`, `.dd`, `.topbar`, the menu,
+  the preview's screen switcher). Derived from `--figma-color-*` so the panel
+  sits inside Figma's theme. **14px minimum** for text.
+- **`--wa-*` — WhatsApp's identity**, for the phone mockup (`.wa-*`,
+  `.wa-c-*`). Set from `src/main/theme.ts` by `applyThemeVars()` — the same
+  tokens the Figma generator paints with, which is what keeps the preview and
+  the generated frames in step. Real WhatsApp sizes, often below 14px.
+
+**Never point one at the other**, in either direction. A `--wa-*` value is
+WhatsApp's to dictate and ours to copy accurately; a `--ui-*` value is ours to
+choose. The plugin accent *happens* to be a WhatsApp green — that is a styling
+choice, not a brand rule, so changing `--wa-primary` must not change it.
+
+The mockup's CSS is one contiguous block between two `####` banners. The
+invariant is checkable: no `var(--ui-*)` inside that block, no `var(--wa-*)`
+outside it.
 
 ## Re-render only what has to change
 
