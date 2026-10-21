@@ -1,4 +1,8 @@
-// WhatsApp Flows visual tokens. Two curated palettes (light default + dark).
+// WhatsApp Flows visual tokens. Two palettes (light default + dark).
+//
+// Provenance matters here, because "close enough" greens drift: the accent and
+// the chat tokens are *measured* off WhatsApp's own surfaces (see the comments
+// on each), not picked by eye. Re-measure rather than adjust by taste.
 // `COLOR` is a live view of the active palette — call setPalette() before a
 // render to switch. Consumers read COLOR.* at call time (never bake at load),
 // so a single proxy keeps the whole generator/preview theme-aware.
@@ -28,14 +32,20 @@ export const COLOR_LIGHT: Palette = {
   textPrimary: "#111B21",
   textSecondary: "#667781",
   divider: "#E9EDEF",
-  primary: "#008069", // CTA / accents
+  // The accent: the footer CTA, the selected radio/checkbox mark, the progress
+  // bar. Measured 2026-10-20 off Meta's own flow renderer — the live preview on
+  // the Flows Playground page, with the CTA enabled (it is a translucent grey
+  // while the form is incomplete, which is not the colour to sample). #008069,
+  // the value before this, is WhatsApp's *older* teal from the classic web
+  // header; the current flow UI is this lighter green.
+  primary: "#1DAA61", // CTA / accents
   onPrimary: "#FFFFFF",
   link: "#027EB5",
   inputBorder: "#D1D7DB",
   inputBg: "#FFFFFF",
   chipBg: "#F0F2F5",
   chipSelectedBg: "#D9FDD3",
-  chipSelectedBorder: "#008069",
+  chipSelectedBorder: "#1DAA61", // same accent as `primary`
   statusBar: "#F7F8FA",
   placeholder: "#8696A0",
   bubbleIn: "#FFFFFF",
@@ -53,14 +63,14 @@ export const COLOR_DARK: Palette = {
   textPrimary: "#E9EDEF",
   textSecondary: "#8696A0",
   divider: "#2A3942",
-  primary: "#00A884",
+  primary: "#21C063", // same source as light, with the Playground set to dark
   onPrimary: "#111B21",
   link: "#53BDEB",
   inputBorder: "#2A3942",
   inputBg: "#1F2C34",
   chipBg: "#2A3942",
   chipSelectedBg: "#0B3D2E",
-  chipSelectedBorder: "#00A884",
+  chipSelectedBorder: "#21C063", // same accent as `primary`
   statusBar: "#1F2C34",
   placeholder: "#8696A0",
   bubbleIn: "#1D272B",
