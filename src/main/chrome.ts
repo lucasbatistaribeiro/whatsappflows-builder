@@ -1,5 +1,6 @@
 // WhatsApp screen chrome: status bar and the top app bar shown above the flow body.
-import { COLOR, DEVICE, SPACE } from "./theme";
+import type { HeaderContact } from "../shared/messages";
+import { COLOR, DEVICE, SPACE, NAV_BAR_H, SHEET_SCRIM, headerSkin, type HeaderStyle } from "./theme";
 import { FONT } from "./fonts";
 import { autoFrame, text, divider, markFill } from "./nodes";
 import { fill } from "./theme";
@@ -29,6 +30,11 @@ const strokeSvg = (ink: string, paths: string): string =>
   `stroke="${ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 const backSvg = (ink: string): string => strokeSvg(ink, `<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>`);
 const closeSvg = (ink: string): string => strokeSvg(ink, `<path d="M18 6 6 18"/><path d="m6 6 12 12"/>`);
+// The business verified check: a filled rosette with a tick punched out.
+const verifiedSvg = (ink: string): string =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${ink}">` +
+  `<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>` +
+  `<path d="m9 12 2 2 4-4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const moreSvg = (ink: string): string =>
   `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${ink}">` +
   `<circle cx="12" cy="5" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="12" cy="19" r="1.75"/></svg>`;
@@ -78,6 +84,124 @@ export function progressBar(done: number, total: number): FrameNode {
     markFill(seg); // segments share the width equally (FILL resolved in applyFills)
     bar.appendChild(seg);
   }
+  return bar;
+}
+
+
+// ---- The conversation behind the sheet -----------------------------------
+// A flow never opens on a blank phone: it slides up over the chat it was sent
+// in, so the business's header stays visible above it. This draws that header;
+// screen.ts stacks it under the status bar and puts the sheet below.
+
+/** Initials fallback, matching chat mode's avatar. */
+function initials(name: string): string {
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
+}
+
+/**
+ * The contact avatar: the real image when there is one, a monogram otherwise.
+ *
+ * `figma.createImage` wants bytes, and the sandbox has no `atob` — `figma`
+ * provides `base64Decode` for exactly this. The payload may arrive as a full
+ * data URI (what a file picker produces) or bare base64 (what Flow JSON uses
+ * for `Image.src`), so the prefix is stripped either way. Anything unreadable
+ * falls back to the monogram rather than failing the whole generate.
+ */
+function headerAvatar(contact: HeaderContact): SceneNode {
+  const size = AVATAR;
+  const src = (contact.avatar ?? "").trim();
+  if (src) {
+    try {
+      const bare = src.replace(/^data:[^;]*;base64,/, "");
+      const image = figma.createImage(figma.base64Decode(bare));
+      const node = figma.createEllipse();
+      node.name = "Avatar";
+      node.resize(size, size);
+      node.fills = [{ type: "IMAGE", imageHash: image.hash, scaleMode: "FILL" }];
+      return node;
+    } catch {
+      /* not decodable as an image — fall through to the monogram */
+    }
+  }
+  const f = autoFrame({ name: "Avatar", axis: "HORIZONTAL", align: "CENTER", counterAlign: "CENTER",
+    width: size, height: size, bg: COLOR.chipBg, radius: size / 2 });
+  f.appendChild(text(initials(contact.name) || "?", { size: 12, font: FONT.semibold, color: COLOR.textSecondary }));
+  return f;
+}
+
+// A 42px photo in 8px of vertical padding -> a 58px bar. Right padding is 12,
+// everything else 8.
+const AVATAR = 42;
+const HEADER_PAD_Y = 8;
+export const CHAT_HEADER_H = AVATAR + HEADER_PAD_Y * 2;
+
+/**
+ * The chat header a flow sheet opens over: back, avatar, name (+ badge),
+ * overflow — with the sheet's scrim laid over the lot.
+ *
+ * `scrim` is an absolutely-positioned rectangle rather than darker colours,
+ * because it has to dim the contact's photo as well, and a token cannot.
+ */
+export function chatHeader(contact: HeaderContact, style: HeaderStyle, scrim = true): FrameNode {
+  const skin = headerSkin(style);
+  const bar = autoFrame({
+    name: "chat-header", axis: "HORIZONTAL", gap: 8,
+    padding: [HEADER_PAD_Y, 12, HEADER_PAD_Y, 8],
+    bg: skin.bg, counterAlign: "CENTER", width: DEVICE.width,
+  });
+  bar.appendChild(iconNode(backSvg(skin.ink), 20));
+  bar.appendChild(headerAvatar(contact));
+
+  const nameRow = autoFrame({ name: "Name", axis: "HORIZONTAL", gap: 4, counterAlign: "CENTER" });
+  markFill(nameRow);
+  nameRow.appendChild(text(contact.name || "Business", { size: 16, font: FONT.semibold, color: skin.ink }));
+  if (contact.verified) {
+    const badge = iconNode(verifiedSvg(skin.badge), 14);
+    nameRow.appendChild(badge);
+  }
+  bar.appendChild(nameRow);
+
+  bar.appendChild(iconNode(moreSvg(skin.ink), 20));
+
+  if (scrim) {
+    // Absolute so auto-layout ignores it; sized to the bar, whose height the
+    // avatar and the padding fix.
+    try {
+      const veil = figma.createRectangle();
+      veil.name = "sheet-scrim";
+      veil.resize(DEVICE.width, CHAT_HEADER_H);
+      veil.fills = [fill(SHEET_SCRIM.color)];
+      veil.opacity = SHEET_SCRIM.opacity;
+      bar.appendChild(veil);
+      veil.layoutPositioning = "ABSOLUTE";
+      veil.x = 0;
+      veil.y = 0;
+      veil.constraints = { horizontal: "STRETCH", vertical: "STRETCH" };
+    } catch {
+      /* absolute positioning refused — the header just stays undimmed */
+    }
+  }
+  return bar;
+}
+
+
+/**
+ * Android's navigation bar. Measured off Meta's Flows artwork: ~41px at a
+ * 360-wide screen, a light tray under the sheet. It is why the CTA in a real
+ * screenshot never sits flush with the bottom edge — leave it out and every
+ * proportion below the fold reads wrong.
+ */
+export function navBar(): FrameNode {
+  const bar = autoFrame({
+    name: "nav-bar", axis: "HORIZONTAL", height: NAV_BAR_H, bg: COLOR.navBar,
+    padding: [0, 48, 0, 48], align: "SPACE_BETWEEN" as never, counterAlign: "CENTER",
+    width: DEVICE.width,
+  });
+  bar.primaryAxisAlignItems = "SPACE_BETWEEN";
+  const glyph = (svg: string) => bar.appendChild(iconNode(svg, 14));
+  glyph(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${COLOR.textPrimary}"><path d="M16 4 6 12l10 8z"/></svg>`);
+  glyph(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${COLOR.textPrimary}" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>`);
+  glyph(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="${COLOR.textPrimary}"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>`);
   return bar;
 }
 

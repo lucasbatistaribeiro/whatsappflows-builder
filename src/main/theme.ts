@@ -31,7 +31,7 @@ export interface Palette {
   bg: string; surface: string; textPrimary: string; textSecondary: string;
   divider: string; primary: string; onPrimary: string; link: string;
   inputBorder: string; inputBg: string; chipBg: string; chipSelectedBg: string;
-  chipSelectedBorder: string; statusBar: string; placeholder: string;
+  chipSelectedBorder: string; statusBar: string; navBar: string; placeholder: string;
   // Chat mode (see knowledge/CHAT_UI.md). Sampled from WhatsApp LLC's own Play
   // Store screenshots — Android, which is what this mocks. The earlier guesses
   // were WhatsApp *Web* values, which is why they were consistently off.
@@ -60,6 +60,7 @@ export const COLOR_LIGHT: Palette = {
   chipSelectedBg: "#D9FDD3",
   chipSelectedBorder: "#1DAA61", // same accent as `primary`
   statusBar: "#F7F8FA",
+  navBar: "#F6F8FA", // measured off the same artwork
   placeholder: "#8696A0",
   bubbleIn: "#FFFFFF",
   bubbleOut: "#CFFFCF",
@@ -85,6 +86,7 @@ export const COLOR_DARK: Palette = {
   chipSelectedBg: "#0B3D2E",
   chipSelectedBorder: "#21C063", // same accent as `primary`
   statusBar: "#1F2C34",
+  navBar: "#111B21",
   placeholder: "#8696A0",
   bubbleIn: "#1D272B",
   bubbleOut: "#004F37",
@@ -106,9 +108,60 @@ export const COLOR: Palette = new Proxy({} as Palette, {
   get: (_t, prop: string) => active[prop as keyof Palette],
 }) as Palette;
 
-export const RADIUS = { input: 8, button: 24, chip: 16, card: 12 };
+/**
+ * The chat header sitting above a flow sheet, in two eras.
+ *
+ * WhatsApp redesigned the chat screen in 2021: the header went from a solid
+ * green bar to a light one that blends into the wallpaper. Both still show up
+ * — the current app uses the light one, while Meta's own Flows artwork (and a
+ * lot of material people have on hand) shows the green one — so the mockup
+ * offers both and the author picks.
+ *
+ * `classic` is measured off Meta's Flows artwork — see CLASSIC below for the
+ * values and why the first reading of them was wrong. `current` is not a
+ * constant: it reads the active palette, so it follows light/dark like
+ * everything else.
+ */
+export type HeaderStyle = "classic" | "current";
 
-export const SPACE = { screenPad: 16, gap: 16, gapSm: 8, gapXs: 4 };
+export interface HeaderSkin {
+  bg: string;
+  ink: string;     // the name, the icons
+  inkDim: string;  // the presence line under the name
+  badge: string;   // the business's verified check
+}
+
+// Measured off Meta's Flows artwork, with the scrim taken back out.
+//
+// The artwork shows the header both ways — undimmed on the chat phone, dimmed
+// under a raised sheet on the other two — and the second is exactly the first
+// at two thirds on every channel. So the earlier #005646 / #008638 were the
+// *scrimmed* values with the overlay baked in; these are the real ones, and
+// SHEET_SCRIM below is what darkens them at draw time.
+const CLASSIC: HeaderSkin = { bg: "#008069", ink: "#FFFFFF", inkDim: "#BFD8D1", badge: "#00C853" };
+
+/**
+ * A raised sheet dims the conversation behind it: black at a third, measured
+ * off the same artwork (#008069 -> #005646 and #00C853 -> #008638, both 0.333
+ * on every non-zero channel). It is an overlay rather than darker tokens on
+ * purpose — it has to dim the contact's photo too, which no colour can.
+ */
+export const SHEET_SCRIM = { color: "#000000", opacity: 1 / 3 };
+
+/** `current` is not a constant: it reads the active palette, so it follows the theme. */
+export function headerSkin(style: HeaderStyle): HeaderSkin {
+  if (style === "classic") return CLASSIC;
+  return { bg: COLOR.chatHeader, ink: COLOR.textPrimary, inkDim: COLOR.textSecondary, badge: COLOR.link };
+}
+
+export const RADIUS = { input: 8, button: 24, chip: 16, card: 12, sheet: 16 };
+
+// Android's navigation bar, measured off Meta's Flows artwork (41px at a
+// 360-wide screen). The sheet stops above it, which is what keeps the CTA off
+// the bottom edge.
+export const NAV_BAR_H = 41;
+
+export const SPACE = { screenPad: 16, gap: 16, gapSm: 8, gapXs: 4, ctaInset: 9 };
 
 // Figma's RGB / SolidPaint named structurally rather than through the plugin
 // typings. The preview imports this module for the palette (one source of

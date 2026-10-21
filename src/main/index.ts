@@ -25,6 +25,9 @@ const DEFAULT_PREFS: Prefs = {
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
   sectionName: "", sectionColor: SECTION_BG, sectionRadius: SECTION_RADIUS,
+  // A flow opens over a conversation by default; `current` is the app's
+  // present-day header, `classic` the pre-2021 green one.
+  showChat: true, headerStyle: "current", contact: { name: "Business name" },
 };
 
 figma.showUI(__html__, { width: 500, height: 740, themeColors: true });
@@ -67,6 +70,7 @@ const DEFAULT_OPTIONS: GenOptions = {
   os: "ios", theme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
   sectionName: "", sectionColor: SECTION_BG, sectionRadius: SECTION_RADIUS,
+  showChat: true, headerStyle: "current", contact: { name: "Business name" },
 };
 
 // ---- Generated section + embedded Flow JSON ------------------------------
@@ -200,10 +204,22 @@ figma.on("selectionchange", () => {
 // is left alone (the frame already grew past the minimum).
 function enforceMinHeight(frame: FrameNode, minH: number): void {
   if (frame.height >= minH) return;
-  const body = frame.findChild((n) => n.name === "body") as FrameNode | null;
   frame.primaryAxisSizingMode = "FIXED";
   frame.resize(frame.width, minH);
-  if (body) { try { (body as SceneNode & { layoutSizingVertical?: string }).layoutSizingVertical = "FILL"; } catch { /* not fillable */ } }
+
+  const fillV = (n: SceneNode | null): void => {
+    if (!n) return;
+    try { (n as SceneNode & { layoutSizingVertical?: string }).layoutSizingVertical = "FILL"; }
+    catch { /* not fillable */ }
+  };
+  // The slack has to reach the frame named `body`, which is what pins the
+  // footer to the bottom. With the chat header on, `body` is one level deeper
+  // — inside `flow-sheet` — and the sheet has to absorb the slack first, or
+  // the body has nothing to grow into.
+  const sheet = frame.findChild((n) => n.name === "flow-sheet") as FrameNode | null;
+  const host = sheet ?? frame;
+  fillV(sheet);
+  fillV(host.findChild((n) => n.name === "body") as FrameNode | null);
 }
 
 // Wrap a run of frames in the dated section: laid out in a row, "fill container"
@@ -251,7 +267,10 @@ async function generate(flow: FlowJSON, options: GenOptions = DEFAULT_OPTIONS, r
   setPalette(options.theme); // switch the active palette before building any node
   setBusiness(options.showBusinessName, options.businessName);
 
-  const built: BuiltScreen[] = flow.screens.map((s, i) => buildScreen(s, i, flow.screens.length));
+  const built: BuiltScreen[] = flow.screens.map((s, i) =>
+    buildScreen(s, i, flow.screens.length, {
+      showChat: options.showChat, headerStyle: options.headerStyle, contact: options.contact,
+    }));
 
   // Updating a section the user imported from: build the replacement at the old
   // one's spot, then remove it. Built first so a failure mid-build leaves the

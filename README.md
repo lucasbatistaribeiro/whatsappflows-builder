@@ -41,6 +41,12 @@ cara do WhatsApp na canvas.
   vinculado à sua section: a barra de cima mostra qual é, e **Gerar** vira
   **Atualizar**, reconstruindo aquela section no lugar em vez de deixar as telas
   antigas para trás. Desvincule (o x do chip) para gerar uma section separada.
+- **A conversa atrás da folha** — um flow não abre num celular em branco: ele
+  sobe como uma folha sobre a conversa em que foi enviado. As telas geradas
+  desenham o cabeçalho do contato acima da folha, com **nome, foto e selo
+  verificado** configuráveis no menu, e em dois estilos: **atual** (claro, o
+  app desde 2021) ou **clássico** (a barra verde, medida da própria arte de
+  Flows da Meta). Dá para desligar e voltar à folha sozinha.
 - **Modo Chat** — monte uma conversa do WhatsApp (balões, mídia, respostas
   citadas, botões de resposta, menu de lista, botão de flow, templates) e gere-a
   como um frame.
@@ -220,6 +226,12 @@ render navigable, WhatsApp-styled mockups on the canvas.
   to its section: the top bar shows which one, and **Generate** becomes **Update**,
   rebuilding that section in place instead of leaving the old screens behind.
   Unlink (the x on the chip) to generate a separate section instead.
+- **The conversation behind the sheet** — a flow never opens on a blank phone:
+  it slides up over the chat it was sent in. Generated screens draw the
+  business's chat header above the sheet, with **name, photo and verified
+  badge** set from the menu, in two eras: **current** (the light header, the
+  app since 2021) or **classic** (the green bar, measured off Meta's own Flows
+  artwork). Turn it off for the bare sheet.
 - **Chat mode** — compose a WhatsApp conversation (bubbles, media, quoted
   replies, reply buttons, list menu, flow button, templates) and generate it as a
   frame.

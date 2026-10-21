@@ -6,7 +6,7 @@ import { PALETTE } from "../model/palette";
 import { SAMPLE_FLOW, sampleFlow } from "../model/sample";
 import { templates } from "../model/templates";
 import { postToMain } from "./bridge";
-import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme, setPreviewBusiness } from "./preview";
+import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme, setPreviewBusiness, setPreviewChat } from "./preview";
 import { renderChat } from "./chat";
 import { renderComposer } from "./chatComposer";
 import { sampleThread, type Thread } from "../model/chatTypes";
@@ -598,6 +598,7 @@ let prefs: Prefs = {
   theme: "system", lang: "en", os: "ios", previewTheme: "light", interactive: true, size: "md",
   showBusinessName: false, businessName: "Business name",
   sectionName: "", sectionColor: SECTION_BG_DEFAULT, sectionRadius: SECTION_RADIUS_DEFAULT,
+  showChat: true, headerStyle: "current", contact: { name: "Business name" },
 };
 
 // The WhatsApp-mockup options sent with a generate + used by the live preview.
@@ -605,6 +606,7 @@ const genOptions = (): GenOptions => ({
   os: prefs.os, theme: prefs.previewTheme, interactive: prefs.interactive, size: prefs.size,
   showBusinessName: prefs.showBusinessName, businessName: prefs.businessName,
   sectionName: prefs.sectionName, sectionColor: prefs.sectionColor, sectionRadius: prefs.sectionRadius,
+  showChat: prefs.showChat, headerStyle: prefs.headerStyle, contact: prefs.contact,
 });
 
 // System = follow the OS/Figma theme (no data-theme); light/dark force it.
@@ -634,6 +636,34 @@ function applyInteractive(on: boolean): void {
 
 // Sync the switch + its name field with prefs, and hide the field when off.
 // Never called while typing (it would rewrite the value under the caret).
+// The conversation the flow sheet opens over. Like applyBusiness, never call
+// this while typing — it rewrites the value under the caret.
+function applyChat(p: Prefs): void {
+  setPreviewChat(p.showChat, p.headerStyle, p.contact);
+  const toggle = document.querySelector<HTMLInputElement>("#chat-toggle");
+  if (toggle) toggle.checked = p.showChat;
+  const name = document.querySelector<HTMLInputElement>("#contact-name");
+  if (name) name.value = p.contact.name;
+  const verified = document.querySelector<HTMLInputElement>("#contact-verified");
+  if (verified) verified.checked = !!p.contact.verified;
+  paintAvatarPreview();
+  // The style picker and the fields only matter with the chat shown.
+  const box = document.querySelector<HTMLElement>("#chat-fields");
+  if (box) box.hidden = !p.showChat;
+}
+
+// The little round preview of the chosen photo, plus the remove button.
+function paintAvatarPreview(): void {
+  const img = document.querySelector<HTMLImageElement>("#contact-avatar-img");
+  const clear = document.querySelector<HTMLElement>("#contact-avatar-clear");
+  const av = (prefs.contact.avatar ?? "").trim();
+  if (img) {
+    img.hidden = !av;
+    if (av) img.src = av.startsWith("data:") ? av : `data:image/png;base64,${av}`;
+  }
+  if (clear) clear.hidden = !av;
+}
+
 function applyBusiness(show: boolean, name: string): void {
   setPreviewBusiness(show, name);
   const box = document.querySelector<HTMLInputElement>("#biz-toggle");
@@ -691,6 +721,11 @@ function buildMenuDropdowns(): void {
     [{ value: "system", label: t("themeSystem") }, { value: "light", label: t("themeLight") }, { value: "dark", label: t("themeDark") }],
     (v) => { prefs = { ...prefs, theme: v as ThemePref }; applyTheme(prefs.theme); savePrefs(); });
 
+  fillDropdown("#header-style-dd", prefs.headerStyle,
+    [{ value: "current", label: t("headerCurrent") }, { value: "classic", label: t("headerClassic") }],
+    (v) => { prefs = { ...prefs, headerStyle: v as Prefs["headerStyle"] };
+             setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact); refreshPreview(); savePrefs(); });
+
   fillDropdown("#lang-dd", prefs.lang,
     [{ value: "en", label: t("langEn") }, { value: "pt", label: t("langPt") }],
     (v) => { if (v !== prefs.lang) { prefs = { ...prefs, lang: v as Lang }; applyLang(prefs.lang); savePrefs(); } });
@@ -715,6 +750,7 @@ function applyPrefs(p: Prefs): void {
   applyLang(prefs.lang); // also (re)builds the menu combo boxes from prefs
   applyInteractive(prefs.interactive);
   applyBusiness(prefs.showBusinessName, prefs.businessName);
+  applyChat(prefs);
   applySection(prefs);
   applyMode(prefs.mode ?? "flows"); // reopen in the generator last used
   applySize(prefs.size);
@@ -745,6 +781,59 @@ $("#biz-name").addEventListener("input", (e) => {
   refreshPreview();
 });
 $("#biz-name").addEventListener("change", () => savePrefs());
+
+// ---- The conversation behind the sheet -----------------------------------
+
+$("#chat-toggle").addEventListener("change", (e) => {
+  prefs = { ...prefs, showChat: (e.target as HTMLInputElement).checked };
+  applyChat(prefs);
+  refreshPreview();
+  savePrefs();
+});
+
+// Live-update on every keystroke, persist on commit — same rule as the
+// business name: one clientStorage write per character would be absurd.
+$("#contact-name").addEventListener("input", (e) => {
+  prefs = { ...prefs, contact: { ...prefs.contact, name: (e.target as HTMLInputElement).value } };
+  setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact);
+  refreshPreview();
+});
+$("#contact-name").addEventListener("change", () => savePrefs());
+
+$("#contact-verified").addEventListener("change", (e) => {
+  const on = (e.target as HTMLInputElement).checked;
+  prefs = { ...prefs, contact: { ...prefs.contact, verified: on || undefined } };
+  setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact);
+  refreshPreview();
+  savePrefs();
+});
+
+// The photo. Read as a data URI so it round-trips through clientStorage as a
+// string and can be handed to both the <img> preview and figma.createImage.
+$("#contact-avatar").addEventListener("click", () => ($("#avatar-file") as HTMLInputElement).click());
+$("#avatar-file").addEventListener("change", (e) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    prefs = { ...prefs, contact: { ...prefs.contact, avatar: String(reader.result) } };
+    paintAvatarPreview();
+    setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact);
+    refreshPreview();
+    savePrefs();
+    input.value = ""; // so picking the same file again still fires
+  };
+  reader.onerror = () => postToMain({ type: "notify", message: "Could not read that image." });
+  reader.readAsDataURL(file);
+});
+$("#contact-avatar-clear").addEventListener("click", () => {
+  prefs = { ...prefs, contact: { ...prefs.contact, avatar: undefined } };
+  paintAvatarPreview();
+  setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact);
+  refreshPreview();
+  savePrefs();
+});
 
 // Section fields: nothing to re-render (they only shape the generated Figma
 // section), so just track the value and persist on commit rather than per keystroke.

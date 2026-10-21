@@ -3,7 +3,8 @@
 // so the preview and the generated frames stay in sync.
 import type { FlowJSON, Screen, Component } from "../model/flowTypes";
 import { screenChildren, dataSourceOf, isBinding } from "../model/flowTypes";
-import { COLOR, SCREEN_HEIGHTS, setPalette } from "../main/theme";
+import { COLOR, SCREEN_HEIGHTS, setPalette, type HeaderStyle } from "../main/theme";
+import type { HeaderContact } from "../shared/messages";
 import { t } from "./i18n";
 
 // Push theme tokens into CSS custom properties once, so the stylesheet in
@@ -24,6 +25,7 @@ export function applyThemeVars(): void {
     "--wa-chip-sel": COLOR.chipSelectedBg,
     "--wa-chip-sel-border": COLOR.chipSelectedBorder,
     "--wa-status": COLOR.statusBar,
+    "--wa-nav": COLOR.navBar,
     "--wa-placeholder": COLOR.placeholder,
     // chat mode
     "--wa-bubble-in": COLOR.bubbleIn,
@@ -66,6 +68,51 @@ export function setPreviewBusiness(show: boolean, name: string): void {
   business = { show, name };
 }
 
+// The conversation a flow opens over: the business's chat header above the
+// sheet. Mirrors chatHeader() in src/main/chrome.ts — the preview and the
+// generated frames have to agree.
+let chat: { show: boolean; style: HeaderStyle; contact: HeaderContact } = {
+  show: true, style: "current", contact: { name: "Business name" },
+};
+export function setPreviewChat(show: boolean, style: HeaderStyle, contact: HeaderContact): void {
+  chat = { show, style, contact };
+}
+
+function initials(name: string): string {
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase();
+}
+
+const VERIFIED_ICON =
+  '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">' +
+  '<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>' +
+  '<path d="m9 12 2 2 4-4" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/** The chat header the flow sheet slides up over. */
+function chatHeaderEl(): HTMLElement {
+  // `scrimmed` because in Flows mode the sheet is always up over this header.
+  const bar = el("div", "wa-chat-head scrimmed " + chat.style);
+  bar.appendChild(hIcon(BACK_ICON));
+  const av = (chat.contact.avatar ?? "").trim();
+  if (av) {
+    const img = el("img", "wa-chat-av") as HTMLImageElement;
+    img.src = av.startsWith("data:") ? av : `data:image/png;base64,${av}`;
+    img.alt = "";
+    bar.appendChild(img);
+  } else {
+    bar.appendChild(el("div", "wa-chat-av mono", initials(chat.contact.name) || "?"));
+  }
+  const name = el("div", "wa-chat-name");
+  name.appendChild(el("span", undefined, chat.contact.name || "Business"));
+  if (chat.contact.verified) {
+    const b = el("span", "wa-chat-badge");
+    b.innerHTML = VERIFIED_ICON;
+    name.appendChild(b);
+  }
+  bar.appendChild(name);
+  bar.appendChild(hIcon(MORE_ICON));
+  return bar;
+}
+
 function el(tag: string, className?: string, text?: string): HTMLElement {
   const n = document.createElement(tag);
   if (className) n.className = className;
@@ -90,25 +137,59 @@ export function renderPreview(flow: FlowJSON, host: HTMLElement, fallbackScreenI
   // not the plugin window's.
   phone.style.colorScheme = previewTheme;
   phone.appendChild(statusBar());
+
+  // A flow is a bottom sheet over the conversation it arrived in. With the chat
+  // on, everything below the status bar goes into `.wa-sheet` — rounded at the
+  // top, sitting under the business's chat header. Off, the sheet IS the phone,
+  // which is the bare layout this had before.
+  let sheet = phone;
+  if (chat.show) {
+    phone.appendChild(chatHeaderEl());
+    // No wallpaper sliver: the sheet's rounded top sits against the header.
+    sheet = el("div", "wa-sheet");
+    phone.appendChild(sheet);
+  }
+
   if (selected === SUMMARY) {
-    phone.appendChild(header("Review and submit"));
-    appendProgress(phone, flow, flow.screens.length); // all steps done at the summary
-    phone.appendChild(summaryBody(flow));
+    sheet.appendChild(header("Review and submit"));
+    appendProgress(sheet, flow, flow.screens.length); // all steps done at the summary
+    sheet.appendChild(summaryBody(flow));
   } else {
     const screen = flow.screens.find((s) => s.id === selected);
     if (screen) {
       // First screen in authoring order = entry: close "✕" instead of back.
-      phone.appendChild(header(screen.title ?? screen.id, flow.screens[0]?.id === screen.id));
-      appendProgress(phone, flow, flow.screens.findIndex((s) => s.id === selected) + 1);
-      phone.appendChild(screenBody(flow, screen, host));
+      sheet.appendChild(header(screen.title ?? screen.id, flow.screens[0]?.id === screen.id));
+      appendProgress(sheet, flow, flow.screens.findIndex((s) => s.id === selected) + 1);
+      sheet.appendChild(screenBody(flow, screen, host));
       // Footer is a sibling of the body, as in the generator: measured from the
       // phone edge (not nested inside the body's padding) and pinned while the
       // body scrolls.
       const footer = screenChildren(screen).find((c) => c.type === "Footer");
-      if (footer) phone.appendChild(renderFooter(footer, flow));
+      if (footer) sheet.appendChild(renderFooter(footer, flow));
     }
   }
+  // Android's nav bar closes the phone, under the sheet. Without it the CTA
+  // sits flush with the bottom edge, which no real screenshot does.
+  if (chat.show) {
+    const nav = el("div", "wa-nav");
+    for (const g of ["nav-back", "nav-home", "nav-recents"]) nav.appendChild(el("span", g));
+    phone.appendChild(nav);
+  }
   host.appendChild(phone);
+  fitPhone(phone, host);
+}
+
+/**
+ * Scale the phone to the panel. The mockup is laid out at DEVICE.width (360)
+ * so its internal sizes match the generator's one-for-one; `zoom` shrinks the
+ * laid-out result, unlike `transform: scale` which would leave the old box
+ * size behind and break the surrounding flow.
+ */
+const PHONE_W = 360;
+function fitPhone(phone: HTMLElement, host: HTMLElement): void {
+  const available = host.clientWidth - 8; // breathing room either side
+  const scale = Math.min(1, available / (PHONE_W + 18)); // + the bezel
+  (phone.style as CSSStyleDeclaration & { zoom?: string }).zoom = String(scale > 0 ? scale : 1);
 }
 
 // WhatsApp shows a segmented step-progress bar in the flow header for multi-screen

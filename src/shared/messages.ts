@@ -11,6 +11,18 @@ export type LangPref = "en" | "pt";
 // WhatsApp mockup options — mirror the Meta Playground's gear menu. These affect
 // the live preview AND the generated Figma frames (via the `generate` message).
 export type OS = "android" | "ios";
+/** Which era of WhatsApp chat header sits above the flow sheet. */
+export type HeaderStyle = "classic" | "current";
+
+/**
+ * The business whose chat the flow opens over. Only what the header draws —
+ * chat mode has its own, richer `Contact` on the thread.
+ */
+export interface HeaderContact {
+  name: string;
+  avatar?: string;  // base64 (data URI or bare); absent renders a monogram
+  verified?: boolean;
+}
 export type PreviewTheme = "light" | "dark";
 export type ScreenSize = "sm" | "md" | "lg"; // standard phone height for generated frames
 export interface GenOptions {
@@ -24,6 +36,11 @@ export interface GenOptions {
   sectionName: string;   // prefix; the run's date is always appended (empty = date only)
   sectionColor: string;  // "#rrggbb" background fill
   sectionRadius: number; // corner radius in px
+  // A flow opens as a sheet over a conversation, so the generated screen draws
+  // that chat header above it. `showChat: false` keeps the old bare sheet.
+  showChat: boolean;
+  headerStyle: HeaderStyle;
+  contact: HeaderContact;
 }
 
 /** Which generator the plugin is showing. */
@@ -42,6 +59,9 @@ export interface Prefs {
   sectionName: string;
   sectionColor: string;
   sectionRadius: number;
+  showChat: boolean;
+  headerStyle: HeaderStyle;
+  contact: HeaderContact;
 }
 
 // UI -> main

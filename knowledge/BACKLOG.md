@@ -9,6 +9,32 @@ Status: **idea** (no design yet) · **ready** (approach settled) · **blocked**.
 
 ---
 
+## One contact for both modes (and the chat-side avatar gap)
+
+**Status:** ready · raised 2026-10-20
+
+Flows mode now draws the business's chat header above the sheet, with the
+contact (name, photo, verified) in the menu and carried in `Prefs` /
+`GenOptions` as `HeaderContact`. Chat mode has its own, older `Contact` on
+`Thread`, edited in the composer. So **the same business is typed in two
+places**, and they can disagree inside one plugin window.
+
+Worse, the chat side has a hole that predates this: `Contact.avatar` exists in
+the model and `src/ui/chat.ts` renders it, but **the composer has no field to
+set it** and `src/main/thread.ts` draws a monogram even when it is set. The
+Flows work added the missing half — `headerAvatar()` in `src/main/chrome.ts`
+decodes base64 with `figma.base64Decode` + `createImage` — so the generator
+fix is now a reuse, not a new mechanism.
+
+The job: make `Prefs.contact` the single source, have the composer edit it,
+derive `Thread.contact` from it at generate time (keeping the field for
+imported threads), add the photo field to the composer, and point
+`thread.ts`'s avatar at the shared helper. The decision to settle first is what
+happens to a thread imported with its own contact — follow prefs, or let the
+import win and update prefs.
+
+---
+
 ## Validate: flag duplicate ids inside a data-source / list-items
 
 **Status:** ready · raised 2026-10-20
