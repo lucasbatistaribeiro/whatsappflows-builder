@@ -43,6 +43,31 @@ and friends. `figma.root.findAll/findOne` additionally require an explicit
 is fine. Figma's list of what was replaced:
 <https://developers.figma.com/docs/plugins/migrating-to-dynamic-loading/>
 
+## The generated screen is a sheet over a chat
+
+A flow never opens on a blank phone — it slides up over the conversation it was
+sent in. `buildScreen` stacks status bar → `chat-header` → a wallpaper sliver →
+`flow-sheet` (rounded at the top), and the flow's own chrome goes *inside* the
+sheet. With `showChat: false` the sheet is the frame itself and you get the old
+bare layout.
+
+**Two frame names are load-bearing**, both read back by `enforceMinHeight` in
+`index.ts` when a short screen is padded to the standard phone height:
+`flow-sheet` has to absorb the slack first, then `body` inside it absorbs what
+is left — that is what keeps the footer pinned to the bottom. Rename either and
+the footer floats. The lookup falls back to a direct `body` child when there is
+no sheet, which is what chat mode produces.
+
+## Images: decode, don't placeholder
+
+`figma.createImage` wants bytes and the sandbox has no `atob` — use
+`figma.base64Decode`. Payloads arrive either as a full data URI (what a file
+picker produces) or bare base64 (what Flow JSON uses for `Image.src`), so strip
+the `data:…;base64,` prefix either way, and fall back rather than throwing: one
+unreadable image must not fail the whole generate. `headerAvatar` in `chrome.ts`
+is the worked example. Note the `Image` / `ImageCarousel` components still draw
+grey placeholders — that is a gap, not a rule.
+
 ## One generate = one section
 
 `placeInSection` wraps the run, `embedPayload` hides the source JSON in a locked,

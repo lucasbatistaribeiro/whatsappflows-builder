@@ -4,8 +4,9 @@ import type { Screen, Component } from "../model/flowTypes";
 import { screenChildren } from "../model/flowTypes";
 import { COLOR, DEVICE, RADIUS, SPACE } from "./theme";
 import { FONT } from "./fonts";
-import { autoFrame, text, divider, markFill } from "./nodes";
-import { statusBar, header, progressBar } from "./chrome";
+import { autoFrame, text, divider, markFill, markFillV } from "./nodes";
+import { statusBar, header, progressBar, chatHeader } from "./chrome";
+import type { GenOptions } from "../shared/messages";
 import { renderComponent, type NodeLink } from "./components";
 
 // Captions for footer actions that a Figma prototype can't execute.
@@ -46,7 +47,19 @@ function footerButton(c: Component): FrameNode {
   return btn;
 }
 
-export function buildScreen(screen: Screen, index = 0, total = 1): BuiltScreen {
+/** The options the screen builder reads. Defaults keep older callers working. */
+export type ScreenOptions = Pick<GenOptions, "showChat" | "headerStyle" | "contact">;
+
+const DEFAULT_SCREEN_OPTIONS: ScreenOptions = {
+  showChat: true, headerStyle: "current", contact: { name: "Business name" },
+};
+
+export function buildScreen(
+  screen: Screen,
+  index = 0,
+  total = 1,
+  options: ScreenOptions = DEFAULT_SCREEN_OPTIONS,
+): BuiltScreen {
   const navTargets: NavTarget[] = [];
 
   // Fixed phone width; height hugs the content so the screen grows with it.
@@ -56,17 +69,45 @@ export function buildScreen(screen: Screen, index = 0, total = 1): BuiltScreen {
   });
   frame.clipsContent = true;
   const sb = statusBar(); frame.appendChild(sb); markFill(sb);
+
+  // A flow is a bottom sheet over the conversation it arrived in, so the
+  // business's chat header stays visible above it. Everything below goes into
+  // a `sheet` frame with rounded top corners, which is what reads as "this
+  // slid up over something".
+  const chat = options.showChat;
+  if (chat) {
+    const ch = chatHeader(options.contact, options.headerStyle);
+    frame.appendChild(ch);
+    markFill(ch);
+    // The sliver of wallpaper the sheet doesn't cover.
+    const gap = autoFrame({ name: "chat-peek", height: 10, bg: COLOR.wallpaper });
+    frame.appendChild(gap);
+    markFill(gap);
+  }
+
+  const sheet = chat
+    ? autoFrame({ name: "flow-sheet", bg: COLOR.bg })
+    : frame;
+  if (chat) {
+    frame.appendChild(sheet);
+    markFill(sheet);
+    markFillV(sheet); // the sheet takes the height the chat header leaves
+    sheet.topLeftRadius = RADIUS.sheet;
+    sheet.topRightRadius = RADIUS.sheet;
+    sheet.clipsContent = true;
+  }
+
   // First screen in authoring order = entry: it gets a close "✕", not a back arrow.
-  const hd = header(screen.title ?? "", index === 0); frame.appendChild(hd); markFill(hd);
+  const hd = header(screen.title ?? "", index === 0); sheet.appendChild(hd); markFill(hd);
 
   // Segmented step-progress bar, matching the live preview (multi-screen only).
   if (total > 1) {
-    const pb = progressBar(index + 1, total); frame.appendChild(pb); markFill(pb);
+    const pb = progressBar(index + 1, total); sheet.appendChild(pb); markFill(pb);
   }
 
   // Body fills the width and hugs its height (the screen grows with the content).
   const body = autoFrame({ name: "body", gap: SPACE.gap, padding: SPACE.screenPad });
-  frame.appendChild(body);
+  sheet.appendChild(body);
   markFill(body);
 
   const children = screenChildren(screen); // descends into a Form container if present
@@ -105,7 +146,7 @@ export function buildScreen(screen: Screen, index = 0, total = 1): BuiltScreen {
         markFill(cap);
       }
     }
-    frame.appendChild(area);
+    sheet.appendChild(area);
   }
 
   return { id: screen.id, frame, navTargets };

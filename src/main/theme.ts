@@ -106,7 +106,41 @@ export const COLOR: Palette = new Proxy({} as Palette, {
   get: (_t, prop: string) => active[prop as keyof Palette],
 }) as Palette;
 
-export const RADIUS = { input: 8, button: 24, chip: 16, card: 12 };
+/**
+ * The chat header sitting above a flow sheet, in two eras.
+ *
+ * WhatsApp redesigned the chat screen in 2021: the header went from a solid
+ * green bar to a light one that blends into the wallpaper. Both still show up
+ * — the current app uses the light one, while Meta's own Flows artwork (and a
+ * lot of material people have on hand) shows the green one — so the mockup
+ * offers both and the author picks.
+ *
+ * `classic` is measured off Meta's Flows artwork: #005646 for the bar, #008638
+ * for the business's verified badge. (Not #075E54, which is the green people
+ * remember and quote; the artwork is darker.) `current` is not a constant — it
+ * reads the active palette, so it follows light/dark like everything else.
+ */
+export type HeaderStyle = "classic" | "current";
+
+export interface HeaderSkin {
+  bg: string;
+  ink: string;     // the name, the icons
+  inkDim: string;  // the presence line under the name
+  badge: string;   // the business's verified check
+}
+
+// Measured off Meta's own Flows artwork. `inkDim` is the only value not in the
+// sample — the sheet covers the presence line there — so it is a muted tint of
+// the bar, which is what the era's header used.
+const CLASSIC: HeaderSkin = { bg: "#005646", ink: "#FFFFFF", inkDim: "#A7C3BB", badge: "#008638" };
+
+/** `current` is not a constant: it reads the active palette, so it follows the theme. */
+export function headerSkin(style: HeaderStyle): HeaderSkin {
+  if (style === "classic") return CLASSIC;
+  return { bg: COLOR.chatHeader, ink: COLOR.textPrimary, inkDim: COLOR.textSecondary, badge: COLOR.link };
+}
+
+export const RADIUS = { input: 8, button: 24, chip: 16, card: 12, sheet: 16 };
 
 export const SPACE = { screenPad: 16, gap: 16, gapSm: 8, gapXs: 4 };
 
