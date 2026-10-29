@@ -69,6 +69,10 @@
 /* ---- Section + heading row (padding 25/16/0, gap 12; heading 18 tracked) -- */
 .ui-section { display: flex; flex-direction: column; gap: var(--ui-space-12); padding: var(--ui-space-24) var(--ui-space-16) 0; }
 .ui-section.tight { padding-top: calc(20px * var(--ui-scale)); }
+/* A section has no bottom padding because a 57px row carries its own air. When
+   it ends on anything else (a field, a card) and a divider follows, that air
+   is missing and the divider sits on the control — so add it back. */
+.ui-section:has(+ .ui-divider):has(> :last-child:not(.ui-row)) { padding-bottom: var(--ui-space-16); }
 .ui-section-head { display: flex; align-items: center; gap: var(--ui-space-8); font-size: var(--ui-text-sub); color: var(--ui-text-tertiary);
   text-transform: uppercase; letter-spacing: var(--ui-heading-tracking); line-height: 1.2; }
 .ui-section-head > :first-child { flex: 1; min-width: 0; }
