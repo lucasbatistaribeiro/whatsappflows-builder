@@ -49,8 +49,18 @@ export function section(o: { heading?: string; hint?: string; action?: { label: 
 export type RailKey = "flows" | "chat" | "settings";
 const RAIL_ICONS: Record<RailKey, string> = { flows: "box", chat: "message-square-text", settings: "sliders-vertical" };
 
-// The brand mark: a filled four-point sparkle, as drawn in the Figma rail.
-const SPARKLE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 1.5c.5 5.6 4.9 10 10.5 10.5-5.6.5-10 4.9-10.5 10.5C11.5 16.9 7.1 12.5 1.5 12 7.1 11.5 11.5 7.1 12 1.5z"/></svg>';
+// The logo: the Figma component "logo-flowbuilder", exported as SVG (48², r12,
+// a radial gradient from the accent to the tile mint, a white four-point
+// sparkle). Inlined because the plugin can't fetch assets (networkAccess: none).
+// Its colours are the brand's, fixed in both themes. The gradient id is
+// namespaced; when several rails share a page (the gallery), they all resolve
+// it to the same, identical gradient, which is harmless.
+const LOGO =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">' +
+  '<rect width="48" height="48" rx="12" fill="url(#ui-logo-grad)"/>' +
+  '<path d="M24 10C24.6667 17.4667 30.5333 23.3333 38 24C30.5333 24.6667 24.6667 30.5333 24 38C23.3333 30.5333 17.4667 24.6667 10 24C17.4667 23.3333 23.3333 17.4667 24 10Z" fill="#fff"/>' +
+  '<defs><radialGradient id="ui-logo-grad" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(24 12.8889) rotate(71.8619) scale(54.2514)">' +
+  '<stop stop-color="#008069"/><stop offset="1" stop-color="#86DEC4"/></radialGradient></defs></svg>';
 
 export interface RailOptions {
   active: RailKey;
@@ -60,11 +70,11 @@ export interface RailOptions {
   help?: { title: string; onClick: () => void };
 }
 
-/** The 79px rail: brand, the three destinations, theme + help at the foot. */
+/** The 70px rail: the logo, the three destinations, theme + help at the foot. */
 export function rail(o: RailOptions): HTMLElement {
   const r = el("nav", "ui-rail");
   const brand = el("div", "ui-rail-brand");
-  brand.innerHTML = SPARKLE;
+  brand.innerHTML = LOGO;
   const top = el("div", "ui-rail-top", brand);
   for (const key of ["flows", "chat", "settings"] as RailKey[]) {
     const b = el("button", "ui-rail-item", ic(RAIL_ICONS[key]));
@@ -79,7 +89,7 @@ export function rail(o: RailOptions): HTMLElement {
   r.append(top);
   const foot = el("div", "ui-rail-foot");
   if (o.theme) {
-    const b = el("button", "ui-rail-item", ic(o.theme.icon));
+    const b = el("button", "ui-rail-item boxed", ic(o.theme.icon));
     b.type = "button"; b.title = o.theme.title; b.setAttribute("aria-label", o.theme.title);
     b.dataset.rail = "theme";
     b.addEventListener("click", o.theme.onClick);

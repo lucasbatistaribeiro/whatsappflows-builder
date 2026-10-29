@@ -1,7 +1,7 @@
 # New UI — the rail + panel chrome (in progress)
 
 The plugin chrome is being rebuilt to the structure sketched in the Figma file
-**Flows Builder** (`FhzvBsgVbtp6eIoZ54aWBs`): a 79px navigation rail (Flows ·
+**Flows Builder** (`FhzvBsgVbtp6eIoZ54aWBs`): a 70px navigation rail (Flows ·
 Chat · Settings) beside a 497px panel of sections, category rows and draggable
 cards. The file is the source of truth — this document maps it to the code and
 records the decisions the mapping needed. Work lands on the `new-ui` branch in
@@ -22,7 +22,7 @@ browser before the next starts.
 | Page 1 | `new ui` — the original sketch the structure comes from | `40:298` |
 | Page 1 | `Plugin UI — telas do plugin` — the *current* UI, 1:1 at 500×740 | `17:448` |
 | Page 1 | `wa-phone` — a 300×667 phone mockup frame (sheet, progress, footer) | `47:625` |
-| Components | Atoms, Controls, Rows, Fields & bars, WhatsApp mockup, Navigation rail/item | sections |
+| Components | Atoms, Controls, Rows, Fields & bars, WhatsApp mockup, Navigation rail/item, `logo-flowbuilder` | sections + `65:2578` (logo) |
 | icons | `Icon / <name>` sets, one per Lucide icon, sizes 18 · 22 · 26 | |
 | _Backup | the concept before componentisation — do not build from it | |
 
@@ -89,8 +89,9 @@ screens own the i18n and the model.
 
 | Figma component | Variants / props | Spec | Builder · CSS |
 |---|---|---|---|
-| Navigation rail | active = Flows · Chat · Settings | 79 wide, padding 18/12, 2px right border; brand 54² accent r12 + sparkle; nav gap 16, brand→nav 48; bottom: theme (sun) button 54² + help 54×48 | `rail()` · `.ui-rail`, `.ui-rail-brand`, `.ui-rail-top/-foot` |
-| Navigation item | Enabled · Disabled (.38) · Selected (surface + border, shadow) · Hover (muted) · Pressed (accent/soft) · Focus (2px accent) | 54², r13, icon 28; icon colour by state: muted · accent · secondary · accent/text | `.ui-rail-item` + `[aria-current="page"]`, `:hover`, `:active`, `:focus-visible`, `:disabled` |
+| Navigation rail | active = Flows · Chat · Settings | hugs to 70 wide (48 + padding 10, 2px right border), padding 18 top/bottom; the `logo-flowbuilder` instance; nav gap 16, logo→nav 48; foot gap 16: theme (sun) as a secondary icon button 48² r12, help 48² bare | `rail()` · `.ui-rail`, `.ui-rail-brand`, `.ui-rail-top/-foot`, `.ui-rail-item.boxed/.plain` |
+| Navigation item | Enabled · Disabled (.38) · Selected (surface + border) · Hover (muted) · Pressed (accent/soft) · Focus (2px accent); 1px shadow on every filled state | 48², r8 (= radius/sm, not bound), icon 28; icon colour by state: muted · accent · secondary · accent/text | `.ui-rail-item` + `[aria-current="page"]`, `:hover`, `:active`, `:focus-visible`, `:disabled` |
+| logo-flowbuilder | — | 48², r12, radial gradient #008069 → #86DEC4 (literal, not bound), white four-point sparkle; the brand mark, same in both themes | `LOGO` SVG in `components.ts` · `.ui-rail-brand` |
 | Toolbar | back · actions 0/1/2 · caret | h82, padding 16, gap 10; Back = secondary 48 icon button; title 24/600 + caret 22, meta 17 tertiary | `toolbar()` · `.ui-toolbar`, `-title`, `-meta` |
 | Heading row | hint | 18 tertiary, tracking 2, uppercase; hint 17 right | `section()` · `.ui-section`, `.ui-section-head`, `-hint` |
 | Category row | trailing = none · chevron · count · caret · value · toggle | h57, padding 0/14, gap 12; icon 26 muted; label 22 secondary; count 18 tertiary; chevron 22 | `row()` · `.ui-row`, `-count`, `-value`, `-swatch` |
@@ -159,6 +160,10 @@ drill-in screen each, not dropdowns; the text prefs persist on commit.
 
 `.claude/agents/plugin-ui-tester.md` has the route table with what to query on
 each screen.
+
+**Out of step in the file:** the `size/rail` variable still reads 79 while the
+rail component hugs to 70. The code follows the component
+(`--ui-size-rail: 70`); update the variable, or bind the rail's width to it.
 
 ## Decisions taken (validate or revert)
 

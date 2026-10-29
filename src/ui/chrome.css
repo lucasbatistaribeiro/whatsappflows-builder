@@ -25,28 +25,37 @@
 .ui-ic.lg { font-size: var(--ui-icon-lg); }
 .ui-ic svg { width: 1em; height: 1em; display: block; }
 
-/* ---- Navigation rail (79 wide, padding 18/12, 2px right border) ---------- */
+/* ---- Navigation rail (70 wide = 48 + padding 10 + 2px right border; 18 top/bottom) ---- */
 .ui-rail { flex: none; width: var(--ui-size-rail); display: flex; flex-direction: column; align-items: center;
-  justify-content: space-between; padding: calc(18px * var(--ui-scale)) var(--ui-space-12);
+  justify-content: space-between; padding: calc(18px * var(--ui-scale)) calc(10px * var(--ui-scale));
   border-right: 2px solid var(--ui-border); background: var(--ui-surface); }
 .ui-rail-top, .ui-rail-foot { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-16); }
-.ui-rail-brand { width: calc(54px * var(--ui-scale)); height: calc(54px * var(--ui-scale)); border-radius: var(--ui-radius-md);
-  background: var(--ui-accent); color: var(--ui-on-accent); display: flex; align-items: center; justify-content: center;
+/* The logo is the Figma component "logo-flowbuilder" (48², r12, radial
+   gradient), inlined as SVG by components.ts. It is the brand mark, so it does
+   not follow the light/dark palette. */
+.ui-rail-brand { flex: none; width: var(--ui-size-control); height: var(--ui-size-control); display: block;
   margin-bottom: calc(var(--ui-space-48) - var(--ui-space-16)); /* brand -> nav is 48, the list gap is 16 */ }
-.ui-rail-brand svg { width: calc(32px * var(--ui-scale)); height: calc(32px * var(--ui-scale)); }
-/* Navigation item: 54², r13, icon 28. The six Figma states map to CSS states;
-   the icon colour is the "Navigation item — icon states" variable. */
-.ui-rail-item { width: calc(54px * var(--ui-scale)); height: calc(54px * var(--ui-scale)); border-radius: calc(13px * var(--ui-scale));
+.ui-rail-brand svg { width: 100%; height: 100%; display: block; }
+/* Navigation item: 48², r8 (radius/sm), icon 28. The six Figma states map to CSS
+   states; the icon colour is the "Navigation item — icon states" variable, and
+   every state that has a fill carries the component's 1px shadow. */
+.ui-rail-item { width: var(--ui-size-control); height: var(--ui-size-control); border-radius: var(--ui-radius-sm);
   display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid transparent;
   background: transparent; color: var(--ui-icon-muted); cursor: pointer; box-shadow: none;
   transition: background .12s, color .12s, border-color .12s, box-shadow .12s; }
 .ui-rail-item .ui-ic { font-size: calc(28px * var(--ui-scale)); color: inherit; }
-.ui-rail-item:hover { background: var(--ui-surface-muted); color: var(--ui-text-secondary); }
-.ui-rail-item:active { background: var(--ui-accent-soft); color: var(--ui-accent-text); }
+.ui-rail-item:hover { background: var(--ui-surface-muted); color: var(--ui-text-secondary); box-shadow: var(--ui-shadow-sm); }
+.ui-rail-item:active { background: var(--ui-accent-soft); color: var(--ui-accent-text); box-shadow: var(--ui-shadow-sm); }
 .ui-rail-item[aria-current="page"] { background: var(--ui-surface); border-color: var(--ui-border); color: var(--ui-accent); box-shadow: var(--ui-shadow-sm); }
-.ui-rail-item:focus-visible { outline: none; border: 2px solid var(--ui-accent); }
+.ui-rail-item:focus-visible { outline: none; background: var(--ui-surface); border: 2px solid var(--ui-accent); box-shadow: var(--ui-shadow-sm); }
 .ui-rail-item:disabled { opacity: .38; cursor: default; }
-.ui-rail-foot .ui-rail-item.plain { height: var(--ui-size-control); } /* Help: 54×48, no box */
+/* The foot: the theme switch is a secondary icon button (48², r12, bordered),
+   not a navigation item; Help is a bare 48² icon. */
+.ui-rail-foot .ui-rail-item.boxed { border-radius: var(--ui-radius-md); background: var(--ui-surface); border-color: var(--ui-border);
+  color: var(--ui-text-secondary); }
+.ui-rail-foot .ui-rail-item.boxed:hover { background: var(--ui-surface-sunken); box-shadow: none; }
+.ui-rail-foot .ui-rail-item.boxed .ui-ic { font-size: var(--ui-icon-md); }
+.ui-rail-foot .ui-rail-item.plain .ui-ic { font-size: calc(24px * var(--ui-scale)); }
 
 /* ---- Toolbar (h82, padding 16, gap 10) ----------------------------------- */
 .ui-toolbar { flex: none; display: flex; align-items: center; gap: var(--ui-space-10); padding: var(--ui-space-16); min-height: calc(82px * var(--ui-scale)); }

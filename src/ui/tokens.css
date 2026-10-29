@@ -73,7 +73,7 @@
   --ui-size-tile:       calc(40px  * var(--ui-scale));
   --ui-size-control:    calc(48px  * var(--ui-scale)); /* buttons, toolbar actions */
   --ui-size-control-sm: calc(40px  * var(--ui-scale)); /* card actions */
-  --ui-size-rail:       calc(79px  * var(--ui-scale));
+  --ui-size-rail:       calc(70px  * var(--ui-scale)); /* the rail component hugs to 70; the size/rail variable still reads 79 */
   --ui-size-panel:      calc(497px * var(--ui-scale));
 
   /* ---- Type (from the components, no Figma collection) -----------------
