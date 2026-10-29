@@ -9,8 +9,8 @@ only what bites *in this directory*.
 
 ## You can verify this code — do it
 
-The UI runs standalone outside Figma (the `--figma-color-*` vars fall back to
-themed defaults):
+The UI runs standalone outside Figma (the chrome tokens are literal, so nothing
+depends on Figma injecting `--figma-color-*`):
 
 ```bash
 npm run build && (cd plugin && python -m http.server 8791)
@@ -25,14 +25,36 @@ to the **`plugin-ui-tester`** subagent.
 The browser cannot emulate a narrow Figma panel reliably — test responsiveness
 by reading computed styles and clamping logic, not by resizing the window.
 
+The new chrome's components can be seen on their own, every variant at once,
+without a screen using them: `npm run gallery` builds `build/gallery.html`
+from `build/gallery.ts` + `tokens.css` + `chrome.css`. Serve `build/` and
+open it; the button in the corner flips light/dark.
+
+## The new chrome: `components.ts` + `chrome.css`
+
+The rail + panel UI (`knowledge/NEW_UI.md`) is built from DOM builders in
+`components.ts` — one per Figma component (`rail`, `toolbar`, `section`, `row`,
+`card`, `cardExpanded`, `field`, `searchField`, `banner`, `toggle`…) — styled
+by the `.ui-*` rules in `chrome.css`, which the build inlines into `ui.html`
+next to the tokens. The builders are pure DOM: callers pass translated strings
+(no `t()` inside), and sizes come from the tokens, so everything follows
+`--ui-scale`. Icons go through `ic(name, size)`, a span sized by CSS, not by
+`iconEl()`'s pixel argument. `ui.html` keeps only the shell and the page glue
+(offer banner, generating state, dropdown mechanics); `chrome.css` is inlined
+*after* it so the component look wins. `ui.ts` is a router: one `route`, a
+builder per screen, `go()` / `back()` — see "How the screens are wired" in
+`knowledge/NEW_UI.md`.
+
 ## Two brands, and the prefix tells you which
 
 The stylesheet in `ui.html` holds two identities, and every colour belongs to
 exactly one of them. The token namespace says which, at the use site:
 
-- **`--ui-*` — the plugin's own chrome** (`.comp`, `.dd`, `.topbar`, the menu,
-  the preview's screen switcher). Derived from `--figma-color-*` so the panel
-  sits inside Figma's theme. **14px minimum** for text.
+- **`--ui-*` — the plugin's own chrome** (the `.ui-*` components, `.dd`, the
+  `.pe-*` editor, the preview's screen switcher). Defined in `tokens.css`, a mirror of the
+  Figma file's *Chrome* and *Scale* variable collections (light + dark), and
+  inlined into `ui.html` by the build. `knowledge/NEW_UI.md` has the mapping
+  and the one scale knob. **14px minimum** for text.
 - **`--wa-*` — WhatsApp's identity**, for the phone mockup (`.wa-*`,
   `.wa-c-*`). Set from `src/main/theme.ts` by `applyThemeVars()` — the same
   tokens the Figma generator paints with, which is what keeps the preview and
@@ -49,11 +71,12 @@ outside it.
 
 ## Re-render only what has to change
 
-A value edit must not rebuild the DOM it is being typed into: `renderComposer`
-and `renderComponentList` empty their host, so re-rendering on a keystroke
-removes the focused input and the caret lands on `<body>`. Both sides already
-have the split — `softSync` / `structuralSync` in `ui.ts`, `ComposerSync` in
-`chatComposer.ts`. Value change → `soft`. Fields appear or disappear →
+A value edit must not rebuild the DOM it is being typed into: `render()` and
+`renderComposer` replace their host's children, so re-rendering on a keystroke
+removes the focused input and the caret lands on `<body>`. Both sides have the
+split — `softSync` / `structuralSync` in `ui.ts`, `ComposerSync` in
+`chatComposer.ts`. Value change → `soft` (JSON, preview, banner and the card's
+own title via `setCardText`, all in place). Fields appear or disappear →
 `structural`. See the first entry in BUGFIXES.
 
 ## The dropdown must stay `position: fixed`

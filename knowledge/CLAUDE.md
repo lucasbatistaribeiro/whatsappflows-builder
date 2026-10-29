@@ -21,6 +21,7 @@ npm install
 npm run build      # build/esbuild.mjs -> plugin/code.js (main) + plugin/ui.html (UI inlined)
 npm run watch      # rebuild main on change (re-run for UI changes)
 npm run typecheck  # both projects: typecheck:main + typecheck:ui (strict)
+npm run gallery    # build/gallery.html: every new-chrome component, light + dark
 ```
 
 `plugin/` is the deliverable: after a build it holds only `manifest.json`,
@@ -85,9 +86,12 @@ then `npm run build`.
   in `ui.html`) and the generated screens use *real* WhatsApp sizes/colors — don't
   restyle them to match the plugin chrome. Plugin-chrome text has a **14px minimum**;
   `wa-*` does not.
-- **Theme:** tokens in `ui.html` map to `--figma-color-*` with light/dark fallbacks;
-  a manual toggle sets `:root[data-theme="light|dark"]`. The generator's own tokens
-  live in `src/main/theme.ts` and also feed the preview via CSS vars (single source).
+- **Theme:** the chrome's tokens live in `src/ui/tokens.css` (inlined into
+  `ui.html` by the build), a mirror of the Figma file's Chrome + Scale variable
+  collections with light/dark values — see `knowledge/NEW_UI.md` for the mapping
+  and the scale knob. Light/dark follows `prefers-color-scheme`; a manual toggle
+  sets `:root[data-theme="light|dark"]`. The generator's own tokens live in
+  `src/main/theme.ts` and also feed the preview via CSS vars (single source).
 - **i18n (`src/ui/i18n.ts`):** static text uses `data-i18n` / `data-i18n-ph` /
   `data-i18n-title` (filled by `applyI18n`); JS-built text uses `t(key, params)`
   with `{n}` slots. The validator emits `{key, params}` and the UI translates it.
@@ -126,13 +130,15 @@ src/
   shared/      messages                                          (UI <-> main contract)
   main/        theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
   ui/          ui.html, ui.ts, bridge, preview, propEditor, dropdown, icons, i18n (plugin UI)
+               tokens.css + chrome.css + components.ts: the new chrome (NEW_UI.md)
                each of those three carries its own CLAUDE.md with the rules
                that bite there — the compiler-enforced split, the traps, how
                to verify. They load when you open files in that directory.
 build/         esbuild.mjs (paths resolve from the file, not the cwd) + three
-               tsconfigs: base, main (no DOM), ui (no figma)
+               tsconfigs: base, main (no DOM), ui (no figma); gallery.ts/.mjs
+               render every new-chrome component (`npm run gallery`)
 knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md, BACKLOG.md,
-               CHAT_UI.md, CHAT_PATTERNS.md
+               CHAT_UI.md, CHAT_PATTERNS.md, NEW_UI.md (the rail + panel chrome)
 .claude/agents/ runnable subagent definitions — not docs (see plugin-ui-tester)
 .claude/skills/ invocable procedures: release (cut a tagged release + verify the
                published zip), meta-sync (reconcile with Meta's spec)

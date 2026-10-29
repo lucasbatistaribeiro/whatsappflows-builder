@@ -1,6 +1,6 @@
 // Chat mode's authoring UI: contact, thread options, and the message list.
-// Reuses the Flows card machinery (grip + accordion + drag) and its CSS classes
-// rather than inventing a second interaction — see knowledge/CHAT_UI.md.
+// Built from the same components the Flows side uses (card + expanded card +
+// drag) rather than inventing a second interaction — see knowledge/CHAT_UI.md.
 //
 // The official limits from CHAT_PATTERNS.md are enforced *here*, in the inputs:
 // `maxlength` on every capped field and a disabled "add" once a count is reached,
@@ -9,11 +9,11 @@ import type {
   Interactive, ListRow, Message, MessageType, TemplateButton, TemplateButtonType, Thread,
 } from "../model/chatTypes";
 import { LIMITS } from "../model/chatTypes";
-import { CHAT_PALETTE, CHAT_PALETTE_GROUPS } from "../model/chatPalette";
+import { CHAT_PALETTE } from "../model/chatPalette";
 import { createDropdown } from "./dropdown";
 import { startDrag } from "./drag";
-import { iconEl } from "./icons";
 import { t } from "./i18n";
+import * as C from "./components";
 
 type Rerender = () => void;
 
@@ -37,79 +37,33 @@ export interface ComposerSync {
  */
 let currentThread: Thread;
 
-const el = (tag: string, cls?: string, text?: string): HTMLElement => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text !== undefined) n.textContent = text;
-  return n;
-};
+const el = C.el;
 
-function label(text: string): HTMLElement {
-  const l = el("label", "f");
-  l.textContent = text;
-  return l;
+/** A capped, labelled text input. `max` comes from LIMITS, never a literal. */
+function field(label: string, value: string, max: number, onInput: (v: string) => void, placeholder = ""): HTMLElement {
+  return C.field({ label, value, maxLength: max, placeholder, onInput });
 }
 
-/** A capped text input. `max` comes from LIMITS, never a literal. */
-function field(value: string, max: number, onInput: (v: string) => void, placeholder = ""): HTMLInputElement {
-  const inp = document.createElement("input");
-  inp.type = "text";
-  inp.value = value;
-  inp.maxLength = max;
-  inp.placeholder = placeholder;
-  inp.oninput = () => onInput(inp.value);
-  return inp;
+function area(label: string, value: string, max: number, onInput: (v: string) => void): HTMLElement {
+  return C.textArea({ label, value, maxLength: max, rows: 2, onInput });
 }
 
-function area(value: string, max: number, onInput: (v: string) => void): HTMLTextAreaElement {
-  const ta = document.createElement("textarea");
-  ta.className = "chat-area";
-  ta.value = value;
-  ta.maxLength = max;
-  ta.rows = 2;
-  ta.oninput = () => onInput(ta.value);
-  return ta;
+function dropdown(label: string, value: string, options: { value: string; label: string }[], onChange: (v: string) => void): HTMLElement {
+  return C.labeled(label, createDropdown({ value, options, size: "md", onChange }));
 }
 
-function iconBtn(name: string, onClick: () => void, title = ""): HTMLButtonElement {
-  const b = document.createElement("button");
-  b.className = "icon-btn";
-  b.title = title;
-  b.onclick = onClick;
-  b.appendChild(iconEl(name, 16));
-  return b;
-}
+const toggle = C.switchRow;
 
-function dropdown(value: string, options: { value: string; label: string }[], onChange: (v: string) => void): HTMLElement {
-  const host = el("span");
-  host.appendChild(createDropdown({ value, options, size: "sm", onChange }));
-  return host;
-}
-
-function toggle(text: string, on: boolean, onChange: (v: boolean) => void): HTMLElement {
-  const wrap = el("label", "menu-toggle");
-  wrap.appendChild(el("span", undefined, text));
-  const box = document.createElement("input");
-  box.type = "checkbox";
-  box.className = "menu-switch";
-  box.checked = on;
-  box.onchange = () => onChange(box.checked);
-  wrap.appendChild(box);
-  return wrap;
-}
+const removeBtn = (onClick: () => void): HTMLButtonElement => C.button({ icon: "trash-2", sm: true, title: t("remove"), onClick });
 
 /**
- * An "add" button that disables itself at the official cap, so the limit is felt
+ * An "add" link that disables itself at the official cap, so the limit is felt
  * in the UI instead of being a comment in a doc.
  */
 function addBtn(text: string, count: number, max: number, onClick: () => void): HTMLButtonElement {
-  const b = document.createElement("button");
-  b.className = "btn ghost add-row";
-  b.appendChild(iconEl("plus", 16));
-  b.appendChild(document.createTextNode(`${text} (${count}/${max})`));
+  const b = C.addLink(`${text} (${count}/${max})`, onClick);
   b.disabled = count >= max;
   if (b.disabled) b.title = t("chatAtLimit");
-  else b.onclick = onClick;
   return b;
 }
 
@@ -118,45 +72,38 @@ function addBtn(text: string, count: number, max: number, onClick: () => void): 
 function buttonsEditor(inter: Extract<Interactive, { kind: "buttons" }>, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
   inter.buttons.forEach((b, i) => {
-    const row = el("div", "chat-row");
-    row.appendChild(field(b.title, LIMITS.replyButtonTitle, (v) => { b.title = v; sync.soft(); }, t("chatButtonLabel")));
-    row.appendChild(iconBtn("trash-2", () => { inter.buttons.splice(i, 1); sync.structural(); }, t("remove")));
-    box.appendChild(row);
+    box.append(el("div", "chat-row",
+      field(t("chatButtonLabel"), b.title, LIMITS.replyButtonTitle, (v) => { b.title = v; sync.soft(); }),
+      removeBtn(() => { inter.buttons.splice(i, 1); sync.structural(); })));
   });
-  box.appendChild(addBtn(t("chatAddButton"), inter.buttons.length, LIMITS.replyButtons,
+  box.append(addBtn(t("chatAddButton"), inter.buttons.length, LIMITS.replyButtons,
     () => { inter.buttons.push({ title: "" }); sync.structural(); }));
   return box;
 }
 
 function listEditor(inter: Extract<Interactive, { kind: "list" }>, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
-  box.appendChild(label(t("chatListCta")));
-  box.appendChild(field(inter.cta, LIMITS.listCta, (v) => { inter.cta = v; sync.soft(); }));
+  box.append(field(t("chatListCta"), inter.cta, LIMITS.listCta, (v) => { inter.cta = v; sync.soft(); }));
 
   // The model supports up to 10 sections; the editor exposes the first one only.
   // Multi-section authoring is a deliberate gap, not an oversight — see CHAT_UI.md.
   const section = inter.sections[0] ?? { rows: [] as ListRow[] };
   if (!inter.sections.length) inter.sections.push(section);
 
-  box.appendChild(label(t("chatSectionTitle")));
-  box.appendChild(field(section.title ?? "", LIMITS.listSectionTitle, (v) => { section.title = v || undefined; sync.soft(); }));
+  box.append(field(t("chatSectionTitle"), section.title ?? "", LIMITS.listSectionTitle, (v) => { section.title = v || undefined; sync.soft(); }));
 
   section.rows.forEach((r, i) => {
-    const row = el("div", "chat-row");
-    const stack = el("div", "chat-stack");
-    stack.appendChild(field(r.title, LIMITS.listRowTitle, (v) => { r.title = v; sync.soft(); }, t("chatRowTitle")));
-    stack.appendChild(field(r.description ?? "", LIMITS.listRowDescription,
-      (v) => { r.description = v || undefined; sync.soft(); }, t("chatRowDesc")));
-    row.appendChild(stack);
-    row.appendChild(iconBtn("trash-2", () => { section.rows.splice(i, 1); sync.structural(); }, t("remove")));
-    box.appendChild(row);
+    const stack = el("div", "chat-stack",
+      field(t("chatRowTitle"), r.title, LIMITS.listRowTitle, (v) => { r.title = v; sync.soft(); }),
+      field(t("chatRowDesc"), r.description ?? "", LIMITS.listRowDescription, (v) => { r.description = v || undefined; sync.soft(); }));
+    box.append(el("div", "chat-row", stack, removeBtn(() => { section.rows.splice(i, 1); sync.structural(); })));
   });
-  box.appendChild(addBtn(t("chatAddRow"), section.rows.length, LIMITS.listRows,
+  box.append(addBtn(t("chatAddRow"), section.rows.length, LIMITS.listRows,
     () => { section.rows.push({ title: "" }); sync.structural(); }));
 
   // Which of the list's two states to mock. Only one sheet can be open at a time,
   // so turning this on clears it on every other list message.
-  box.appendChild(toggle(t("chatSheetOpen"), !!inter.sheetOpen, (on) => {
+  box.append(toggle(t("chatSheetOpen"), !!inter.sheetOpen, (on) => {
     if (on) for (const m of currentThread.messages) {
       if (m.interactive && m.interactive.kind === "list") m.interactive.sheetOpen = undefined;
     }
@@ -171,31 +118,25 @@ const TEMPLATE_BUTTON_TYPES: TemplateButtonType[] =
 
 function templateEditor(inter: Extract<Interactive, { kind: "template" }>, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
-  box.appendChild(label(t("chatTplHeader")));
-  box.appendChild(field(inter.header ?? "", LIMITS.headerText, (v) => { inter.header = v || undefined; sync.soft(); }));
-  box.appendChild(label(t("chatTplFooter")));
-  box.appendChild(field(inter.footer ?? "", LIMITS.footerText, (v) => { inter.footer = v || undefined; sync.soft(); }));
+  box.append(field(t("chatTplHeader"), inter.header ?? "", LIMITS.headerText, (v) => { inter.header = v || undefined; sync.soft(); }));
+  box.append(field(t("chatTplFooter"), inter.footer ?? "", LIMITS.footerText, (v) => { inter.footer = v || undefined; sync.soft(); }));
 
   inter.buttons.forEach((b: TemplateButton, i) => {
-    const row = el("div", "chat-row");
     // Types stay in English: they mirror the spec, like Flows component names.
     // A type swap changes no fields, so it's a value edit like the text beside it.
-    row.appendChild(dropdown(b.type, TEMPLATE_BUTTON_TYPES.map((v) => ({ value: v, label: v })),
-      (v) => { b.type = v as TemplateButtonType; sync.soft(); }));
-    row.appendChild(field(b.text, LIMITS.templateButtonText, (v) => { b.text = v; sync.soft(); }, t("chatButtonLabel")));
-    row.appendChild(iconBtn("trash-2", () => { inter.buttons.splice(i, 1); sync.structural(); }, t("remove")));
-    box.appendChild(row);
+    const stack = el("div", "chat-stack",
+      dropdown(t("chatType"), b.type, TEMPLATE_BUTTON_TYPES.map((v) => ({ value: v, label: v })),
+        (v) => { b.type = v as TemplateButtonType; sync.soft(); }),
+      field(t("chatButtonLabel"), b.text, LIMITS.templateButtonText, (v) => { b.text = v; sync.soft(); }));
+    box.append(el("div", "chat-row", stack, removeBtn(() => { inter.buttons.splice(i, 1); sync.structural(); })));
   });
-  box.appendChild(addBtn(t("chatAddButton"), inter.buttons.length, LIMITS.templateButtons,
+  box.append(addBtn(t("chatAddButton"), inter.buttons.length, LIMITS.templateButtons,
     () => { inter.buttons.push({ type: "QUICK_REPLY", text: "" }); sync.structural(); }));
   return box;
 }
 
 function flowEditor(inter: Extract<Interactive, { kind: "flow" }>, sync: ComposerSync): HTMLElement {
-  const box = el("div", "chat-sub");
-  box.appendChild(label(t("chatFlowCta")));
-  box.appendChild(field(inter.cta, LIMITS.flowCta, (v) => { inter.cta = v; sync.soft(); }));
-  return box;
+  return el("div", "chat-sub", field(t("chatFlowCta"), inter.cta, LIMITS.flowCta, (v) => { inter.cta = v; sync.soft(); }));
 }
 
 const MESSAGE_TYPES: MessageType[] = ["text", "image", "video", "document", "audio"];
@@ -205,32 +146,25 @@ function mediaEditor(msg: Message, sync: ComposerSync): HTMLElement {
   const box = el("div", "chat-sub");
   const media = msg.media ?? (msg.media = {});
   if (msg.type === "image" || msg.type === "video") {
-    box.appendChild(label(t("chatMediaSrc")));
     // Long base64 belongs in a textarea; the cap is generous, not spec-derived.
-    box.appendChild(area(media.src ?? "", 2_000_000, (v) => { media.src = v.trim() || undefined; sync.soft(); }));
+    box.append(area(t("chatMediaSrc"), media.src ?? "", 2_000_000, (v) => { media.src = v.trim() || undefined; sync.soft(); }));
   }
   if (msg.type === "document") {
-    box.appendChild(label(t("chatFileName")));
-    box.appendChild(field(media.name ?? "", 80, (v) => { media.name = v || undefined; sync.soft(); }, "invoice.pdf"));
-    box.appendChild(label(t("chatFileSize")));
-    box.appendChild(field(media.size ?? "", 20, (v) => { media.size = v || undefined; sync.soft(); }, "1.2 MB"));
+    box.append(field(t("chatFileName"), media.name ?? "", 80, (v) => { media.name = v || undefined; sync.soft(); }, "invoice.pdf"));
+    box.append(field(t("chatFileSize"), media.size ?? "", 20, (v) => { media.size = v || undefined; sync.soft(); }, "1.2 MB"));
   }
   if (msg.type === "audio" || msg.type === "video") {
-    box.appendChild(label(t("chatDuration")));
-    box.appendChild(field(media.duration ?? "", 10, (v) => { media.duration = v || undefined; sync.soft(); }, "0:35"));
+    box.append(field(t("chatDuration"), media.duration ?? "", 10, (v) => { media.duration = v || undefined; sync.soft(); }, "0:35"));
   }
   return box;
 }
 
 /** The quoted-reply block: author plus one line of quoted text. */
 function replyEditor(msg: Message, sync: ComposerSync): HTMLElement {
-  const box = el("div", "chat-sub");
   const reply = msg.replyTo!;
-  box.appendChild(label(t("chatReplyAuthor")));
-  box.appendChild(field(reply.author, 40, (v) => { reply.author = v; sync.soft(); }));
-  box.appendChild(label(t("chatReplyText")));
-  box.appendChild(field(reply.text, 120, (v) => { reply.text = v; sync.soft(); }));
-  return box;
+  return el("div", "chat-sub",
+    field(t("chatReplyAuthor"), reply.author, 40, (v) => { reply.author = v; sync.soft(); }),
+    field(t("chatReplyText"), reply.text, 120, (v) => { reply.text = v; sync.soft(); }));
 }
 
 const KINDS = ["none", "buttons", "list", "flow", "template"] as const;
@@ -245,34 +179,32 @@ function freshInteractive(kind: string): Interactive | undefined {
 
 // ---- message card ---------------------------------------------------------
 
-/** One-line summary for a collapsed card. */
+const TYPE_ICON: Record<MessageType, string> = { text: "message-square-text", image: "image", video: "video", document: "file-text", audio: "mic" };
+const KIND_ICON: Record<string, string> = { buttons: "reply", list: "list", flow: "workflow", template: "layout-template" };
+const icon = (msg: Message): string => (msg.interactive && KIND_ICON[msg.interactive.kind]) || TYPE_ICON[msg.type];
+
+/** The card's title: the text, or what stands for it. */
+function title(msg: Message): string {
+  return (msg.text ?? "").trim() || t("chatEmptyMessage"); // the card ellipsises
+}
+
+/** The card's subtitle: type, interactive kind, time, status. */
 function summary(msg: Message): string {
-  const kind = (msg.type !== "text" ? ` · ${msg.type}` : "") + (msg.interactive ? ` · ${msg.interactive.kind}` : "");
-  const text = (msg.text ?? "").trim();
-  const head = text.length > 34 ? text.slice(0, 34) + "…" : text || t("chatEmptyMessage");
-  return head + kind;
+  const parts = [msg.type === "text" ? t("chatText") : t("chatType_" + msg.type)];
+  if (msg.interactive) parts.push(msg.interactive.kind);
+  if (msg.time) parts.push(msg.time);
+  if (msg.direction === "out" && msg.status) parts.push(t("chat" + msg.status[0].toUpperCase() + msg.status.slice(1)).toLowerCase());
+  return parts.join(" · ");
 }
 
 // Cards start collapsed, matching the Flows component list — a long thread is
 // unreadable with every editor open. `seen` is what makes "first render" mean
-// something; a message added from the toolbar is marked seen *without* being
+// something; a message added from the library is marked seen *without* being
 // collapsed, so it opens ready to type in.
 const collapsed = new WeakSet<Message>();
 const seen = new WeakSet<Message>();
 
-function openOnFirstRender(msg: Message): void { seen.add(msg); }
-
-/**
- * One setter per rendered card, rebuilt on every composer render. The collapse-all
- * button drives these rather than re-rendering, so the cards animate — the same
- * reason the Flows list keeps its own `cardToggles`.
- */
-const cardToggles: ((collapse: boolean) => void)[] = [];
-
 const anyExpanded = (thread: Thread): boolean => thread.messages.some((m) => !collapsed.has(m));
-
-/** Set by the header on each render; cards call it after an individual toggle. */
-let repaintCollapseAll: () => void = () => { /* no header yet */ };
 
 function collapseIfNew(msg: Message): void {
   if (seen.has(msg)) return;
@@ -280,52 +212,37 @@ function collapseIfNew(msg: Message): void {
   collapsed.add(msg);
 }
 
+/** Append a message of the palette entry `key` to `thread`, open for editing. */
+export function addMessage(thread: Thread, key: string): void {
+  const entry = CHAT_PALETTE.find((e) => e.key === key);
+  if (!entry) return;
+  const msg = entry.make();
+  seen.add(msg); // opens ready to edit
+  thread.messages.push(msg);
+}
+
 function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement, sync: ComposerSync): HTMLElement {
   const redraw = sync.structural;
   collapseIfNew(msg);
-  const isCollapsed = collapsed.has(msg);
-  const card = el("div", "comp" + (isCollapsed ? " collapsed" : ""));
+  const drag = (card: HTMLElement) => (e: Event) => startDrag(e as PointerEvent, card, host, thread.messages, redraw);
 
-  const row = el("div", "row");
-  const grip = el("span", "comp-grip");
-  grip.title = t("dragToReorder");
-  grip.appendChild(iconEl("grip-vertical", 16));
-  grip.addEventListener("pointerdown", (e) => startDrag(e as PointerEvent, card, host, thread.messages, redraw));
+  if (collapsed.has(msg)) {
+    const card = C.card({ icon: icon(msg), title: title(msg), subtitle: summary(msg), trailing: "badge", badge: msg.direction,
+      gripTitle: t("dragToReorder"), onClick: () => { collapsed.delete(msg); redraw(); } });
+    card.querySelector(".ui-grip")?.addEventListener("pointerdown", drag(card));
+    return card;
+  }
 
-  const head = el("div", "comp-head");
-  head.appendChild(el("span", "type", msg.direction === "out" ? t("chatOut") : t("chatIn")));
+  let card: HTMLElement;
   // The collapsed summary used to refresh for free, because every keystroke
   // re-rendered the whole composer. Value edits no longer do, so patch it here.
-  const summaryEl = el("span", "chat-summary", summary(msg));
-  head.appendChild(summaryEl);
-
   const cardSync: ComposerSync = {
-    soft: () => { summaryEl.textContent = summary(msg); sync.soft(); },
+    soft: () => { C.setCardText(card, title(msg), summary(msg)); sync.soft(); },
     structural: sync.structural,
   };
 
-  const chev = el("span", "comp-chev");
-  chev.appendChild(iconEl(isCollapsed ? "chevron-down" : "chevron-up", 16));
-  // Toggle in place (class only) so the body animates instead of re-rendering.
-  const setCollapsed = (collapse: boolean): void => {
-    card.classList.toggle("collapsed", collapse);
-    if (collapse) collapsed.add(msg); else collapsed.delete(msg);
-    chev.replaceChildren(iconEl(collapse ? "chevron-down" : "chevron-up", 16));
-  };
-  cardToggles.push(setCollapsed);
-  const toggleCard = (): void => {
-    setCollapsed(!card.classList.contains("collapsed"));
-    repaintCollapseAll(); // otherwise the header still offers the stale action
-  };
-  head.onclick = toggleCard;
-  chev.onclick = toggleCard;
-  row.append(grip, head, chev);
-  card.appendChild(row);
-
-  const body = el("div", "comp-body");
-
-  body.appendChild(label(t("chatDirection")));
-  body.appendChild(dropdown(msg.direction,
+  const body = el("div", "pe-form");
+  body.append(dropdown(t("chatDirection"), msg.direction,
     [{ value: "in", label: t("chatIn") }, { value: "out", label: t("chatOut") }],
     (v) => {
       msg.direction = v as Message["direction"];
@@ -337,143 +254,98 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
       redraw();
     }));
 
-  body.appendChild(label(t("chatType")));
-  body.appendChild(dropdown(msg.type, MESSAGE_TYPES.map((v) => ({ value: v, label: t("chatType_" + v) })),
+  body.append(dropdown(t("chatType"), msg.type, MESSAGE_TYPES.map((v) => ({ value: v, label: t("chatType_" + v) })),
     (v) => { msg.type = v as MessageType; redraw(); })); // swaps the media fields
-  if (msg.type !== "text") body.appendChild(mediaEditor(msg, cardSync));
+  if (msg.type !== "text") body.append(mediaEditor(msg, cardSync));
 
   // For media the text is the caption, which the spec caps the same as a body.
-  body.appendChild(label(msg.type === "text" ? t("chatText") : t("chatCaption")));
-  body.appendChild(area(msg.text ?? "", LIMITS.bodyText, (v) => { msg.text = v; cardSync.soft(); }));
+  body.append(area(msg.type === "text" ? t("chatText") : t("chatCaption"), msg.text ?? "", LIMITS.bodyText,
+    (v) => { msg.text = v; cardSync.soft(); }));
 
-  body.appendChild(toggle(t("chatQuoted"), !!msg.replyTo, (on) => {
+  body.append(toggle(t("chatQuoted"), !!msg.replyTo, (on) => {
     msg.replyTo = on ? { author: thread.contact.name, text: "" } : undefined;
     redraw(); // the reply sub-editor appears/disappears
   }));
-  if (msg.replyTo) body.appendChild(replyEditor(msg, cardSync));
+  if (msg.replyTo) body.append(replyEditor(msg, cardSync));
 
-  const meta = el("div", "chat-row");
-  const timeBox = el("div", "chat-stack");
-  timeBox.appendChild(label(t("chatTime")));
-  timeBox.appendChild(field(msg.time ?? "", 8, (v) => { msg.time = v || undefined; cardSync.soft(); }, "09:41"));
-  meta.appendChild(timeBox);
+  const meta = el("div", "chat-row", field(t("chatTime"), msg.time ?? "", 8, (v) => { msg.time = v || undefined; cardSync.soft(); }, "09:41"));
   if (msg.direction === "out") {
-    const statusBox = el("div", "chat-stack");
-    statusBox.appendChild(label(t("chatStatus")));
-    statusBox.appendChild(dropdown(msg.status ?? "sent",
-      [{ value: "sent", label: t("chatSent") }, { value: "delivered", label: t("chatDelivered") },
-       { value: "read", label: t("chatRead") }],
+    meta.append(dropdown(t("chatStatus"), msg.status ?? "sent",
+      [{ value: "sent", label: t("chatSent") }, { value: "delivered", label: t("chatDelivered") }, { value: "read", label: t("chatRead") }],
       (v) => { msg.status = v as Message["status"]; cardSync.soft(); }));
-    meta.appendChild(statusBox);
   }
-  body.appendChild(meta);
+  body.append(meta);
 
-  body.appendChild(label(t("chatInteractive")));
-  body.appendChild(dropdown(msg.interactive?.kind ?? "none",
+  body.append(dropdown(t("chatInteractive"), msg.interactive?.kind ?? "none",
     KINDS.map((k) => ({ value: k, label: k === "none" ? t("chatNone") : k })),
     (v) => { msg.interactive = freshInteractive(v); redraw(); })); // swaps the sub-editor
 
   const inter = msg.interactive;
   if (inter) {
-    if (inter.kind === "buttons") body.appendChild(buttonsEditor(inter, cardSync));
-    else if (inter.kind === "list") body.appendChild(listEditor(inter, cardSync));
-    else if (inter.kind === "flow") body.appendChild(flowEditor(inter, cardSync));
-    else body.appendChild(templateEditor(inter, cardSync));
+    if (inter.kind === "buttons") body.append(buttonsEditor(inter, cardSync));
+    else if (inter.kind === "list") body.append(listEditor(inter, cardSync));
+    else if (inter.kind === "flow") body.append(flowEditor(inter, cardSync));
+    else body.append(templateEditor(inter, cardSync));
   }
 
-  const actions = el("div", "comp-actions");
-  actions.appendChild(iconBtn("copy", () => {
-    const copy: Message = JSON.parse(JSON.stringify(msg));
-    copy.id = "m" + Date.now().toString(36);
-    seen.add(copy); // open/closed like the card it came from
-    if (collapsed.has(msg)) collapsed.add(copy);
-    thread.messages.splice(i + 1, 0, copy);
-    redraw();
-  }, t("duplicate")));
-  actions.appendChild(iconBtn("trash-2", () => { thread.messages.splice(i, 1); redraw(); }, t("remove")));
-  body.appendChild(actions);
-
-  // Grid wrapper so the collapse can animate to the body's natural height. Without
-  // it `.comp.collapsed .comp-body-wrap` never matches and collapsing does nothing
-  // visible — the class flips, the chevron flips, and the body stays 644px tall.
-  const bodyWrap = el("div", "comp-body-wrap");
-  bodyWrap.appendChild(body);
-  card.appendChild(bodyWrap);
+  card = C.cardExpanded({
+    icon: icon(msg), title: title(msg), subtitle: summary(msg), body, gripTitle: t("dragToReorder"),
+    trailing: "badge", badge: msg.direction,
+    onCollapse: () => { collapsed.add(msg); redraw(); },
+    actions: [
+      C.button({ icon: "copy", label: t("duplicate"), sm: true, onClick: () => {
+        const copy: Message = JSON.parse(JSON.stringify(msg));
+        copy.id = "m" + Date.now().toString(36);
+        seen.add(copy); // open/closed like the card it came from
+        if (collapsed.has(msg)) collapsed.add(copy);
+        thread.messages.splice(i + 1, 0, copy);
+        redraw();
+      } }),
+      C.button({ icon: "trash-2", label: t("remove"), sm: true, onClick: () => { thread.messages.splice(i, 1); redraw(); } }),
+    ],
+  });
+  card.querySelector(".ui-card-head .ui-grip")?.addEventListener("pointerdown", drag(card));
   return card;
 }
 
 // ---- the composer ---------------------------------------------------------
 
-/** Render the composer for `thread` into `host`. `onChange` refreshes the preview. */
+/**
+ * Render the composer for `thread` into `host`: the contact, the thread
+ * options and the message cards. `onChange` runs after every edit (the screen
+ * keeps its toolbar meta current with it). Adding a message is the library
+ * screen's job — `addMessage` — so the composer has no picker of its own.
+ */
 export function renderComposer(thread: Thread, host: HTMLElement, onChange: Rerender): void {
   const redraw = (): void => { renderComposer(thread, host, onChange); onChange(); };
   // Value edits keep the DOM (and the caret); only structural ones rebuild it.
   const sync: ComposerSync = { soft: onChange, structural: redraw };
   currentThread = thread;
-  host.innerHTML = "";
+  host.replaceChildren();
 
-  host.appendChild(el("div", "section-label", t("chatContact")));
-  host.appendChild(label(t("chatName")));
-  host.appendChild(field(thread.contact.name, 40, (v) => { thread.contact.name = v; onChange(); }));
-  host.appendChild(label(t("chatPresence")));
-  host.appendChild(field(thread.contact.presence ?? "", 40,
-    (v) => { thread.contact.presence = v || undefined; onChange(); }, "online"));
-  host.appendChild(toggle(t("chatVerified"), !!thread.contact.verified,
-    (v) => { thread.contact.verified = v || undefined; onChange(); }));
+  host.append(C.section({ heading: t("chatContact") },
+    field(t("chatName"), thread.contact.name, 40, (v) => { thread.contact.name = v; onChange(); }),
+    field(t("chatPresence"), thread.contact.presence ?? "", 40, (v) => { thread.contact.presence = v || undefined; onChange(); }, "online"),
+    C.row({ icon: "badge-check", label: t("chatVerified"), trailing: "toggle",
+      toggle: { on: !!thread.contact.verified, onChange: (v) => { thread.contact.verified = v || undefined; onChange(); } } }),
+  ));
 
-  host.appendChild(el("div", "section-label", t("chatThread")));
-  host.appendChild(label(t("chatDateLabel")));
-  host.appendChild(field(thread.dateLabel ?? "", 20,
-    (v) => { thread.dateLabel = v || undefined; onChange(); }, "TODAY"));
-  host.appendChild(toggle(t("chatEncryption"), !!thread.showEncryptionNotice,
-    (v) => { thread.showEncryptionNotice = v || undefined; onChange(); }));
+  host.append(C.section({ heading: t("chatThread") },
+    field(t("chatDateLabel"), thread.dateLabel ?? "", 20, (v) => { thread.dateLabel = v || undefined; onChange(); }, "TODAY"),
+    C.row({ icon: "lock", label: t("chatEncryption"), trailing: "toggle",
+      toggle: { on: !!thread.showEncryptionNotice, onChange: (v) => { thread.showEncryptionNotice = v || undefined; onChange(); } } }),
+  ));
 
-  const head = el("div", "section-label section-row");
-  head.appendChild(el("span", undefined, t("chatMessages")));
-  const collapseAll = document.createElement("button");
-  collapseAll.className = "collapse-all";
-  collapseAll.type = "button";
-  const paintCollapseAll = (): void => {  // also installed as repaintCollapseAll below
-    collapseAll.style.display = thread.messages.length ? "" : "none";
-    collapseAll.textContent = t(anyExpanded(thread) ? "collapseAll" : "expandAll");
-  };
-  collapseAll.onclick = () => {
-    const collapse = anyExpanded(thread);
-    for (const toggle of cardToggles) toggle(collapse); // animates; also updates the set
-    paintCollapseAll();
-  };
-  head.appendChild(collapseAll);
-  host.appendChild(head);
-  repaintCollapseAll = paintCollapseAll;
-
-  cardToggles.length = 0; // rebuilt below, one per card
-  const list = el("div", "chat-list");
-  thread.messages.forEach((msg, i) => list.appendChild(messageCard(msg, i, thread, list, sync)));
-  paintCollapseAll();
-  if (!thread.messages.length) list.appendChild(el("div", "empty", t("chatNoMessages")));
-  host.appendChild(list);
-
-  // The same grouped, searchable picker the Flows palette uses, so adding a list
-  // menu is the same gesture as adding a component. Entries arrive fully formed.
-  const groups = CHAT_PALETTE_GROUPS
-    .map((g) => ({ label: g, options: CHAT_PALETTE.filter((e) => e.group === g).map((e) => ({ value: e.key, label: e.label })) }))
-    .filter((g) => g.options.length > 0);
-  const picker = el("div", "chat-add");
-  picker.appendChild(createDropdown({
-    value: "",
-    placeholder: t("chatAddPlaceholder"),
-    groups,
-    searchable: true,
-    searchPlaceholder: t("chatSearchMessage"),
-    resetAfterSelect: true,
-    onChange: (key) => {
-      const entry = CHAT_PALETTE.find((e) => e.key === key);
-      if (!entry) return;
-      const msg = entry.make();
-      openOnFirstRender(msg); // a freshly added message opens ready to edit
-      thread.messages.push(msg);
+  const list = el("div", "ui-list");
+  thread.messages.forEach((msg, i) => list.append(messageCard(msg, i, thread, list, sync)));
+  if (!thread.messages.length) list.append(C.hint("message-square-text", t("chatNoMessages")));
+  host.append(C.divider(), C.section({
+    heading: t("chatMessages"),
+    hint: thread.messages.length > 1 ? t("dragToReorder") : undefined,
+    action: thread.messages.length ? { label: t(anyExpanded(thread) ? "collapseAll" : "expandAll"), onClick: () => {
+      const collapse = anyExpanded(thread);
+      for (const m of thread.messages) { if (collapse) collapsed.add(m); else collapsed.delete(m); }
       redraw();
-    },
-  }));
-  host.appendChild(picker);
+    } } : undefined,
+  }, list));
 }

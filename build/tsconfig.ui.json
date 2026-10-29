@@ -16,6 +16,7 @@
     "../src/ui/**/*.ts",
     "../src/model/**/*.ts",
     "../src/shared/**/*.ts",
-    "../src/main/theme.ts"
+    "../src/main/theme.ts",
+    "../build/gallery.ts"
   ]
 }

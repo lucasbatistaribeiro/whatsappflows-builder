@@ -19,9 +19,9 @@ cara do WhatsApp na canvas.
 - **Telas** — adicione, remova e renomeie telas; marque as terminais.
 - **Editor de propriedades** — edite as propriedades reais de cada componente
   (input-type, opções, destino das ações, captions…), não só o rótulo.
-- **Prévia ao vivo** — um mockup de celular com uma aba por tela e uma aba de
+- **Prévia ao vivo** — um mockup de celular com um chip por tela e um de
   Resumo; as ações `navigate` do footer caminham entre as telas como no flow real.
-- **Aba Flow JSON** — um editor ao vivo sincronizado com o construtor visual nos
+- **Tela Flow JSON** — um editor ao vivo sincronizado com o construtor visual nos
   dois sentidos; JSON inválido é sinalizado, nunca aplicado.
 - **Validação** — confere as restrições do WhatsApp Flows (tela terminal precisa
   de Footer, destinos de `navigate` existem, limites por componente…). Erros
@@ -40,11 +40,12 @@ cara do WhatsApp na canvas.
 - **Editar atualiza a section de origem** — um flow carregado assim continua
   vinculado à sua section: a barra de cima mostra qual é, e **Gerar** vira
   **Atualizar**, reconstruindo aquela section no lugar em vez de deixar as telas
-  antigas para trás. Desvincule (o x do chip) para gerar uma section separada.
+  antigas para trás. Desvincule (a ação ao lado de Gerar) para gerar uma section
+  separada.
 - **A conversa atrás da folha** — um flow não abre num celular em branco: ele
   sobe como uma folha sobre a conversa em que foi enviado. As telas geradas
   desenham o cabeçalho do contato acima da folha, com **nome, foto e selo
-  verificado** configuráveis no menu, e em dois estilos: **atual** (claro, o
+  verificado** configuráveis em Configurações, e em dois estilos: **atual** (claro, o
   app desde 2021) ou **clássico** (a barra verde, medida da própria arte de
   Flows da Meta). Dá para desligar e voltar à folha sozinha.
 - **Modo Chat** — monte uma conversa do WhatsApp (balões, mídia, respostas
@@ -129,8 +130,11 @@ whatsappflows-builder/
 │  │
 │  └─ ui/                  iframe do plugin: DOM, sem API `figma`  ->  ui.html
 │     ├─ CLAUDE.md         as regras daqui (como verificar, 14px, wa-*, foco, i18n)
-│     ├─ ui.html           markup + CSS (tokens --figma-color-*) e o ponto onde o bundle entra
-│     ├─ ui.ts             orquestra tudo: telas, abas, menu, preferências, validação, Gerar
+│     ├─ ui.html           a casca (rail + painel), o CSS da página e o ponto onde o bundle entra
+│     ├─ tokens.css        os tokens de design, espelho das variáveis do Figma (claro/escuro)
+│     ├─ chrome.css        os componentes do chrome (.ui-*), medidos do Figma
+│     ├─ components.ts     os construtores DOM desses componentes (rail, toolbar, cards, campos…)
+│     ├─ ui.ts             orquestra tudo: as telas e a navegação, preferências, validação, Gerar
 │     ├─ bridge.ts         o postMessage da UI para o sandbox
 │     ├─ propEditor.ts     o editor de propriedades de cada componente
 │     ├─ preview.ts        o mockup de celular ao vivo (modo Flows)
@@ -205,9 +209,9 @@ render navigable, WhatsApp-styled mockups on the canvas.
 - **Screens** — add / remove / rename screens, mark terminal screens.
 - **Property editor** — edit each component's real props (input-type, options,
   action targets, captions…), not just the label.
-- **Live preview** — a WhatsApp phone mockup with a tab per screen + a Summary
-  tab; footer `navigate` actions walk between screens like the real flow.
-- **Flow JSON tab** — a live editor kept in sync with the visual builder in both
+- **Live preview** — a WhatsApp phone mockup with a chip per screen + a Summary
+  chip; footer `navigate` actions walk between screens like the real flow.
+- **Flow JSON screen** — a live editor kept in sync with the visual builder in both
   directions; invalid JSON is flagged, never applied.
 - **Validation** — lints WhatsApp Flows constraints (terminal needs a Footer,
   navigate targets exist, per-component limits…). Errors block generation and
@@ -225,11 +229,11 @@ render navigable, WhatsApp-styled mockups on the canvas.
 - **Edit updates the section it came from** — a flow loaded that way stays linked
   to its section: the top bar shows which one, and **Generate** becomes **Update**,
   rebuilding that section in place instead of leaving the old screens behind.
-  Unlink (the x on the chip) to generate a separate section instead.
+  Unlink (the action next to Generate) to generate a separate section instead.
 - **The conversation behind the sheet** — a flow never opens on a blank phone:
   it slides up over the chat it was sent in. Generated screens draw the
   business's chat header above the sheet, with **name, photo and verified
-  badge** set from the menu, in two eras: **current** (the light header, the
+  badge** set in Settings, in two eras: **current** (the light header, the
   app since 2021) or **classic** (the green bar, measured off Meta's own Flows
   artwork). Turn it off for the bare sheet.
 - **Chat mode** — compose a WhatsApp conversation (bubbles, media, quoted

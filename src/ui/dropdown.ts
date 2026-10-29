@@ -123,18 +123,20 @@ export function createDropdown(cfg: DDConfig): HTMLElement {
     // Close when the page/container scrolls (the fixed popup would detach),
     // but not when the user scrolls inside the list itself.
     const onScroll = (e: Event) => { if (!list.contains(e.target as Node)) close(); };
+    // A resize's target is `window`, not a node — `contains` would throw.
+    const onResize = () => close();
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
     setTimeout(() => {
       document.addEventListener("mousedown", onDocDown);
       window.addEventListener("scroll", onScroll, true);
-      window.addEventListener("resize", onScroll);
+      window.addEventListener("resize", onResize);
       document.addEventListener("keydown", onKey);
     }, 0);
 
     closeCurrent = () => {
       document.removeEventListener("mousedown", onDocDown);
       window.removeEventListener("scroll", onScroll, true);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
       document.removeEventListener("keydown", onKey);
       list.remove();
       dd.classList.remove("open");

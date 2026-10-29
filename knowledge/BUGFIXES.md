@@ -21,6 +21,22 @@ area so you don't have to read all of it.
 
 ---
 
+## The dropdown threw on window resize instead of closing
+
+**Symptom.** With a dropdown open, resizing the plugin window left the list
+floating where it was and logged an uncaught `Failed to execute 'contains' on
+'Node'`. Found by the UI tester during the new-chrome pass; it predates it.
+
+**Root cause.** `window.addEventListener("resize", onScroll)` reused the scroll
+handler, whose first line is `list.contains(e.target as Node)` — written to let
+the user scroll *inside* the list without closing it. A resize event's target
+is `window`, which is not a Node, so the check threw before `close()` ran.
+
+**Fix.** A resize has nothing inside the list to exempt, so it gets its own
+one-line handler that closes unconditionally (`src/ui/dropdown.ts`).
+
+---
+
 ## Selecting a generated conversation cried "invalid Flow JSON"
 
 **Symptom.** Clicking a section produced by chat mode popped an error toast:

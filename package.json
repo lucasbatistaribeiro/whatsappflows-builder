@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node build/esbuild.mjs",
     "watch": "node build/esbuild.mjs --watch",
+    "gallery": "node build/gallery.mjs",
     "typecheck": "npm run typecheck:main && npm run typecheck:ui",
     "typecheck:main": "tsc --project build/tsconfig.main.json",
     "typecheck:ui": "tsc --project build/tsconfig.ui.json"
