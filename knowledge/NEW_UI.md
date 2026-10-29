@@ -12,7 +12,7 @@ browser before the next starts.
 |---|---|---|
 | 1 · tokens | done | `src/ui/tokens.css`, inlined by the build |
 | 2 · components | done | `src/ui/components.ts` (DOM builders) + `src/ui/chrome.css` (`.ui-*`); `npm run gallery` renders every variant |
-| 3 · screens | next | `ui.ts`: the nine screens below, replacing the tabs, the mode switch and the drawer |
+| 3 · screens | done | `ui.ts`: a route per screen, each built from the components; the tabs, the mode switch and the drawer are gone |
 
 ## Where things are in the file
 
@@ -142,6 +142,24 @@ menu's Flow group; 02 ← `#screen-meta` + `#comp-list`; 03 ← `#palette`
 dropdown; 04 ← `#panel-preview`; 05 ← `#panel-json`; 06/07 ← `#chat-composer`;
 08 ← `#panel-chat-preview`; 09 ← `#menu`.
 
+## How the screens are wired (layer 3)
+
+`ui.ts` keeps one `route` (`home`, `screen`, `library`, `preview`, `json`,
+`chat`, `chatAdd`, `chatPreview`, `settings`, `pick`) and a `SCREENS` table of
+builders returning `{ toolbar, body, foot }`; `go()` swaps the three hosts in
+`ui.html` and moves the rail's current marker, `back()` follows `PARENT`.
+Value edits call `softSync()` (JSON + preview + banner, in place); structural
+ones call `structuralSync()` (rebuild the screen, keep the scroll). The
+elements the old code addressed by id (`#json`, `#preview`, `#generate`) now
+exist only while their screen is up, so every repaint looks them up and skips
+what is absent. Pickers (template, header style, size, themes, language) are a
+drill-in screen each, not dropdowns; the text prefs persist on commit.
+`chatComposer.ts` renders through the same builders and no longer owns the
+"add" picker — `addMessage()` is what the `chatAdd` screen calls.
+
+`.claude/agents/plugin-ui-tester.md` has the route table with what to query on
+each screen.
+
 ## Decisions taken (validate or revert)
 
 - **Back on the left** of the toolbar (the sketch's `Toolbar` frame had it on
@@ -153,4 +171,9 @@ dropdown; 04 ← `#panel-preview`; 05 ← `#panel-json`; 06/07 ← `#chat-compos
 - **Import / Copy JSON** leave Settings for Flow home.
 - The concept's flow name ("Barber booking") is a placeholder: the sample
   flow has no name. The title slot shows the template name or the imported
-  file name.
+  file name, and "Flow" for the sample.
+- **Left out of this pass** (in `knowledge/BACKLOG.md`): the search field on
+  Flow home, the rail's Help button, dragging a library card onto the list (tap
+  appends), the collapse animation on cards (expand/collapse rebuilds the list),
+  and the message and component editors' own field layout (they keep the
+  `.pe-*` structure, restyled).

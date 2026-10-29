@@ -1,6 +1,6 @@
 ---
 name: plugin-ui-tester
-description: Exercises the built plugin UI in a real browser — both generators. Flows: import/export JSON, templates, Generate, validation, preview, menu prefs, card editing. Chat: mode switch, composer, media and interactive bubbles. Plus dropdowns and i18n. Use when a UI change needs verifying end to end, or to smoke-test before shipping. Reports measured pass/fail per scenario and states plainly what can only be checked inside Figma.
+description: Exercises the built plugin UI in a real browser — both generators, through the rail + panel screens. Flows: import/export JSON, templates, Generate, validation, preview, settings, card editing. Chat: the rail switch, composer, media and interactive bubbles. Plus dropdowns and i18n. Use when a UI change needs verifying end to end, or to smoke-test before shipping. Reports measured pass/fail per scenario and states plainly what can only be checked inside Figma.
 tools: Bash, Read, Grep, Glob, mcp__Claude_Browser__preview_start, mcp__Claude_Browser__navigate, mcp__Claude_Browser__javascript_tool, mcp__Claude_Browser__read_console_messages, mcp__Claude_Browser__computer, mcp__Claude_Browser__read_page
 ---
 
@@ -41,13 +41,40 @@ window.parent.postMessage = (m, o) => { window.__sent.push(m); return orig(m, o)
 with `{type:'generated', screenCount}`, `{type:'error', message}`,
 `{type:'prefs', prefs}`, `{type:'importOffer', name, flow}`, `{type:'importOfferEnd'}`.
 
+## The chrome: rail + panel, one screen at a time
+
+The UI is a navigation rail (`.ui-rail`, buttons `[data-rail=flows|chat|settings]`
+plus `[data-rail=theme]`) beside one panel: `#toolbar-host` (the screen's
+toolbar), `#body` (its content) and `#foot-host` (an optional footer button).
+Every screen is rebuilt from `src/ui/components.ts` on navigation, so **re-query
+after every click** — `document.body.dataset.route` says which screen is up:
+
+| route | reached by | what to find |
+|---|---|---|
+| `home` | rail Flows | validation banner `#validation .ui-banner.ok/.err/.warn` + `.ui-issue` rows; one `.ui-card` per screen (`.selected` = current, `.err` = has errors); rows "New screen", "Live preview", "Flow JSON", "Template", "Import JSON", "Copy JSON"; `#generate` in the toolbar |
+| `screen` | tap a screen card | `.ui-field` Screen id / Title, the Terminal `.ui-switch` row, `#comp-list` with a `.ui-card` per component (`.open` = expanded, its editor is `.pe-form`), the "Add component" footer button; toolbar: Back, eye (preview), trash (delete screen) |
+| `library` | "Add component" | `.ui-search input`, `#library` with a `.ui-row` per palette group (count + caret; tap toggles) and a `.ui-card` per entry; tapping a card appends it, opens it and returns to `screen` |
+| `preview` | row "Live preview" / the eye | `#preview` with `.pv-tab` chips and `.wa-phone`; toolbar sun/moon flips the WhatsApp theme |
+| `json` | row "Flow JSON" | `#json-scope .dd`, `textarea#json`, `#json-status` (`.ui-pill.ok/.err` + text); toolbar Copy |
+| `chat` | rail Chat | `#chat-composer`: contact fields, thread rows, a `.ui-card` per message (`.ui-dir.in/.out` badge); "Add message" footer button; `#generate` |
+| `chatAdd` | "Add message" | like `library`, over `CHAT_PALETTE` |
+| `chatPreview` | the eye in Chat | `#chat-preview` with `.wa-c-*` bubbles |
+| `settings` | rail Settings | `.ui-row` per pref: toggles (`.ui-switch`) and value rows (`.ui-row-value`) that open a picker |
+| `pick` | a value row | one `.ui-row` per option; the current one carries the check icon and `.on` |
+
+Find rows by their label: `[...document.querySelectorAll('.ui-row')].find(r =>
+r.querySelector('.ui-row-label')?.textContent === 'Flow JSON')`; buttons by
+text. Back is the first `.ui-btn` in `.ui-toolbar` on drill-in screens.
+
 ## Scenarios
 
 **Load a flow — three real paths, test each:**
-- *JSON tab*: set `#json`.value, dispatch `input`. Exercises normalizeFlow +
-  validation + every render. Most reliable; use it to set up other tests.
-- *File import*: `#import` opens a hidden `#file` input. You cannot drive the OS
-  picker, but you can inject a file:
+- *Flow JSON screen*: set `#json`.value, dispatch `input`. Exercises
+  normalizeFlow + validation. Most reliable; use it to set up other tests. Note
+  the textarea only exists while that screen is up; the flow is the source and
+  the screens re-read it.
+- *File import*: the "Import JSON" row clicks a hidden `#file` input. You cannot
+  drive the OS picker, but you can inject a file:
   ```js
   const dt = new DataTransfer();
   dt.items.add(new File([json], 'flow.json', { type: 'application/json' }));
@@ -56,78 +83,84 @@ with `{type:'generated', screenCount}`, `{type:'error', message}`,
   input.dispatchEvent(new Event('change', { bubbles: true }));
   ```
   Also feed it malformed JSON and a flow with no `screens` — it must notify and
-  keep the previous flow, never half-render.
-- *Template picker*: `#template .dd` (see the dropdown gotcha below).
+  keep the previous flow, never half-render. A successful import lands on `home`
+  with the file name as the toolbar title.
+- *Template*: the "Template" row opens the `pick` screen listing `templates(lang)`;
+  tapping one loads it and returns home with the template's name as the title.
 
-**Export**: `#copy`. `navigator.clipboard` is usually unavailable here, so the code
-falls back to a notify — assert via the captured messages, not the clipboard. It is
-gated on validation: with an error present it must refuse and notify instead.
+**Export**: the "Copy JSON" row (home) or Copy (JSON screen). `navigator.clipboard`
+is usually unavailable here, so the code falls back to a notify — assert via the
+captured messages, not the clipboard. It is gated on validation: with an error
+present it must refuse and notify instead.
 
 **Generate**: assert the captured `{type:'generate', flow, options}` payload
-(options carry `os`, `theme`, `size`, `interactive`). Then drive the feedback
-states: busy (spinner, "Generating…", disabled, `body.generating`, `#gen-bar`
-visible, workspace skeletoned) → reply `generated` → done (check icon,
-"Generated!") → auto-idle. The busy state is held a minimum time (`MIN_BUSY_MS`),
-so probe across it rather than immediately. An `error` reply must clear busy at
-once and cancel the pending "done". Returning to idle must respect the validation
-gate: a flow with errors stays disabled.
+(options carry `os`, `theme`, `size`, `interactive`, the section fields and the
+contact). Then drive the feedback states: busy (spinner, "Generating…", disabled,
+`body.generating`, `#gen-bar` visible, lists skeletoned) → reply `generated` →
+done (check icon, "Generated!") → auto-idle. The busy state is held a minimum
+time (`MIN_BUSY_MS`), so probe across it rather than immediately. An `error`
+reply must clear busy at once and cancel the pending "done". Returning to idle
+must respect the validation gate: a flow with errors stays disabled. The button
+exists only on `home` and `chat`; navigating away and back must show the right
+state.
 
-**Validation**: the badge is hidden when clean, shows counts otherwise; error-level
-issues disable Generate and mark the offending screen chip.
+**Validation**: the home banner reads valid / `n errors found` / `n warnings`,
+with one `.ui-issue` per issue under it; an issue with a screen is a button that
+opens that screen's editor. Error-level issues disable Generate and mark the
+screen card `.err`.
 
-**Preview**: screen tabs (`.pv-tab`), footer `navigate` walking screens, Summary;
+**Preview**: screen chips (`.pv-tab`), footer `navigate` walking screens, Summary;
 interactive mode on (real typeable inputs, live `n / max` counter, selectable
 radios/checkboxes) vs off (static placeholder boxes); WhatsApp light/dark repaints
-the `--wa-*` vars; screen size sm/md/lg changes the phone aspect-ratio.
+the `--wa-*` vars (the toolbar icon and the Settings row are two ways to the same
+pref); screen size sm/md/lg changes the phone aspect-ratio.
 
-**Menu**: the combo boxes (see Dropdowns below) and the interactive switch;
-`savePrefs` is emitted on every change; the drawer opens from `#menu-btn`, closes
-via `#menu-close` / backdrop / Escape, marks the rest of the app `inert` while open
-and restores focus to the trigger on close.
+**Settings**: every toggle and picker emits `savePrefs`; the text fields persist on
+`change` (blur/Enter), not per keystroke. The rail's theme button flips
+`data-theme` between light and dark and swaps its own icon. A `prefs` message
+restores everything and reopens in the generator `prefs.mode` names.
 
-**Cards**: add from the palette, duplicate, delete, collapse/expand (plus
-collapse-all), and drag-reorder from the grip — after which the Flow JSON order
-must match the DOM order.
+**Cards**: add from the library, duplicate, delete, expand/collapse (tap the
+collapsed card / the chevron; plus the section's Collapse all / Expand all
+action), and drag-reorder from `.ui-grip` — after which the Flow JSON order must
+match the DOM order. Screens drag the same way on `home`. Typing in an expanded
+card's field must keep the caret: the card title/subtitle update in place
+(`setCardText`) and only structural edits rebuild the list.
 
-**i18n**: run the key flows in both `en` and `pt`.
+**i18n**: run the key flows in both `en` and `pt` (Settings → Language). The
+screen rebuilds with the new strings; the rail tooltips too.
 
 ## Chat mode
 
-The plugin has **two generators**, switched by a segmented control in the top bar
-next to the hamburger (`.mode-switch .seg-item[data-mode]`). Flows and Chat have
-different models, panels and Generate payloads, so test the switch itself as well
-as what's inside.
-
-**The switch** must, per mode: show exactly **one** tab row and the right one
-(`.tabs` for Flows, `.tabs.chat-tabs` for Chat — a specificity tie once made both
-render at once, BUGFIXES); hide the screen rail and the validation badge in Chat;
-remember the tab each mode was on across a round trip; and persist via `savePrefs`
-with `prefs.mode`. A `prefs` message with `mode: "chat"` must reopen in Chat.
+The plugin has **two generators**, chosen on the rail. Flows and Chat have
+different models, screens and Generate payloads, so test the switch itself as
+well as what's inside: `prefs.mode` persists via `savePrefs`, and a `prefs`
+message with `mode: "chat"` must reopen on `chat`.
 
 **The validation gate is mode-scoped.** Break the flow (make every screen terminal
-with no children → errors), then check Generate is **disabled in Flows and enabled
-in Chat**, and that Chat still emits `generateChat` with a `thread`. A flow error
-must never block generating a conversation.
+with no children → errors), then check Generate is **disabled on `home` and
+enabled on `chat`**, and that Chat still emits `generateChat` with a `thread`. A
+flow error must never block generating a conversation.
 
-**The composer** (`#chat-composer`, Chat → Compose) edits contact, thread options
-and the message list. Cards reuse the Flows machinery, so grip-drag, accordion,
-duplicate and delete all behave the same — and `startDrag` is now shared
+**The composer** (`#chat-composer`) edits contact, thread options and the message
+list. Cards are the same component as the Flows list, so grip-drag, accordion,
+duplicate and delete all behave the same — and `startDrag` is shared
 (`src/ui/drag.ts`), so **a drag regression in one generator means checking both**.
 Assert the reorder by comparing the rendered order against the cards, not by
 eyeballing.
 
-- Cards start **collapsed**; a message added from the toolbar opens; a duplicate
-  mirrors the card it came from.
+- Cards start **collapsed**; a message added from the `chatAdd` library opens; a
+  duplicate mirrors the card it came from.
 - Switching direction to Incoming clears the status and hides the Status field;
   switching back must restore a status, or the dropdown shows "Sent" over an
   undefined value and the preview renders no tick (this was a real bug).
 - **Every capped field takes its `maxlength` from `LIMITS`** in
-  `src/model/chatTypes.ts`, and each "add" button disables at the cap showing the
+  `src/model/chatTypes.ts`, and each "add" link disables at the cap showing the
   count. Read the expected numbers from that file, never from this doc. The one
   worth checking by name: a reply-button label caps at **20**, a template button's
   at **25** — conflating them is the documented trap.
 
-**The bubbles** (Chat → Preview): text, the four media types, and the interactive
+**The bubbles** (`chatPreview`): text, the four media types, and the interactive
 patterns.
 
 - Media: a voice note draws a play glyph, a playhead, a bar waveform of varying
@@ -153,29 +186,21 @@ Every picker is the project's own control (`src/ui/dropdown.ts`), not a native
 (`resetAfterSelect` — the trigger falls back to its placeholder after choosing) and
 **value-keeping** (the trigger shows the current selection).
 
-**Add component** (`#palette`) — action-style, grouped and searchable:
-- Groups render with headers in order Text → Input → Selection → Media → Action,
-  and the options match `PALETTE` in `src/model/palette.ts`. Assert against the
-  source (read it) rather than a hardcoded count, so the test survives new
-  components.
-- The filter box narrows options as you type **and hides group headers whose
-  options are all filtered out**; `Enter` picks the first still-visible option;
-  `Escape` closes without selecting.
-- Choosing appends that component to the current screen (Build list grows, Flow
-  JSON updates) and the trigger **returns to the placeholder** instead of showing
-  the picked value.
-- Search a term matching nothing: the list should be empty with no stray headers.
+The component and message libraries and the Settings pickers are **screens**,
+not dropdowns (see the route table). Dropdowns remain in three places: the JSON
+screen's scope (`#json-scope .dd`, value-keeping), the property editor's selects
+inside an expanded component card, and the message card's direction / type /
+status / interactive pickers. All are value-keeping.
 
-**Menu pickers** — `#template` (action-style, `mini`) plus the value-keeping
-`#size-dd`, `#wa-theme-dd`, `#app-theme-dd`, `#lang-dd`:
-- Each opens showing the **current pref** as its value.
-- Changing one applies its effect (size → phone aspect-ratio; WhatsApp theme →
-  `--wa-*` repaint; plugin theme → `data-theme`; language → retranslation) and
-  emits `savePrefs`.
-- `#template` loads the flow, closes the drawer, and resets to its placeholder.
-- After a language change the menu pickers are **rebuilt**: option labels must be
-  retranslated while each selection is preserved (re-query them; the old nodes are
-  gone).
+**The library screens** (`library`, `chatAdd`):
+- Groups render as rows in order Text → Input → Selection → Media → Action (chat:
+  Text → Media → Interactive), with a count, and the cards match `PALETTE` /
+  `CHAT_PALETTE` in `src/model`. Assert against the source (read it) rather than
+  a hardcoded count, so the test survives new components.
+- The search field narrows cards as you type and opens every group that still
+  has a match; a term matching nothing shows one "Nothing matches" hint.
+- Tapping a card appends the component / message, which opens for editing, and
+  returns to the editor screen.
 
 **Shared behaviour, worth one pass on any single dropdown:**
 - The open list is appended to `<body>` with `position: fixed` and its width matched
@@ -243,9 +268,14 @@ displayed, say that the visual check was not possible instead of implying you ey
 - **Re-query after a re-render.** Several handlers replace nodes (the chevron via
   `replaceChildren`, the menu combos on language change); a reference captured
   earlier measures a detached node and reads 0×0.
-- **The screens rail is Build-only** — hidden on Preview and Flow JSON.
-- **Dragging** is pointer events: `pointerdown` on `.comp-grip`, then
+- **Navigation rebuilds the screen.** `go()` replaces `#toolbar-host`, `#body`
+  and `#foot-host`; a reference captured on another screen is detached.
+- **Dragging** is pointer events: `pointerdown` on `.ui-grip`, then
   `pointermove`/`pointerup` on `document`. Geometry is snapshotted at drag start.
+- **The browser page has no fixed size.** The plugin runs at 500×740 (`showUI`);
+  to see the layout as Figma shows it, size `.ui-app` with an injected style
+  (`.ui-app{width:500px;height:740px}`) rather than the viewport emulation, which
+  lays the page out at 980px.
 - Read `mcp__Claude_Browser__read_console_messages` (or hook `window.onerror`) —
   a silent exception can leave a panel half-rendered while everything looks fine.
 

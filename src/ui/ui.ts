@@ -1,34 +1,116 @@
-// Plugin UI: a lightweight WhatsApp Flows "playground" — compose screens with a
-// palette, edit the Flow JSON live (two-way), export it, and generate in Figma.
+// Plugin UI: a WhatsApp Flows "playground" — compose screens, edit the Flow
+// JSON live (two-way), preview a phone mockup and generate in Figma. The chrome
+// is the rail + panel structure of knowledge/NEW_UI.md: a navigation rail
+// (Flows · Chat · Settings) beside one panel that shows a single screen at a
+// time, built from the components in components.ts.
 import type { FlowJSON, Screen, Component } from "../model/flowTypes";
 import { screenChildren } from "../model/flowTypes";
-import { PALETTE } from "../model/palette";
+import { PALETTE, type PaletteEntry } from "../model/palette";
 import { SAMPLE_FLOW, sampleFlow } from "../model/sample";
 import { templates } from "../model/templates";
 import { postToMain } from "./bridge";
 import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme, setPreviewBusiness, setPreviewChat } from "./preview";
 import { renderChat } from "./chat";
-import { renderComposer } from "./chatComposer";
+import { renderComposer, addMessage } from "./chatComposer";
 import { sampleThread, type Thread } from "../model/chatTypes";
+import { CHAT_PALETTE, CHAT_PALETTE_GROUPS } from "../model/chatPalette";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
-import { iconEl, applyIcons } from "./icons";
+import { applyIcons } from "./icons";
 import { createDropdown } from "./dropdown";
 import { startDrag } from "./drag";
 import { t, setLang, applyI18n, type Lang } from "./i18n";
+import * as C from "./components";
 import type { Prefs, ThemePref, GenOptions, ScreenSize, PreviewTheme, Mode } from "../shared/messages";
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T;
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v));
 
 let flow: FlowJSON = clone(SAMPLE_FLOW);
+let flowName = ""; // the template or file the flow came from; empty = the sample
 let current = 0; // selected screen index
 
 function screen(): Screen {
   return flow.screens[current];
 }
 
-// ---- Rendering ----------------------------------------------------------
+// ---- Routing ------------------------------------------------------------
+// One screen at a time in the panel. Each rail destination has a root screen;
+// the others drill in from it and come back with the toolbar's Back.
+
+type Route = "home" | "screen" | "library" | "preview" | "json" | "chat" | "chatAdd" | "chatPreview" | "settings" | "pick";
+type PickerId = "template" | "headerStyle" | "size" | "waTheme" | "appTheme" | "lang";
+
+const PARENT: Record<Route, Route> = {
+  home: "home", screen: "home", library: "screen", preview: "home", json: "home",
+  chat: "chat", chatAdd: "chat", chatPreview: "chat",
+  settings: "settings", pick: "settings",
+};
+const railOf = (r: Route): C.RailKey => (r.startsWith("chat") ? "chat" : r === "settings" || r === "pick" ? "settings" : "flows");
+
+let route: Route = "home";
+let picker: PickerId = "template";
+let pickedFrom: Route = "settings"; // a picker returns to the screen that opened it
+
+function go(r: Route, p?: PickerId): void {
+  if (r === "pick" && route !== "pick") pickedFrom = route;
+  route = r;
+  if (p) picker = p;
+  render();
+  $("#body").scrollTop = 0;
+}
+const back = (): void => go(route === "pick" ? pickedFrom : PARENT[route]);
+
+interface ScreenView { toolbar: HTMLElement; body: HTMLElement[]; foot?: HTMLElement }
+
+function render(): void {
+  const view = SCREENS[route]();
+  $("#toolbar-host").replaceChildren(view.toolbar);
+  $("#body").replaceChildren(...view.body);
+  $("#foot-host").replaceChildren(...(view.foot ? [view.foot] : []));
+  C.setRailActive($("#rail-host"), railOf(route));
+  document.body.dataset.route = route;
+  repaintGenerate();
+}
+
+// ---- Icons and summaries for the lists ------------------------------------
+
+const TYPE_ICON: Record<string, string> = {
+  TextHeading: "type", TextSubheading: "type", TextBody: "type", TextCaption: "type", RichText: "type",
+  TextInput: "text-cursor-input", TextArea: "text-cursor-input", DatePicker: "calendar", CalendarPicker: "calendar",
+  PhotoPicker: "image", DocumentPicker: "file-text", OptIn: "square-check",
+  RadioButtonsGroup: "circle-dot", CheckboxGroup: "square-check", Dropdown: "chevrons-up-down", ChipsSelector: "tag",
+  Image: "image", ImageCarousel: "image", NavigationList: "list", EmbeddedLink: "link",
+  Footer: "mouse-pointer-click", Form: "frame",
+};
+const GROUP_ICON: Record<PaletteEntry["group"], string> = {
+  Text: "type", Input: "text-cursor-input", Selection: "list-checks", Media: "image", Action: "corner-down-right",
+};
+const typeIcon = (type: string): string => TYPE_ICON[type] ?? "box";
+
+// One line under a component's type: the text people would recognise it by.
+function componentSummary(c: Component): string {
+  const r = c as Record<string, unknown>;
+  const ds = r["data-source"];
+  const opts = Array.isArray(ds) ? ` · ${t("nOptions", [ds.length])}` : "";
+  if (c.type === "Footer") {
+    const action = r["on-click-action"] as { name?: string; next?: { name?: string } } | undefined;
+    const target = action?.next?.name;
+    return `${String(r.label ?? "")}${target ? ` → ${target}` : action?.name ? ` · ${action.name}` : ""}`;
+  }
+  if (c.type === "NavigationList") return t("nItems", [(r["list-items"] as unknown[] | undefined)?.length ?? 0]);
+  if (c.type === "ImageCarousel") return t("nItems", [(r.images as unknown[] | undefined)?.length ?? 0]);
+  if (c.type === "Image") return "base64";
+  if (typeof r.text === "string") return r.text;
+  return `${String(r.label ?? "")}${opts}`;
+}
+
+function screenSummary(s: Screen): string {
+  const n = screenChildren(s).length;
+  return `${s.title ?? ""} · ${t("nComponents", [n])}${s.terminal ? ` · ${t("terminal").toLowerCase()}` : ""}`;
+}
+
+// ---- Validation -----------------------------------------------------------
 
 // Screen ids that carry at least one error-level validation issue.
 function errorScreenIds(): Set<string> {
@@ -36,160 +118,135 @@ function errorScreenIds(): Set<string> {
   for (const issue of validateFlow(flow)) if (issue.level === "error" && issue.screen) set.add(issue.screen);
   return set;
 }
+const errorCount = (): number => validateFlow(flow).filter((i) => i.level === "error").length;
 
-function renderScreens(): void {
-  const host = $("#screens");
-  host.innerHTML = "";
+// The banner on Flow home: one line for the state, then the issues under it.
+function validationBlock(): HTMLElement {
+  const issues = validateFlow(flow);
+  const errors = issues.filter((i) => i.level === "error").length;
+  const warnings = issues.length - errors;
+  const host = C.el("div", "ui-list");
+  host.id = "validation";
+  if (errors > 0) host.append(C.banner("err", errors === 1 ? t("errorFound") : t("errorsFound", [errors])));
+  else if (warnings > 0) host.append(C.banner("warn", warnings === 1 ? t("warningFound") : t("warningsFound", [warnings])));
+  else host.append(C.banner("ok", t("validOk")));
+  for (const issue of issues) host.append(issueRow(issue));
+  return host;
+}
+
+function issueRow(issue: Issue): HTMLElement {
+  const row = C.el(issue.screen ? "button" : "div", `ui-issue ${issue.level}`);
+  if (issue.screen) (row as HTMLButtonElement).type = "button";
+  row.append(C.ic(issue.level === "error" ? "circle-alert" : "triangle-alert", "sm"));
+  if (issue.screen) row.append(C.el("b", "", issue.screen));
+  row.append(C.el("span", "", t(issue.key, issue.params)));
+  if (issue.screen) {
+    row.addEventListener("click", () => {
+      const idx = flow.screens.findIndex((s) => s.id === issue.screen);
+      if (idx >= 0) { current = idx; go("screen"); }
+    });
+  }
+  return row;
+}
+
+// ---- Screen 01 · Flow home ------------------------------------------------
+
+function flowTitle(): string { return flowName || t("flowUntitled"); }
+function flowMeta(): string {
+  if (isLinked()) return t("linkedMeta", [linkedName]);
+  const n = flow.screens.length;
+  return n === 1 ? t("flowMetaOne", [flow.version]) : t("flowMeta", [n, flow.version]);
+}
+
+function homeScreen(): ScreenView {
+  const actions: HTMLElement[] = [];
+  if (isLinked()) actions.push(C.button({ icon: "link", title: t("unlink"), onClick: () => { setLinkedSection(undefined, ""); render(); } }));
+  actions.push(generateButton());
+  const toolbar = C.toolbar({ title: flowTitle(), meta: flowMeta(), actions });
+
+  const list = C.el("div", "ui-list");
   const errs = errorScreenIds();
   flow.screens.forEach((s, i) => {
-    const chip = document.createElement("div");
-    chip.className = "chip" + (i === current ? " active" : "") + (errs.has(s.id) ? " has-error" : "");
-    const label = document.createElement("span");
-    label.textContent = s.id + (s.terminal ? " ●" : "");
-    label.onclick = () => { current = i; renderAll(); };
-    chip.appendChild(label);
-    if (flow.screens.length > 1) {
-      const x = document.createElement("span");
-      x.className = "x"; x.title = "Delete screen";
-      x.appendChild(iconEl("x", 16));
-      x.onclick = (e) => { e.stopPropagation(); flow.screens.splice(i, 1); current = Math.max(0, current - (i <= current ? 1 : 0)); syncAndRender(); };
-      chip.appendChild(x);
-    }
-    host.appendChild(chip);
+    const card = C.card({
+      icon: "phone", title: s.id, subtitle: screenSummary(s), selected: i === current,
+      gripTitle: t("dragToReorder"), onClick: () => { current = i; go("screen"); },
+    });
+    if (errs.has(s.id)) card.classList.add("err");
+    card.querySelector(".ui-grip")?.addEventListener("pointerdown", (e) => {
+      const sel = flow.screens[current];
+      startDrag(e as PointerEvent, card, list, flow.screens, () => { current = Math.max(0, flow.screens.indexOf(sel)); syncAndRender(); });
+    });
+    list.append(card);
   });
-  const add = document.createElement("button");
-  add.className = "chip add"; add.title = "Add screen";
-  add.appendChild(iconEl("plus", 16));
-  add.appendChild(document.createTextNode(t("addScreen")));
-  add.onclick = () => {
-    const id = uniqueId("SCREEN");
-    flow.screens.push({ id, title: "New screen", layout: { type: "SingleColumnLayout", children: [] } });
-    current = flow.screens.length - 1;
-    syncAndRender();
-  };
-  host.appendChild(add);
+  const screens = C.section({ heading: t("screens"), hint: flow.screens.length > 1 ? t("dragToReorder") : undefined },
+    validationBlock(), list,
+    C.row({ icon: "plus", label: t("newScreen"), trailing: "none", action: true, onClick: () => {
+      const id = uniqueId("SCREEN");
+      flow.screens.push({ id, title: "New screen", layout: { type: "SingleColumnLayout", children: [] } });
+      current = flow.screens.length - 1;
+      syncJson();
+      go("screen");
+    } }),
+  );
+
+  const view = C.section({ heading: t("view") },
+    C.row({ icon: "eye", label: t("livePreview"), onClick: () => go("preview") }),
+    C.row({ icon: "code-xml", label: t("flowJson"), onClick: () => go("json") }),
+  );
+  const flowSec = C.section({ heading: t("groupFlow") },
+    C.row({ icon: "layout-template", label: t("template"), trailing: "value", value: flowName || t("templateNone"), onClick: () => go("pick", "template") }),
+    C.row({ icon: "import", label: t("import"), trailing: "none", action: true, onClick: () => ($("#file") as HTMLInputElement).click() }),
+    C.row({ icon: "copy", label: t("copy"), trailing: "none", action: true, onClick: copyJson }),
+  );
+  return { toolbar, body: [screens, C.divider(), view, C.divider(), flowSec] };
 }
 
-function renderScreenMeta(): void {
-  const host = $("#screen-meta");
+// ---- Screen 02 · Screen editor -------------------------------------------
+
+function screenEditor(): ScreenView {
   const s = screen();
-  host.innerHTML = "";
+  const actions = [C.button({ icon: "eye", title: t("livePreview"), onClick: () => go("preview") })];
+  if (flow.screens.length > 1) {
+    actions.push(C.button({ icon: "trash-2", title: t("deleteScreen"), onClick: () => {
+      flow.screens.splice(current, 1);
+      current = Math.max(0, current - 1);
+      syncJson();
+      go("home");
+    } }));
+  }
+  const toolbar = C.toolbar({ title: s.id, meta: t("screenMeta", [current + 1, flow.screens.length]), back: { title: t("back"), onClick: back }, actions });
 
-  host.appendChild(fieldLabel(t("screenId")));
-  host.appendChild(textField(s.id, (v) => { s.id = v.trim() || s.id; syncJson(); }));
-
-  host.appendChild(fieldLabel(t("title")));
-  host.appendChild(textField(s.title ?? "", (v) => { s.title = v; syncJson(); }));
-
-  host.appendChild(fieldLabel(t("terminal")));
-  const cb = document.createElement("input");
-  cb.type = "checkbox"; cb.checked = !!s.terminal;
+  const idField = C.field({ label: t("screenId"), value: s.id, required: true, mono: true, onInput: (v) => {
+    s.id = v.trim() || s.id;
+    C.setToolbarText(toolbar, s.id);
+    softSync();
+  } });
+  const titleField = C.field({ label: t("title"), value: s.title ?? "", required: true, onInput: (v) => { s.title = v; softSync(); } });
   // Keep `success` in lockstep with `terminal` — it's a terminal-only property,
   // so a stale `success` on a non-terminal screen would be rejected on import.
-  cb.onchange = () => {
-    s.terminal = cb.checked || undefined;
-    s.success = cb.checked ? true : undefined;
-    renderScreens(); syncJson();
-  };
-  host.appendChild(cb);
-}
+  const terminal = C.row({ icon: "flag", label: t("terminalScreen"), trailing: "toggle", toggle: { on: !!s.terminal, onChange: (on) => {
+    s.terminal = on || undefined;
+    s.success = on ? true : undefined;
+    softSync();
+  } } });
+  const meta = C.section({ heading: t("screenSection") }, idField, titleField, terminal);
 
-const PALETTE_GROUPS = ["Text", "Input", "Selection", "Media", "Action"] as const;
+  const kids = screenChildren(s);
+  const list = C.el("div", "ui-list");
+  list.id = "comp-list";
+  kids.forEach((c, i) => list.append(componentCard(c, i, kids, list)));
+  if (kids.length === 0) list.append(C.hint("box", t("noComponents")));
+  const comps = C.section({
+    heading: t("components"),
+    action: kids.length ? { label: t(anyExpanded() ? "collapseAll" : "expandAll"), onClick: () => {
+      const collapse = anyExpanded();
+      for (const c of kids) { if (collapse) COLLAPSED.add(c); else COLLAPSED.delete(c); }
+      structuralSync();
+    } } : undefined,
+  }, list);
 
-function renderPalette(): void {
-  const host = $("#palette");
-  host.innerHTML = "";
-  const groups = PALETTE_GROUPS
-    .map((g) => ({ label: g, options: PALETTE.filter((e) => e.group === g).map((e) => ({ value: e.type, label: e.label })) }))
-    .filter((g) => g.options.length > 0);
-
-  host.appendChild(createDropdown({
-    value: "",
-    placeholder: t("palettePlaceholder"),
-    groups,
-    searchable: true,
-    searchPlaceholder: t("searchComponent"),
-    resetAfterSelect: true,
-    onChange: (type) => {
-      const entry = PALETTE.find((e) => e.type === type);
-      if (entry) { screenChildren(screen()).push(entry.make()); syncAndRender(); }
-    },
-  }));
-}
-
-function renderComponentList(): void {
-  const host = $("#comp-list");
-  const kids = screenChildren(screen()); // descends into a Form container if present
-  host.innerHTML = "";
-  cardToggles.length = 0; // rebuilt below, one per card
-  updateCollapseAll();
-  if (kids.length === 0) {
-    const e = document.createElement("div");
-    e.className = "empty"; e.textContent = t("noComponents");
-    host.appendChild(e);
-    return;
-  }
-  kids.forEach((c, i) => {
-    const isCollapsed = COLLAPSED.has(c);
-    const card = document.createElement("div");
-    card.className = "comp" + (isCollapsed ? " collapsed" : "");
-
-    const row = document.createElement("div");
-    row.className = "row";
-
-    // Header: drag grip · component name · accordion chevron.
-    const grip = document.createElement("span");
-    grip.className = "comp-grip"; grip.title = t("dragToReorder");
-    grip.appendChild(iconEl("grip-vertical", 16));
-    grip.addEventListener("pointerdown", (e) => startDrag(e, card, host, kids, syncAndRender));
-
-    const head = document.createElement("div");
-    head.className = "comp-head";
-    const type = document.createElement("span");
-    type.className = "type"; type.textContent = c.type;
-    head.appendChild(type);
-
-    const chev = document.createElement("span");
-    chev.className = "comp-chev";
-    chev.appendChild(iconEl(isCollapsed ? "chevron-down" : "chevron-up", 16));
-
-    // Toggle in place (class only) so the body animates instead of re-rendering.
-    const setCollapsed = (collapse: boolean): void => {
-      card.classList.toggle("collapsed", collapse);
-      if (collapse) COLLAPSED.add(c);
-      else COLLAPSED.delete(c);
-      chev.replaceChildren(iconEl(collapse ? "chevron-down" : "chevron-up", 16));
-    };
-    cardToggles.push(setCollapsed); // reused by the collapse/expand-all button
-    const toggle = (): void => setCollapsed(!card.classList.contains("collapsed"));
-    head.onclick = toggle;
-    chev.onclick = toggle;
-    row.append(grip, head, chev);
-    card.appendChild(row);
-
-    const ids = flow.screens.map((s) => s.id);
-    const editor = buildPropEditor(c, ids, { soft: softSync, structural: structuralSync });
-    editor.classList.add("comp-body");
-    // Duplicate + delete live at the end of the card's own content, so they
-    // collapse with it.
-    const actions = document.createElement("div");
-    actions.className = "comp-actions";
-    actions.appendChild(iconBtn("copy", () => {
-      const copy = clone(c); // deep copy: the duplicate keeps every filled value
-      if (copy.name) copy.name = uniqueComponentName(copy.name, kids);
-      if (COLLAPSED.has(c)) COLLAPSED.add(copy); // open/closed like the card it came from
-      kids.splice(i + 1, 0, copy); // right below the original
-      syncAndRender();
-    }, t("duplicate")));
-    actions.appendChild(iconBtn("trash-2", () => { kids.splice(i, 1); syncAndRender(); }, t("remove")));
-    editor.appendChild(actions);
-    // Grid wrapper so the collapse can animate to the body's natural height.
-    const bodyWrap = document.createElement("div");
-    bodyWrap.className = "comp-body-wrap";
-    bodyWrap.appendChild(editor);
-    card.appendChild(bodyWrap);
-    host.appendChild(card);
-  });
+  const foot = C.el("div", "ui-foot", C.button({ icon: "plus", label: t("addComponent"), style: "soft", onClick: () => go("library") }));
+  return { toolbar, body: [meta, comps], foot };
 }
 
 // Tracks which components are collapsed, keyed by the component object so the
@@ -202,6 +259,7 @@ const COLLAPSED = new WeakSet<object>();
 function collapseAllCards(f: FlowJSON): void {
   for (const s of f.screens) for (const c of screenChildren(s)) COLLAPSED.add(c);
 }
+const anyExpanded = (): boolean => screenChildren(screen()).some((c) => !COLLAPSED.has(c));
 
 // A duplicate can't reuse the source's `name`: names must be unique per screen
 // (validate.ts vDupName), so a verbatim copy would always land as an error.
@@ -213,34 +271,344 @@ function uniqueComponentName(base: string, kids: Component[]): string {
   return `${stem}_${n}`;
 }
 
-// One in-place collapse setter per rendered card, so "collapse all" can animate
-// the existing cards instead of re-rendering them.
-const cardToggles: ((collapse: boolean) => void)[] = [];
+function componentCard(c: Component, i: number, kids: Component[], list: HTMLElement): HTMLElement {
+  const drag = (card: HTMLElement) => (e: Event) => startDrag(e as PointerEvent, card, list, kids, syncAndRender);
+  if (COLLAPSED.has(c)) {
+    const card = C.card({ icon: typeIcon(c.type), title: c.type, subtitle: componentSummary(c), gripTitle: t("dragToReorder"),
+      onClick: () => { COLLAPSED.delete(c); structuralSync(); } });
+    card.querySelector(".ui-grip")?.addEventListener("pointerdown", drag(card));
+    return card;
+  }
+  const ids = flow.screens.map((s) => s.id);
+  let card: HTMLElement;
+  const editor = buildPropEditor(c, ids, {
+    soft: () => { C.setCardText(card, c.type, componentSummary(c)); softSync(); },
+    structural: structuralSync,
+  });
+  card = C.cardExpanded({
+    icon: typeIcon(c.type), title: c.type, subtitle: componentSummary(c), body: editor, gripTitle: t("dragToReorder"),
+    onCollapse: () => { COLLAPSED.add(c); structuralSync(); },
+    actions: [
+      C.button({ icon: "copy", label: t("duplicate"), sm: true, onClick: () => {
+        const copy = clone(c); // deep copy: the duplicate keeps every filled value
+        if (copy.name) copy.name = uniqueComponentName(copy.name, kids);
+        kids.splice(i + 1, 0, copy); // right below the original
+        syncAndRender();
+      } }),
+      C.button({ icon: "trash-2", label: t("remove"), sm: true, onClick: () => { kids.splice(i, 1); syncAndRender(); } }),
+    ],
+  });
+  card.querySelector(".ui-grip")?.addEventListener("pointerdown", drag(card));
+  return card;
+}
 
-// "Collapse all" toggle in the component-list header: collapse every card while
-// any is open, otherwise expand them all.
-function anyExpanded(): boolean {
-  return screenChildren(screen()).some((c) => !COLLAPSED.has(c));
+// ---- Screen 03 · Component library ---------------------------------------
+
+const PALETTE_GROUPS = ["Text", "Input", "Selection", "Media", "Action"] as const;
+const openGroups = new Set<string>(["Text"]);
+
+function libraryScreen(): ScreenView {
+  const toolbar = C.toolbar({ title: t("addComponent"), meta: t("addComponentTo", [screen().id]), back: { title: t("back"), onClick: back } });
+  const list = C.el("div", "ui-list");
+  list.id = "library";
+  let q = ""; // per visit: the field opens empty, so the list must too
+  const paint = (): void => {
+    list.replaceChildren();
+    for (const g of PALETTE_GROUPS) {
+      const entries = PALETTE.filter((e) => e.group === g && (!q || e.label.toLowerCase().includes(q) || e.type.toLowerCase().includes(q)));
+      if (!entries.length) continue;
+      const open = q ? true : openGroups.has(g);
+      list.append(C.row({ icon: GROUP_ICON[g], label: g, trailing: "count", count: entries.length, on: open, onClick: () => {
+        if (openGroups.has(g)) openGroups.delete(g); else openGroups.add(g);
+        paint();
+      } }));
+      if (!open) continue;
+      for (const e of entries) {
+        list.append(C.card({ icon: typeIcon(e.type), title: e.label, subtitle: e.type, plain: true, trailing: "none", onClick: () => {
+          const made = e.make();
+          screenChildren(screen()).push(made);
+          COLLAPSED.delete(made); // a freshly added component opens ready to edit
+          syncJson();
+          go("screen");
+        } }));
+      }
+    }
+    if (!list.children.length) list.append(C.hint("search", t("noMatches")));
+  };
+  paint();
+  const search = C.section({ heading: t("search") }, C.searchField({ placeholder: t("searchComponent"), onInput: (v) => { q = v.trim().toLowerCase(); paint(); } }));
+  const comps = C.section({ heading: t("components") }, list, C.hint("mouse-pointer-click", t("componentHint")));
+  return { toolbar, body: [search, comps] };
 }
-function updateCollapseAll(): void {
-  const btn = document.querySelector<HTMLElement>("#collapse-all");
-  if (!btn) return;
-  const kids = screenChildren(screen());
-  btn.style.display = kids.length ? "" : "none";
-  btn.textContent = t(anyExpanded() ? "collapseAll" : "expandAll");
+
+// ---- Screen 04 · Live preview ---------------------------------------------
+
+function previewScreen(): ScreenView {
+  const toolbar = C.toolbar({
+    title: t("livePreview"), meta: prefs.interactive ? t("previewMeta") : "", back: { title: t("back"), onClick: back },
+    actions: [C.button({ icon: prefs.previewTheme === "dark" ? "sun" : "moon", title: t("waTheme"), onClick: () => {
+      setWaTheme(prefs.previewTheme === "dark" ? "light" : "dark");
+      render();
+    } })],
+  });
+  const host = C.el("div", "");
+  host.id = "preview";
+  const sec = C.section({ tight: true }, host);
+  // Lay out after the host is in the document: the phone scales to its width.
+  queueMicrotask(() => renderPreview(flow, host, screen().id, errorScreenIds()));
+  return { toolbar, body: [sec] };
 }
-$("#collapse-all").addEventListener("click", () => {
-  const collapse = anyExpanded();
-  // Drive the existing cards (each setter also updates COLLAPSED) so they animate.
-  for (const toggle of cardToggles) toggle(collapse);
-  updateCollapseAll();
+
+// ---- Screen 05 · Flow JSON ------------------------------------------------
+
+function jsonScreen(): ScreenView {
+  const toolbar = C.toolbar({ title: t("flowJson"), meta: t("jsonMeta"), back: { title: t("back"), onClick: back },
+    actions: [C.button({ icon: "copy", label: t("copyShort"), onClick: copyJson })] });
+  const scope = C.el("div", "ui-field", C.el("label", "ui-field-label", C.el("span", "", t("jsonScope"))));
+  const scopeHost = C.el("div", "ui-dd-host");
+  scopeHost.id = "json-scope";
+  scope.append(scopeHost);
+  const ta = C.el("textarea", "ui-code");
+  ta.id = "json"; ta.spellcheck = false;
+  ta.addEventListener("input", onJsonInput);
+  const status = C.el("div", "ui-status");
+  status.id = "json-status";
+  const sec = C.section({ tight: true }, scope, ta, status, C.hint("code-xml", t("jsonHint")));
+  jsonScopeSig = ""; // the dropdown host is new
+  queueMicrotask(syncJson);
+  return { toolbar, body: [sec] };
+}
+
+// ---- Screens 06–08 · Chat --------------------------------------------------
+
+// Chat mode: a sample thread stands in until something is composed
+// (knowledge/CHAT_UI.md); the composer mutates it in place.
+const thread: Thread = sampleThread();
+
+function chatScreen(): ScreenView {
+  const toolbar = C.toolbar({ title: t("chatTitle"), meta: t("chatMeta", [thread.messages.length]),
+    actions: [C.button({ icon: "eye", title: t("chatPreviewTitle"), onClick: () => go("chatPreview") }), generateButton()] });
+  const host = C.el("div", "");
+  host.id = "chat-composer";
+  renderComposer(thread, host, () => C.setToolbarText(toolbar, t("chatTitle"), t("chatMeta", [thread.messages.length])));
+  const foot = C.el("div", "ui-foot", C.button({ icon: "plus", label: t("chatAddTitle"), style: "soft", onClick: () => go("chatAdd") }));
+  return { toolbar, body: [host], foot };
+}
+
+const CHAT_ICON: Record<string, string> = {
+  "text-in": "message-square-text", "text-out": "message-square-text", image: "image", video: "video",
+  document: "file-text", audio: "mic", buttons: "reply", list: "list", flow: "workflow", template: "layout-template",
+};
+const CHAT_GROUP_ICON: Record<string, string> = { Text: "message-square-text", Media: "image", Interactive: "mouse-pointer-click" };
+const openChatGroups = new Set<string>(["Text", "Media", "Interactive"]);
+
+function chatAddScreen(): ScreenView {
+  const toolbar = C.toolbar({ title: t("chatAddTitle"), meta: t("chatAddMeta"), back: { title: t("back"), onClick: back } });
+  const list = C.el("div", "ui-list");
+  let q = "";
+  const paint = (): void => {
+    list.replaceChildren();
+    for (const g of CHAT_PALETTE_GROUPS) {
+      const entries = CHAT_PALETTE.filter((e) => e.group === g && (!q || e.label.toLowerCase().includes(q)));
+      if (!entries.length) continue;
+      const open = q ? true : openChatGroups.has(g);
+      list.append(C.row({ icon: CHAT_GROUP_ICON[g], label: g, trailing: "count", count: entries.length, on: open, onClick: () => {
+        if (openChatGroups.has(g)) openChatGroups.delete(g); else openChatGroups.add(g);
+        paint();
+      } }));
+      if (!open) continue;
+      for (const e of entries) {
+        list.append(C.card({ icon: CHAT_ICON[e.key] ?? "message-square-text", title: e.label, plain: true, trailing: "none",
+          onClick: () => { addMessage(thread, e.key); go("chat"); } }));
+      }
+    }
+    if (!list.children.length) list.append(C.hint("search", t("noMatches")));
+  };
+  paint();
+  const search = C.section({ heading: t("search") }, C.searchField({ placeholder: t("chatSearchMessage"), onInput: (v) => { q = v.trim().toLowerCase(); paint(); } }));
+  const types = C.section({ heading: t("chatType") }, list, C.hint("mouse-pointer-click", t("chatMessageHint")));
+  return { toolbar, body: [search, types] };
+}
+
+function chatPreviewScreen(): ScreenView {
+  const toolbar = C.toolbar({ title: t("chatPreviewTitle"), meta: thread.contact.name, back: { title: t("back"), onClick: back },
+    actions: [C.button({ icon: prefs.previewTheme === "dark" ? "sun" : "moon", title: t("waTheme"), onClick: () => {
+      setWaTheme(prefs.previewTheme === "dark" ? "light" : "dark");
+      render();
+    } })] });
+  const host = C.el("div", "");
+  host.id = "chat-preview";
+  renderChat(thread, host);
+  return { toolbar, body: [C.section({ tight: true }, host)] };
+}
+
+// ---- Screen 09 · Settings (+ pickers) -------------------------------------
+
+function settingsScreen(): ScreenView {
+  const toolbar = C.toolbar({ title: t("settings"), meta: t("settingsMeta") });
+  const p = prefs;
+  const save = (patch: Partial<Prefs>, rerender = false): void => {
+    prefs = { ...prefs, ...patch };
+    applyPreviewPrefs();
+    savePrefs();
+    if (rerender) render();
+  };
+  const contact = (patch: Partial<Prefs["contact"]>, rerender = false): void => save({ contact: { ...prefs.contact, ...patch } }, rerender);
+
+  const flowRows: HTMLElement[] = [
+    C.row({ icon: "mouse-pointer-click", label: t("interactive"), trailing: "toggle", toggle: { on: p.interactive, onChange: (on) => save({ interactive: on }) } }),
+    C.row({ icon: "user", label: t("businessName"), trailing: "toggle", toggle: { on: p.showBusinessName, onChange: (on) => save({ showBusinessName: on }, true) } }),
+  ];
+  if (p.showBusinessName) {
+    flowRows.push(C.field({ label: t("businessName"), value: p.businessName, maxLength: 40, placeholder: t("businessNamePh"),
+      onInput: (v) => { prefs = { ...prefs, businessName: v }; applyPreviewPrefs(); }, onCommit: savePrefs }));
+  }
+  flowRows.push(C.row({ icon: "message-square-text", label: t("showChat"), trailing: "toggle", toggle: { on: p.showChat, onChange: (on) => save({ showChat: on }, true) } }));
+  if (p.showChat) {
+    flowRows.push(
+      C.row({ icon: "layout-template", label: t("headerStyle"), trailing: "value", value: p.headerStyle === "classic" ? t("headerClassic") : t("headerCurrent"), onClick: () => go("pick", "headerStyle") }),
+      C.field({ label: t("contactName"), value: p.contact.name, maxLength: 40, placeholder: t("contactNamePh"),
+        onInput: (v) => { prefs = { ...prefs, contact: { ...prefs.contact, name: v } }; applyPreviewPrefs(); }, onCommit: savePrefs }),
+      photoRow(contact),
+      C.row({ icon: "badge-check", label: t("contactVerified"), trailing: "toggle", toggle: { on: !!p.contact.verified, onChange: (on) => contact({ verified: on || undefined }) } }),
+    );
+  }
+  const flowSec = C.section({ heading: t("groupFlow") }, ...flowRows);
+
+  const sizeLabel = { sm: t("sizeSm"), md: t("sizeMd"), lg: t("sizeLg") }[p.size];
+  const figma = C.section({ heading: t("groupFigma") },
+    C.row({ icon: "phone", label: t("screenSize"), trailing: "value", value: sizeLabel, onClick: () => go("pick", "size") }),
+    C.row({ icon: p.previewTheme === "dark" ? "moon" : "sun", label: t("waTheme"), trailing: "value", value: p.previewTheme === "dark" ? t("themeDark") : t("themeLight"), onClick: () => go("pick", "waTheme") }),
+    C.field({ label: t("sectionName"), value: p.sectionName, maxLength: 40, placeholder: t("sectionNamePh"),
+      onInput: (v) => { prefs = { ...prefs, sectionName: v }; }, onCommit: savePrefs }),
+    colorRow(),
+    C.field({ label: t("sectionRadius"), value: String(p.sectionRadius), mono: true, onInput: (raw) => {
+      // Empty or out-of-range input falls back to the default rather than reaching
+      // the generator. `Number("") === 0`, so the emptiness check comes first.
+      const n = Number(raw.trim());
+      const ok = raw.trim() !== "" && isFinite(n) && n >= 0;
+      prefs = { ...prefs, sectionRadius: ok ? Math.min(n, 200) : SECTION_RADIUS_DEFAULT };
+    }, onCommit: () => { savePrefs(); render(); } }),
+  );
+
+  const themeLabel = { system: t("themeSystem"), light: t("themeLight"), dark: t("themeDark") }[p.theme];
+  const system = C.section({ heading: t("groupSystem") },
+    C.row({ icon: "palette", label: t("appTheme"), trailing: "value", value: themeLabel, onClick: () => go("pick", "appTheme") }),
+    C.row({ icon: "languages", label: t("language"), trailing: "value", value: p.lang === "pt" ? t("langPt") : t("langEn"), onClick: () => go("pick", "lang") }),
+  );
+  return { toolbar, body: [flowSec, C.divider(), figma, C.divider(), system] };
+}
+
+// The contact photo: a row that opens the file picker, with a thumbnail and a
+// remove button once one is set. Read as a data URI so it round-trips through
+// clientStorage as a string and can be handed to both <img> and figma.createImage.
+function photoRow(contact: (patch: Partial<Prefs["contact"]>, rerender?: boolean) => void): HTMLElement {
+  const av = (prefs.contact.avatar ?? "").trim();
+  const row = C.row({ icon: "image", label: t("contactPhoto"), trailing: "value", value: av ? t("photoSet") : t("choosePhoto"),
+    onClick: () => ($("#avatar-file") as HTMLInputElement).click() });
+  if (av) {
+    const img = C.el("img", "ui-avatar");
+    img.src = av.startsWith("data:") ? av : `data:image/png;base64,${av}`;
+    img.alt = "";
+    row.querySelector(".ui-row-value")?.prepend(img);
+    const clear = C.button({ icon: "x", sm: true, title: t("removePhoto"), onClick: (ev) => { ev.stopPropagation(); contact({ avatar: undefined }, true); } });
+    row.append(clear);
+  }
+  return row;
+}
+$("#avatar-file").addEventListener("change", (e) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    prefs = { ...prefs, contact: { ...prefs.contact, avatar: String(reader.result) } };
+    applyPreviewPrefs();
+    savePrefs();
+    input.value = ""; // so picking the same file again still fires
+    render();
+  };
+  reader.onerror = () => postToMain({ type: "notify", message: "Could not read that image." });
+  reader.readAsDataURL(file);
 });
 
+// The section background: the row shows the swatch and opens the native colour
+// picker; a hex field under it takes a typed value. Both write the same pref.
+function colorRow(): HTMLElement {
+  const native = C.el("input");
+  native.type = "color"; native.value = prefs.sectionColor; native.className = "ui-color-native";
+  const row = C.row({ icon: "palette", label: t("sectionColor"), trailing: "value", value: prefs.sectionColor, swatch: prefs.sectionColor,
+    onClick: () => native.click() });
+  const hex = C.field({ label: t("sectionColor"), value: prefs.sectionColor, mono: true, maxLength: 7, onInput: (raw) => {
+    const v = normalizeHex(raw);
+    hex.querySelector(".ui-input")?.classList.toggle("invalid", v === null && raw.trim() !== "");
+    if (!v) return; // keep the last good colour while it's still half-typed
+    prefs = { ...prefs, sectionColor: v };
+    native.value = v;
+    C.setRowValue(row, v, v);
+  }, onCommit: () => { savePrefs(); render(); } });
+  native.addEventListener("input", () => {
+    prefs = { ...prefs, sectionColor: native.value };
+    C.setRowValue(row, native.value, native.value);
+    const input = hex.querySelector("input"); if (input) input.value = native.value;
+  });
+  native.addEventListener("change", savePrefs);
+  row.append(native);
+  return C.el("div", "ui-list", row, hex);
+}
 
-// Drag-to-reorder from the grip. The dragged card follows the pointer and stays
-// fully opaque (the others fade via .comp-list.dragging), while an accent line
-// marks the slot it will drop into. The list itself isn't reordered until release,
-// so the indicator is the single source of truth for "where will this land".
+// Typed hex -> "#rrggbb", or null when it isn't a colour. Accepts a missing "#" and
+// the 3-digit shorthand, since both are what people actually type.
+function normalizeHex(raw: string): string | null {
+  const v = raw.trim().replace(/^#/, "").toLowerCase();
+  if (/^[0-9a-f]{6}$/.test(v)) return "#" + v;
+  if (/^[0-9a-f]{3}$/.test(v)) return "#" + v[0] + v[0] + v[1] + v[1] + v[2] + v[2];
+  return null;
+}
+
+interface Picker { title: string; options: { value: string; label: string; icon?: string }[]; value: string; pick: (v: string) => void }
+
+function pickers(): Record<PickerId, Picker> {
+  const set = (patch: Partial<Prefs>): void => { prefs = { ...prefs, ...patch }; applyPreviewPrefs(); savePrefs(); back(); };
+  const list = templates(prefs.lang); // authored content: comes in the plugin's language
+  return {
+    template: { title: t("template"), value: "",
+      options: list.map((tpl, i) => ({ value: String(i), label: tpl.name, icon: "layout-template" })),
+      pick: (v) => { const tpl = list[Number(v)]; if (tpl) { loadFlow(clone(tpl.flow), tpl.name); go("home"); } } },
+    headerStyle: { title: t("headerStyle"), value: prefs.headerStyle,
+      options: [{ value: "current", label: t("headerCurrent") }, { value: "classic", label: t("headerClassic") }],
+      pick: (v) => set({ headerStyle: v as Prefs["headerStyle"] }) },
+    size: { title: t("screenSize"), value: prefs.size,
+      options: [{ value: "sm", label: t("sizeSm") }, { value: "md", label: t("sizeMd") }, { value: "lg", label: t("sizeLg") }],
+      pick: (v) => set({ size: v as ScreenSize }) },
+    waTheme: { title: t("waTheme"), value: prefs.previewTheme,
+      options: [{ value: "light", label: t("themeLight"), icon: "sun" }, { value: "dark", label: t("themeDark"), icon: "moon" }],
+      pick: (v) => set({ previewTheme: v as PreviewTheme }) },
+    appTheme: { title: t("appTheme"), value: prefs.theme,
+      options: [{ value: "system", label: t("themeSystem") }, { value: "light", label: t("themeLight"), icon: "sun" }, { value: "dark", label: t("themeDark"), icon: "moon" }],
+      pick: (v) => { prefs = { ...prefs, theme: v as ThemePref }; applyTheme(prefs.theme); savePrefs(); back(); } },
+    lang: { title: t("language"), value: prefs.lang,
+      options: [{ value: "en", label: t("langEn") }, { value: "pt", label: t("langPt") }],
+      pick: (v) => { if (v !== prefs.lang) { prefs = { ...prefs, lang: v as Lang }; applyLang(prefs.lang); savePrefs(); } back(); } },
+  };
+}
+
+function pickScreen(): ScreenView {
+  const pk = pickers()[picker];
+  const toolbar = C.toolbar({ title: pk.title, meta: pickedFrom === "home" ? flowTitle() : t("settings"), back: { title: t("back"), onClick: back } });
+  const rows = pk.options.map((o) => {
+    const on = o.value === pk.value;
+    return C.row({ icon: on ? "check" : (o.icon ?? "circle"), label: o.label, trailing: "none", on, onClick: () => pk.pick(o.value) });
+  });
+  return { toolbar, body: [C.section({ heading: pk.title }, ...rows)] };
+}
+
+const SCREENS: Record<Route, () => ScreenView> = {
+  home: homeScreen, screen: screenEditor, library: libraryScreen, preview: previewScreen, json: jsonScreen,
+  chat: chatScreen, chatAdd: chatAddScreen, chatPreview: chatPreviewScreen,
+  settings: settingsScreen, pick: pickScreen,
+};
+
 // ---- JSON two-way sync --------------------------------------------------
 
 // The editor shows either the whole flow or a single screen, so a big flow can be
@@ -254,19 +622,23 @@ function scopedScreen(): Screen | null {
   return flow.screens.find((s) => s.id === jsonScope) ?? null;
 }
 
+// Rewrites the editor when it is on screen; the flow itself is the source, so
+// nothing is lost while it isn't.
 function syncJson(): void {
+  const ta = document.querySelector<HTMLTextAreaElement>("#json");
+  if (!ta) return;
   buildJsonScopeDropdown();
   const shown: unknown = scopedScreen() ?? flow;
-  ($("#json") as HTMLTextAreaElement).value = JSON.stringify(shown, null, 2);
-  setJsonStatus(true, t("valid"));
+  ta.value = JSON.stringify(shown, null, 2);
+  setJsonStatus(true, jsonStatusText());
 }
 
 // Rebuilt only when the option set actually changes: this runs on every keystroke
-// of a prop edit, and swapping the node each time would be churn. Called from both
-// syncJson and renderAll, so the options can't go stale after the screens change
-// (editing the whole flow in this tab re-renders without rewriting the textarea).
+// of a prop edit, and swapping the node each time would be churn.
 let jsonScopeSig = "";
 function buildJsonScopeDropdown(): void {
+  const host = document.querySelector<HTMLElement>("#json-scope");
+  if (!host) return;
   // The scoped screen can be renamed or deleted elsewhere — fall back instead of
   // pointing at an id that no longer exists.
   if (jsonScope !== FLOW_SCOPE && !scopedScreen()) jsonScope = FLOW_SCOPE;
@@ -274,11 +646,9 @@ function buildJsonScopeDropdown(): void {
   const sig = [jsonScope, ...ids].join("|");
   if (sig === jsonScopeSig) return;
   jsonScopeSig = sig;
-  const host = $("#json-scope");
-  host.innerHTML = "";
-  host.appendChild(createDropdown({
+  host.replaceChildren(createDropdown({
     value: jsonScope,
-    size: "sm",
+    size: "md",
     options: [{ value: FLOW_SCOPE, label: t("jsonWholeFlow") }, ...ids.map((id) => ({ value: id, label: id }))],
     onChange: (v) => { jsonScope = v; syncJson(); },
   }));
@@ -327,13 +697,12 @@ function onJsonInput(): void {
   if (jsonScope !== FLOW_SCOPE) {
     const idx = flow.screens.findIndex((s) => s.id === jsonScope);
     if (idx < 0) { jsonScope = FLOW_SCOPE; syncJson(); return; } // scope vanished
-    const screen = normalizeScreen(parsed);
-    if (!screen) { setJsonStatus(false, t("jsonNeedsScreen")); return; }
-    flow.screens[idx] = screen;
-    if (typeof screen.id === "string" && screen.id) jsonScope = screen.id; // follow a rename
-    setJsonStatus(true, t("valid"));
+    const scr = normalizeScreen(parsed);
+    if (!scr) { setJsonStatus(false, t("jsonNeedsScreen")); return; }
+    flow.screens[idx] = scr;
+    if (typeof scr.id === "string" && scr.id) jsonScope = scr.id; // follow a rename
+    setJsonStatus(true, jsonStatusText());
     buildJsonScopeDropdown();
-    renderAll();
     return;
   }
 
@@ -344,51 +713,70 @@ function onJsonInput(): void {
   }
   flow = normalized;
   if (current >= flow.screens.length) current = 0;
-  setJsonStatus(true, t("valid"));
-  renderAll(); // refresh Build + Preview + Validation (does not rewrite the textarea)
+  setJsonStatus(true, jsonStatusText());
+  buildJsonScopeDropdown(); // screens may have changed (does not rewrite the textarea)
 }
+
+const jsonStatusText = (): string => flow.screens.length === 1 ? t("jsonStatusOkOne") : t("jsonStatusOk", [flow.screens.length]);
 
 function setJsonStatus(ok: boolean, msg: string): void {
-  const el = $("#json-status");
-  el.className = "json-status " + (ok ? "ok" : "err");
-  el.textContent = msg;
+  const host = document.querySelector<HTMLElement>("#json-status");
+  if (!host) return;
+  host.replaceChildren(C.pill(ok ? "ok" : "err", ok ? t("valid") : t("invalid")), C.el("span", "", msg));
 }
 
-// ---- Orchestration ------------------------------------------------------
+// ---- Re-rendering --------------------------------------------------------
 
-function renderValidation(): void {
-  const issues = validateFlow(flow);
-  const errors = issues.filter((i) => i.level === "error").length;
-  const warnings = issues.length - errors;
+// Sync everything and rebuild the current screen.
+function syncAndRender(): void { syncJson(); render(); }
 
-  // Nothing to report = no badge at all; it only speaks up when something's off.
-  const badge = $("#val-badge");
-  badge.style.display = issues.length === 0 ? "none" : "";
-  if (errors > 0) { badge.className = "badge err"; badge.textContent = `${errors} ${t(errors > 1 ? "errors" : "error")}${warnings ? ` · ${warnings}⚠` : ""}`; }
-  else if (warnings > 0) { badge.className = "badge warn"; badge.textContent = `${warnings} ${t(warnings > 1 ? "warnings" : "warning")}`; }
-  else badge.textContent = "";
-
-  const host = $("#validation");
-  host.innerHTML = "";
-  for (const issue of issues) host.appendChild(issueRow(issue));
-
-  // Block generation while errors exist (warnings still allowed).
-  const gen = $("#generate") as HTMLButtonElement;
-  // Chat mode generates a conversation, which the Flow JSON validator says
-  // nothing about — so flow errors only gate the Flows generator.
-  const gated = mode !== "chat" && errors > 0;
-  gen.disabled = gated || gen.classList.contains("busy");
-  gen.title = gated ? `Fix ${errors} error${errors > 1 ? "s" : ""} before generating` : "";
+// Prop edits: sync the JSON and the preview without rebuilding the screen
+// (keeps input focus while typing). Only what is on screen gets repainted.
+function softSync(): void {
+  syncJson();
+  const preview = document.querySelector<HTMLElement>("#preview");
+  if (preview) renderPreview(flow, preview, screen().id, errorScreenIds());
+  const validation = document.querySelector<HTMLElement>("#validation");
+  if (validation) validation.replaceWith(validationBlock());
+  repaintGenerate(); // the gate follows the error count
+}
+// Structural edits (add/remove option, expand a card): rebuild the screen,
+// keeping the scroll position so the list doesn't jump.
+function structuralSync(): void {
+  const top = $("#body").scrollTop;
+  render();
+  $("#body").scrollTop = top;
 }
 
-// ---- Generate button feedback -------------------------------------------
-// The main thread answers a generate with `generated` (or `error`), so the button
-// can show progress and then confirm the screens landed on the canvas.
+function uniqueId(base: string): string {
+  let n = flow.screens.length + 1;
+  let id = `${base}_${n}`;
+  const has = (x: string) => flow.screens.some((s) => s.id === x);
+  while (has(id)) id = `${base}_${++n}`;
+  return id;
+}
+
+// ---- Generate button ------------------------------------------------------
+// The main thread answers a generate with `generated` (or `error`), so the
+// button can show progress and then confirm the screens landed on the canvas.
+// It lives in the toolbar of the two root screens and is rebuilt with them,
+// so every repaint looks it up afresh.
+
+function generateButton(): HTMLButtonElement {
+  const b = C.button({ icon: "sparkles", label: t("generate"), style: "primary", onClick: () => {
+    setGenState("busy");
+    if (railOf(route) === "chat") postToMain({ type: "generateChat", thread, options: genOptions() });
+    else postToMain({ type: "generate", flow, options: genOptions(), replaceSectionId: linkedSectionId ?? undefined });
+  } });
+  b.id = "generate";
+  return b;
+}
 
 // Generating often finishes in well under a second, which made the bar/skeleton
 // flash. Hold the busy state for at least this long so it reads as progress.
 const MIN_BUSY_MS = 3000;
 
+let genState: "idle" | "busy" | "done" = "idle";
 let genResetTimer = 0;
 let genFinishTimer = 0;
 let busyStartedAt = 0;
@@ -404,108 +792,39 @@ function setGenState(state: "idle" | "busy" | "done"): void {
   clearTimeout(genResetTimer);
   if (state !== "done") clearTimeout(genFinishTimer); // drop a pending finish
   if (state === "busy") busyStartedAt = performance.now();
-  const btn = $("#generate") as HTMLButtonElement;
-  const icon = btn.querySelector<HTMLElement>(".ic");
-  const label = btn.querySelector<HTMLElement>("[data-i18n='generate']");
-  btn.classList.toggle("busy", state === "busy");
-  btn.classList.toggle("done", state === "done");
-  // Drives the loading bar under the top bar and the skeletoned workspace.
+  genState = state;
+  // Drives the loading bar under the toolbar and the skeletoned body.
   document.body.classList.toggle("generating", state === "busy");
-  // Don't clobber the validation gate when returning to idle.
-  const errors = validateFlow(flow).filter((i) => i.level === "error").length;
-  btn.disabled = state === "busy" || errors > 0;
-  const linked = isLinked();
-  if (icon) icon.replaceChildren(iconEl(
-    state === "busy" ? "loader-circle" : state === "done" ? "check" : linked ? "refresh-cw" : "sparkles", 16));
-  if (label) label.textContent = t(
-    state === "busy" ? "generating" : state === "done" ? "genDone" : linked ? "update" : "generate");
+  paintGenerate();
   if (state === "done") genResetTimer = window.setTimeout(() => setGenState("idle"), 2200);
 }
 
+function paintGenerate(): void {
+  const btn = document.querySelector<HTMLButtonElement>("#generate");
+  if (!btn) return;
+  const state = genState;
+  btn.classList.toggle("busy", state === "busy");
+  btn.classList.toggle("done", state === "done");
+  // Chat mode generates a conversation, which the Flow JSON validator says
+  // nothing about — so flow errors only gate the Flows generator.
+  const errors = railOf(route) === "chat" ? 0 : errorCount();
+  btn.disabled = state === "busy" || errors > 0;
+  btn.title = errors > 0 ? `Fix ${errors} error${errors > 1 ? "s" : ""} before generating` : "";
+  const linked = isLinked();
+  C.setButton(btn, {
+    icon: state === "busy" ? "loader-circle" : state === "done" ? "check" : linked ? "refresh-cw" : "sparkles",
+    label: t(state === "busy" ? "generating" : state === "done" ? "genDone" : linked ? "update" : "generate"),
+  });
+}
+
+// Repaint the button's face without disturbing a run in progress.
+const repaintGenerate = paintGenerate;
+
 // Flows mode with a section to update. Chat mode generates its own sections and
 // has no re-import yet, so the link never applies there.
-function isLinked(): boolean { return mode !== "chat" && !!linkedSectionId; }
+function isLinked(): boolean { return railOf(route) !== "chat" && !!linkedSectionId; }
 
-// Repaint the Generate button's idle face without disturbing a run in progress
-// (setGenState("idle") would drop the busy bar before its minimum time).
-function repaintGenerate(): void {
-  const btn = $("#generate");
-  if (!btn.classList.contains("busy") && !btn.classList.contains("done")) setGenState("idle");
-}
-
-function issueRow(issue: Issue): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "val-item " + issue.level;
-  const ico = document.createElement("span");
-  ico.className = "val-ico";
-  ico.appendChild(iconEl(issue.level === "error" ? "circle-alert" : "triangle-alert", 16));
-  row.appendChild(ico);
-  if (issue.screen) {
-    const scr = document.createElement("span");
-    scr.className = "val-scr"; scr.textContent = issue.screen;
-    row.appendChild(scr);
-  }
-  const msg = document.createElement("span");
-  msg.textContent = t(issue.key, issue.params);
-  row.appendChild(msg);
-  if (issue.screen) {
-    row.onclick = () => {
-      const idx = flow.screens.findIndex((s) => s.id === issue.screen);
-      if (idx >= 0) { current = idx; renderAll(); }
-    };
-  }
-  return row;
-}
-
-function renderAll(): void {
-  renderScreens(); renderScreenMeta(); renderPalette(); renderComponentList();
-  renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
-  renderValidation();
-  buildJsonScopeDropdown(); // screens may have changed; keep the scope options fresh
-}
-function syncAndRender(): void { syncJson(); renderAll(); }
-
-// Prop edits: sync the JSON, preview and validation without rebuilding the
-// component cards (keeps input focus while typing).
-function softSync(): void {
-  syncJson();
-  renderPreview(flow, $("#preview"), screen().id);
-  renderValidation();
-}
-// Structural edits (add/remove option, change action shape): rebuild the cards.
-function structuralSync(): void {
-  renderComponentList();
-  softSync();
-}
-
-// ---- Small DOM helpers --------------------------------------------------
-
-function fieldLabel(t: string): HTMLElement {
-  const l = document.createElement("label");
-  l.className = "f"; l.textContent = t;
-  return l;
-}
-function textField(value: string, onChange: (v: string) => void, placeholder = ""): HTMLInputElement {
-  const inp = document.createElement("input");
-  inp.type = "text"; inp.value = value; inp.placeholder = placeholder;
-  inp.oninput = () => onChange(inp.value);
-  return inp;
-}
-function iconBtn(name: string, onClick: () => void, title = ""): HTMLButtonElement {
-  const b = document.createElement("button");
-  b.className = "icon-btn"; b.title = title; b.onclick = onClick;
-  b.appendChild(iconEl(name, 16));
-  return b;
-}
-function uniqueId(base: string): string {
-  let n = flow.screens.length + 1;
-  let id = `${base}_${n}`;
-  const has = (x: string) => flow.screens.some((s) => s.id === x);
-  while (has(id)) id = `${base}_${++n}`;
-  return id;
-}
-
-// ---- Import & templates -------------------------------------------------
+// ---- Import, templates, copy -----------------------------------------------
 
 // Validate structure and load a flow from a template or file. `linkTo` is the
 // id of the generated section the flow came from, when it came from one — see
@@ -519,79 +838,49 @@ function loadFlow(parsed: unknown, sourceName: string, linkTo?: string): void {
     return;
   }
   flow = normalized;
+  flowName = sourceName;
   current = 0;
   jsonScope = FLOW_SCOPE; // a new flow has different screens — don't keep a stale scope
   setLinkedSection(linkTo, linkTo ? sourceName : "");
   collapseAllCards(flow);
   syncAndRender();
-  const errors = validateFlow(flow).filter((i) => i.level === "error").length;
+  const errors = errorCount();
   postToMain({ type: "notify", message: errors ? `Loaded ${sourceName} — ${errors} validation error(s).` : `Loaded ${sourceName}.` });
 }
 
-function buildTemplateDropdown(): void {
-  const host = $("#template");
-  host.innerHTML = "";
-  // Templates are authored content, so they come in the plugin's language.
-  // applyLang() rebuilds this picker, which is what re-reads them.
-  const list = templates(prefs.lang);
-  host.appendChild(createDropdown({
-    value: "",
-    placeholder: t("templatePlaceholder"),
-    options: list.map((tpl, i) => ({ value: String(i), label: tpl.name })),
-    resetAfterSelect: true,
-    size: "mini",
-    onChange: (v) => {
-      const i = Number(v);
-      if (list[i]) loadFlow(clone(list[i].flow), list[i].name);
-      closeMenu();
-    },
-  }));
+$("#file").addEventListener("change", (e) => {
+  const input = e.target as HTMLInputElement;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try { loadFlow(JSON.parse(String(reader.result)), file.name); go("home"); }
+    catch (err) { postToMain({ type: "notify", message: `Import failed: ${err instanceof Error ? err.message : String(err)}` }); }
+    input.value = "";
+  };
+  reader.readAsText(file);
+});
+
+function copyJson(): void {
+  // Don't hand out JSON that won't import — the copied flow is always meant to be
+  // pasted into the Playground. Warnings are advisory and still allowed.
+  const errors = errorCount();
+  if (errors > 0) {
+    postToMain({ type: "notify", message: `Fix ${errors} error${errors > 1 ? "s" : ""} before copying — the JSON won't import.` });
+    return;
+  }
+  const text = JSON.stringify(flow, null, 2);
+  navigator.clipboard?.writeText(text).then(
+    () => postToMain({ type: "notify", message: "Flow JSON copied to clipboard." }),
+    () => postToMain({ type: "notify", message: "Copy failed — select the Flow JSON and copy it." }),
+  );
 }
 
-// ---- Actions drawer (right-side hamburger menu) -------------------------
-
-// Mark everything but the drawer inert while it's open, so keyboard/AT focus
-// stays trapped in the menu; move focus in on open and back to the trigger on close.
-function setBackgroundInert(on: boolean): void {
-  document.querySelectorAll<HTMLElement>(".topbar, .workspace").forEach((el) => {
-    if (on) el.setAttribute("inert", "");
-    else el.removeAttribute("inert");
-  });
-}
-function openMenu(): void {
-  $("#menu").classList.add("open");
-  $("#menu-backdrop").classList.add("open");
-  setBackgroundInert(true);
-  $("#menu-close").focus();
-}
-function closeMenu(): void {
-  if (!$("#menu").classList.contains("open")) return;
-  $("#menu").classList.remove("open");
-  $("#menu-backdrop").classList.remove("open");
-  setBackgroundInert(false);
-  $("#menu-btn").focus();
-}
-$("#menu-btn").addEventListener("click", openMenu);
-$("#menu-close").addEventListener("click", closeMenu);
-$("#menu-backdrop").addEventListener("click", closeMenu);
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
-
-// ---- Preferences: theme & language --------------------------------------
+// ---- Preferences ----------------------------------------------------------
 
 // Section defaults mirror the generator's (src/main/index.ts) — keep them in step.
 const SECTION_BG_DEFAULT = "#353535";
 const SECTION_RADIUS_DEFAULT = 24;
-
-// Which generator is showing, and which Flows tab within it. Generate dispatches
-// on the mode, and the flow validation gate only applies to Flows — a flow error
-// must not block generating a conversation.
-let mode: Mode = "flows";
-let activeTab = "build"; // Flows only; restored when switching back from Chat
-let chatTab = "compose"; // Chat's own tab, likewise remembered
-
-// Chat mode: phase 1 has no composer yet, so a sample thread stands in while
-// the visuals get calibrated (knowledge/CHAT_UI.md).
-const thread: Thread = sampleThread(); // mutated in place by the composer
 
 let prefs: Prefs = {
   mode: "flows",
@@ -609,126 +898,39 @@ const genOptions = (): GenOptions => ({
   showChat: prefs.showChat, headerStyle: prefs.headerStyle, contact: prefs.contact,
 });
 
+const savePrefs = (): void => postToMain({ type: "savePrefs", prefs });
+
 // System = follow the OS/Figma theme (no data-theme); light/dark force it.
 function applyTheme(theme: ThemePref): void {
   const root = document.documentElement;
   if (theme === "system") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", theme);
 }
+const isDarkNow = (): boolean =>
+  prefs.theme === "dark" || (prefs.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+// Everything the preview reads from prefs, pushed in one go.
+function applyPreviewPrefs(): void {
+  setPreviewInteractive(prefs.interactive);
+  setPreviewBusiness(prefs.showBusinessName, prefs.businessName);
+  setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact);
+  setPreviewSize(prefs.size);
+  setPreviewTheme(prefs.previewTheme);
+}
+
+function setWaTheme(theme: PreviewTheme): void {
+  prefs = { ...prefs, previewTheme: theme };
+  applyPreviewPrefs();
+  savePrefs();
+}
 
 function applyLang(lang: Lang): void {
   setLang(lang);
   applyI18n(document);
-  buildTemplateDropdown();
-  buildMenuDropdowns(); // rebuild the combo boxes with translated labels + current values
-  jsonScopeSig = ""; // force the JSON scope picker to rebuild with the new locale
-  buildJsonScopeDropdown();
+  buildRail(); // tooltips
+  jsonScopeSig = ""; // the scope picker must rebuild with the new locale
   if (offered) $("#offer-title").textContent = t("offerTitle", [offeredName]); // JS-built text
-  repaintGenerate(); // applyI18n just reset the button to the "generate" label
-  renderAll();
-}
-
-function applyInteractive(on: boolean): void {
-  setPreviewInteractive(on);
-  const box = document.querySelector<HTMLInputElement>("#interactive-toggle");
-  if (box) box.checked = on;
-}
-
-// Sync the switch + its name field with prefs, and hide the field when off.
-// Never called while typing (it would rewrite the value under the caret).
-// The conversation the flow sheet opens over. Like applyBusiness, never call
-// this while typing — it rewrites the value under the caret.
-function applyChat(p: Prefs): void {
-  setPreviewChat(p.showChat, p.headerStyle, p.contact);
-  const toggle = document.querySelector<HTMLInputElement>("#chat-toggle");
-  if (toggle) toggle.checked = p.showChat;
-  const name = document.querySelector<HTMLInputElement>("#contact-name");
-  if (name) name.value = p.contact.name;
-  const verified = document.querySelector<HTMLInputElement>("#contact-verified");
-  if (verified) verified.checked = !!p.contact.verified;
-  paintAvatarPreview();
-  // The style picker and the fields only matter with the chat shown.
-  const box = document.querySelector<HTMLElement>("#chat-fields");
-  if (box) box.hidden = !p.showChat;
-}
-
-// The little round preview of the chosen photo, plus the remove button.
-function paintAvatarPreview(): void {
-  const img = document.querySelector<HTMLImageElement>("#contact-avatar-img");
-  const clear = document.querySelector<HTMLElement>("#contact-avatar-clear");
-  const av = (prefs.contact.avatar ?? "").trim();
-  if (img) {
-    img.hidden = !av;
-    if (av) img.src = av.startsWith("data:") ? av : `data:image/png;base64,${av}`;
-  }
-  if (clear) clear.hidden = !av;
-}
-
-function applyBusiness(show: boolean, name: string): void {
-  setPreviewBusiness(show, name);
-  const box = document.querySelector<HTMLInputElement>("#biz-toggle");
-  if (box) box.checked = show;
-  const input = document.querySelector<HTMLInputElement>("#biz-name");
-  if (input) { input.value = name; input.hidden = !show; }
-}
-
-function applySize(size: ScreenSize): void { setPreviewSize(size); }
-function applyWaTheme(theme: PreviewTheme): void { setPreviewTheme(theme); }
-
-// Section fields only affect the generated Figma section, so there's nothing to
-// re-render here — just reflect the saved values in the inputs. Like applyBusiness,
-// never call this while typing: it would rewrite the value under the caret.
-function applySection(p: Prefs): void {
-  const name = document.querySelector<HTMLInputElement>("#section-name");
-  if (name) name.value = p.sectionName;
-  const color = document.querySelector<HTMLInputElement>("#section-color");
-  if (color) color.value = p.sectionColor;
-  const hex = document.querySelector<HTMLInputElement>("#section-hex");
-  if (hex) { hex.value = p.sectionColor; hex.classList.remove("invalid"); }
-  const radius = document.querySelector<HTMLInputElement>("#section-radius");
-  if (radius) radius.value = String(p.sectionRadius);
-}
-
-// Typed hex -> "#rrggbb", or null when it isn't a colour. Accepts a missing "#" and
-// the 3-digit shorthand, since both are what people actually type.
-function normalizeHex(raw: string): string | null {
-  const v = raw.trim().replace(/^#/, "").toLowerCase();
-  if (/^[0-9a-f]{6}$/.test(v)) return "#" + v;
-  if (/^[0-9a-f]{3}$/.test(v)) return "#" + v[0] + v[0] + v[1] + v[1] + v[2] + v[2];
-  return null;
-}
-
-function refreshPreview(): void { renderPreview(flow, $("#preview"), screen().id, errorScreenIds()); }
-
-// Build a menu combo box into its placeholder span. Rebuilt on language change
-// so option labels retranslate and the shown value stays in sync with prefs.
-function fillDropdown(sel: string, value: string, options: { value: string; label: string }[], onChange: (v: string) => void): void {
-  const host = $(sel);
-  host.innerHTML = "";
-  host.appendChild(createDropdown({ value, options, size: "sm", onChange }));
-}
-
-function buildMenuDropdowns(): void {
-  fillDropdown("#size-dd", prefs.size,
-    [{ value: "sm", label: t("sizeSm") }, { value: "md", label: t("sizeMd") }, { value: "lg", label: t("sizeLg") }],
-    (v) => { prefs = { ...prefs, size: v as ScreenSize }; applySize(prefs.size); refreshPreview(); savePrefs(); });
-
-  fillDropdown("#wa-theme-dd", prefs.previewTheme,
-    [{ value: "light", label: t("themeLight") }, { value: "dark", label: t("themeDark") }],
-    (v) => { prefs = { ...prefs, previewTheme: v as PreviewTheme }; applyWaTheme(prefs.previewTheme); refreshPreview(); savePrefs(); });
-
-  fillDropdown("#app-theme-dd", prefs.theme,
-    [{ value: "system", label: t("themeSystem") }, { value: "light", label: t("themeLight") }, { value: "dark", label: t("themeDark") }],
-    (v) => { prefs = { ...prefs, theme: v as ThemePref }; applyTheme(prefs.theme); savePrefs(); });
-
-  fillDropdown("#header-style-dd", prefs.headerStyle,
-    [{ value: "current", label: t("headerCurrent") }, { value: "classic", label: t("headerClassic") }],
-    (v) => { prefs = { ...prefs, headerStyle: v as Prefs["headerStyle"] };
-             setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact); refreshPreview(); savePrefs(); });
-
-  fillDropdown("#lang-dd", prefs.lang,
-    [{ value: "en", label: t("langEn") }, { value: "pt", label: t("langPt") }],
-    (v) => { if (v !== prefs.lang) { prefs = { ...prefs, lang: v as Lang }; applyLang(prefs.lang); savePrefs(); } });
+  render();
 }
 
 // The editor boots on the English sample, before the saved language is known.
@@ -740,161 +942,57 @@ function localizeInitialFlow(lang: Lang): void {
   flow = clone(sampleFlow(lang));
   current = 0;
   collapseAllCards(flow);
-  syncJson(); // applyLang's renderAll doesn't rewrite the JSON tab
 }
 
 function applyPrefs(p: Prefs): void {
   prefs = { ...prefs, ...p };
-  localizeInitialFlow(prefs.lang); // before applyLang, which re-renders
+  localizeInitialFlow(prefs.lang);
   applyTheme(prefs.theme);
-  applyLang(prefs.lang); // also (re)builds the menu combo boxes from prefs
-  applyInteractive(prefs.interactive);
-  applyBusiness(prefs.showBusinessName, prefs.businessName);
-  applyChat(prefs);
-  applySection(prefs);
-  applyMode(prefs.mode ?? "flows"); // reopen in the generator last used
-  applySize(prefs.size);
-  applyWaTheme(prefs.previewTheme);
+  applyPreviewPrefs();
+  setLang(prefs.lang);
+  applyI18n(document);
+  buildRail();
+  go((prefs.mode ?? "flows") === "chat" ? "chat" : "home"); // reopen in the generator last used
 }
 
-const savePrefs = (): void => postToMain({ type: "savePrefs", prefs });
+// ---- The rail -------------------------------------------------------------
 
-$("#interactive-toggle").addEventListener("change", (e) => {
-  prefs = { ...prefs, interactive: (e.target as HTMLInputElement).checked };
-  applyInteractive(prefs.interactive);
-  refreshPreview();
-  savePrefs();
-});
-
-$("#biz-toggle").addEventListener("change", (e) => {
-  prefs = { ...prefs, showBusinessName: (e.target as HTMLInputElement).checked };
-  applyBusiness(prefs.showBusinessName, prefs.businessName);
-  refreshPreview();
-  savePrefs();
-});
-
-// Live-update the preview on every keystroke, but only persist on commit
-// (blur/Enter) so typing a name isn't one clientStorage write per character.
-$("#biz-name").addEventListener("input", (e) => {
-  prefs = { ...prefs, businessName: (e.target as HTMLInputElement).value };
-  setPreviewBusiness(prefs.showBusinessName, prefs.businessName);
-  refreshPreview();
-});
-$("#biz-name").addEventListener("change", () => savePrefs());
-
-// ---- The conversation behind the sheet -----------------------------------
-
-$("#chat-toggle").addEventListener("change", (e) => {
-  prefs = { ...prefs, showChat: (e.target as HTMLInputElement).checked };
-  applyChat(prefs);
-  refreshPreview();
-  savePrefs();
-});
-
-// Live-update on every keystroke, persist on commit — same rule as the
-// business name: one clientStorage write per character would be absurd.
-$("#contact-name").addEventListener("input", (e) => {
-  prefs = { ...prefs, contact: { ...prefs.contact, name: (e.target as HTMLInputElement).value } };
-  setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact);
-  refreshPreview();
-});
-$("#contact-name").addEventListener("change", () => savePrefs());
-
-$("#contact-verified").addEventListener("change", (e) => {
-  const on = (e.target as HTMLInputElement).checked;
-  prefs = { ...prefs, contact: { ...prefs.contact, verified: on || undefined } };
-  setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact);
-  refreshPreview();
-  savePrefs();
-});
-
-// The photo. Read as a data URI so it round-trips through clientStorage as a
-// string and can be handed to both the <img> preview and figma.createImage.
-$("#contact-avatar").addEventListener("click", () => ($("#avatar-file") as HTMLInputElement).click());
-$("#avatar-file").addEventListener("change", (e) => {
-  const input = e.target as HTMLInputElement;
-  const file = input.files && input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    prefs = { ...prefs, contact: { ...prefs.contact, avatar: String(reader.result) } };
-    paintAvatarPreview();
-    setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact);
-    refreshPreview();
-    savePrefs();
-    input.value = ""; // so picking the same file again still fires
-  };
-  reader.onerror = () => postToMain({ type: "notify", message: "Could not read that image." });
-  reader.readAsDataURL(file);
-});
-$("#contact-avatar-clear").addEventListener("click", () => {
-  prefs = { ...prefs, contact: { ...prefs.contact, avatar: undefined } };
-  paintAvatarPreview();
-  setPreviewChat(prefs.showChat, prefs.headerStyle, prefs.contact);
-  refreshPreview();
-  savePrefs();
-});
-
-// Section fields: nothing to re-render (they only shape the generated Figma
-// section), so just track the value and persist on commit rather than per keystroke.
-$("#section-name").addEventListener("input", (e) => {
-  prefs = { ...prefs, sectionName: (e.target as HTMLInputElement).value };
-});
-$("#section-name").addEventListener("change", () => savePrefs());
-
-// The swatch and the hex field are two views of one value: whichever you touch
-// updates prefs and mirrors into the other.
-$("#section-color").addEventListener("input", (e) => {
-  prefs = { ...prefs, sectionColor: (e.target as HTMLInputElement).value };
-  const hex = document.querySelector<HTMLInputElement>("#section-hex");
-  if (hex) { hex.value = prefs.sectionColor; hex.classList.remove("invalid"); }
-});
-$("#section-color").addEventListener("change", () => savePrefs());
-
-$("#section-hex").addEventListener("input", (e) => {
-  const field = e.target as HTMLInputElement;
-  const hex = normalizeHex(field.value);
-  field.classList.toggle("invalid", hex === null && field.value.trim() !== "");
-  if (!hex) return; // keep the last good colour while it's still half-typed
-  prefs = { ...prefs, sectionColor: hex };
-  const swatch = document.querySelector<HTMLInputElement>("#section-color");
-  if (swatch) swatch.value = hex;
-});
-// On commit, snap the field back to the value in effect so junk can't linger.
-$("#section-hex").addEventListener("change", () => { applySection(prefs); savePrefs(); });
-
-// Empty or out-of-range input falls back to the default rather than reaching the
-// generator. Note `Number("") === 0`, so the emptiness check has to come first —
-// otherwise clearing the field would silently mean "radius 0".
-$("#section-radius").addEventListener("input", (e) => {
-  const raw = (e.target as HTMLInputElement).value.trim();
-  const n = Number(raw);
-  const ok = raw !== "" && isFinite(n) && n >= 0;
-  prefs = { ...prefs, sectionRadius: ok ? Math.min(n, 200) : SECTION_RADIUS_DEFAULT };
-});
-$("#section-radius").addEventListener("change", () => { applySection(prefs); savePrefs(); });
+function buildRail(): void {
+  const railEl = C.rail({
+    active: railOf(route),
+    labels: { flows: t("navFlows"), chat: t("navChat"), settings: t("navSettings") },
+    onSelect: (key) => {
+      const root: Route = key === "chat" ? "chat" : key === "settings" ? "settings" : "home";
+      const mode: Mode = key === "chat" ? "chat" : "flows";
+      if (key !== "settings" && mode !== prefs.mode) { prefs = { ...prefs, mode }; savePrefs(); }
+      go(root);
+    },
+    theme: { icon: isDarkNow() ? "sun" : "moon", title: t("railTheme"), onClick: () => {
+      prefs = { ...prefs, theme: isDarkNow() ? "light" : "dark" };
+      applyTheme(prefs.theme);
+      savePrefs();
+      buildRail();
+      if (route === "settings") render();
+    } },
+  });
+  $("#rail-host").replaceChildren(railEl);
+}
 
 // ---- Linked section ------------------------------------------------------
 // A flow imported from a generated section stays linked to it, so Generate
 // updates that section instead of dropping a second copy on the canvas. The
-// link is deliberately visible and escapable: an update deletes frames the user
-// may have annotated, so it should never be a silent side effect.
+// link is deliberately visible (the toolbar meta, "Update" on the button) and
+// escapable (the unlink action): an update deletes frames the user may have
+// annotated, so it should never be a silent side effect.
 
 let linkedSectionId: string | null = null;
+let linkedName = "";
 
 function setLinkedSection(id: string | undefined, name: string): void {
   linkedSectionId = id ?? null;
-  const chip = $("#linked");
-  chip.classList.toggle("open", !!id);
-  if (id) $("#linked-name").textContent = name;
+  if (id) linkedName = name;
   repaintGenerate(); // the button reads "Update" while linked
 }
-
-// The name shown on the chip, so a re-link after a run keeps its label.
-function linkedName(): string { return $("#linked-name").textContent ?? ""; }
-
-// Unlink: the next Generate produces a new section and leaves the old one alone.
-$("#linked-unlink").addEventListener("click", () => setLinkedSection(undefined, ""));
 
 // ---- Import offer (user clicked a generated section in Figma) -------------
 
@@ -921,7 +1019,7 @@ $("#offer-import").addEventListener("click", () => {
   hideOffer();
   // Replaces the current flow, same path as a file import — but linked, so
   // editing it updates the section it came from.
-  if (f) loadFlow(f, name, sectionId);
+  if (f) { loadFlow(f, name, sectionId); go("home"); }
 });
 
 // Messages from the main thread: saved prefs on startup, import offers on click.
@@ -935,126 +1033,17 @@ window.addEventListener("message", (e: MessageEvent) => {
   else if (msg.type === "generated") {
     // A run replaces the section with a new node, so re-link to what it just
     // made — otherwise the second Generate would append instead of updating.
-    if (mode !== "chat" && msg.sectionId) setLinkedSection(msg.sectionId, linkedName());
+    if (railOf(route) !== "chat" && msg.sectionId) setLinkedSection(msg.sectionId, linkedName);
     finishGenerate(); // honours the minimum busy time
   }
   else if (msg.type === "error") setGenState("idle");  // failures surface right away
 });
 
-$("#import").addEventListener("click", () => { closeMenu(); ($("#file") as HTMLInputElement).click(); });
-$("#file").addEventListener("change", (e) => {
-  const input = e.target as HTMLInputElement;
-  const file = input.files && input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try { loadFlow(JSON.parse(String(reader.result)), file.name); }
-    catch (err) { postToMain({ type: "notify", message: `Import failed: ${err instanceof Error ? err.message : String(err)}` }); }
-    input.value = "";
-  };
-  reader.readAsText(file);
-});
-
-// ---- Wiring -------------------------------------------------------------
-
-document.querySelectorAll(".tab").forEach((t) => {
-  t.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach((x) => { x.classList.remove("active"); x.setAttribute("aria-selected", "false"); });
-    t.classList.add("active");
-    t.setAttribute("aria-selected", "true");
-    const name = (t as HTMLElement).dataset.tab;
-    $("#panel-build").classList.toggle("active", name === "build");
-    $("#panel-preview").classList.toggle("active", name === "preview");
-    $("#panel-json").classList.toggle("active", name === "json");
-    // The screen rail only belongs to Build: Preview has its own screen tabs and
-    // Flow JSON just shows code.
-    $("#screens").style.display = name === "build" ? "" : "none";
-    if (name === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
-    activeTab = name ?? "build";
-  });
-});
-
-$("#json").addEventListener("input", onJsonInput);
-
-// Switch generator. Chat has one view so far, so its panel simply replaces the
-// Flows tab row + panels; when a composer arrives it gets its own tabs.
-function applyMode(m: Mode): void {
-  mode = m;
-  document.body.classList.toggle("chat-mode", m === "chat");
-  document.querySelectorAll<HTMLElement>(".mode-switch .seg-item").forEach((b) => {
-    const on = b.dataset.mode === m;
-    b.classList.toggle("active", on);
-    b.setAttribute("aria-selected", String(on));
-  });
-  // Returning to either mode restores whichever tab was open there.
-  $("#panel-build").classList.toggle("active", m === "flows" && activeTab === "build");
-  $("#panel-preview").classList.toggle("active", m === "flows" && activeTab === "preview");
-  $("#panel-json").classList.toggle("active", m === "flows" && activeTab === "json");
-  $("#panel-chat-compose").classList.toggle("active", m === "chat" && chatTab === "compose");
-  $("#panel-chat-preview").classList.toggle("active", m === "chat" && chatTab === "preview");
-  if (m === "chat") renderChatAll();
-  else if (activeTab === "preview") renderPreview(flow, $("#preview"), screen().id, errorScreenIds());
-  $("#linked").classList.toggle("open", isLinked());
-  repaintGenerate(); // "Update" is a Flows-only state
-  renderValidation(); // the Generate gate depends on the mode
-}
-
-/** Composer + phone, so an edit in one shows up in the other. */
-function renderChatAll(): void {
-  renderComposer(thread, $("#chat-composer"), () => renderChat(thread, $("#chat-preview")));
-  renderChat(thread, $("#chat-preview"));
-}
-
-document.querySelectorAll<HTMLElement>(".chat-tabs .tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    const name = tab.dataset.chatTab ?? "compose";
-    if (name === chatTab) return;
-    chatTab = name;
-    document.querySelectorAll(".chat-tabs .tab").forEach((x) => {
-      x.classList.remove("active"); x.setAttribute("aria-selected", "false");
-    });
-    tab.classList.add("active");
-    tab.setAttribute("aria-selected", "true");
-    $("#panel-chat-compose").classList.toggle("active", name === "compose");
-    $("#panel-chat-preview").classList.toggle("active", name === "preview");
-    if (name === "preview") renderChat(thread, $("#chat-preview"));
-  });
-});
-
-document.querySelectorAll<HTMLElement>(".mode-switch .seg-item").forEach((b) => {
-  b.addEventListener("click", () => {
-    const m = b.dataset.mode as Mode;
-    if (m === mode) return;
-    applyMode(m);
-    prefs = { ...prefs, mode: m };
-    savePrefs();
-  });
-});
-
-$("#generate").addEventListener("click", () => {
-  setGenState("busy");
-  if (mode === "chat") postToMain({ type: "generateChat", thread, options: genOptions() });
-  else postToMain({ type: "generate", flow, options: genOptions(), replaceSectionId: linkedSectionId ?? undefined });
-});
-
-$("#copy").addEventListener("click", () => {
-  closeMenu();
-  // Don't hand out JSON that won't import — the copied flow is always meant to be
-  // pasted into the Playground. Warnings are advisory and still allowed.
-  const errors = validateFlow(flow).filter((i) => i.level === "error").length;
-  if (errors > 0) {
-    postToMain({ type: "notify", message: `Fix ${errors} error${errors > 1 ? "s" : ""} before copying — the JSON won't import.` });
-    return;
-  }
-  const text = JSON.stringify(flow, null, 2);
-  navigator.clipboard?.writeText(text).then(
-    () => postToMain({ type: "notify", message: "Flow JSON copied to clipboard." }),
-    () => postToMain({ type: "notify", message: "Copy failed — use the Flow JSON tab." }),
-  );
-});
+// ---- Boot -----------------------------------------------------------------
 
 applyThemeVars();
 applyIcons(document);
 collapseAllCards(flow); // the sample flow opens collapsed, like an imported one
-applyPrefs(prefs); // default en / system; overwritten when the main thread sends saved prefs
-syncJson();
+applyPreviewPrefs();
+buildRail();
+render(); // default en / system; overwritten when the main thread sends saved prefs

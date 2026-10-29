@@ -9,6 +9,35 @@ Status: **idea** (no design yet) · **ready** (approach settled) · **blocked**.
 
 ---
 
+## New UI: what the rail + panel pass left out
+
+**Status:** ready · raised 2026-10-29
+
+The chrome rebuild (`knowledge/NEW_UI.md`, branch `new-ui`) covers the nine
+screens of the concept. Four things in the Figma design were deliberately not
+built, so the pass stayed verifiable:
+
+- **Search on Flow home.** The concept searches screens and components from
+  the home screen; today only the two libraries have a search field. Needs a
+  decision on what a result opens (the screen editor with the component card
+  expanded, probably).
+- **The rail's Help button.** Drawn in the design; nothing for it to open yet
+  (the manifest allows no network access, so it can't link out). Could show the
+  version and the keyboard hints.
+- **Drag from the library.** The library cards carry a grip because the design
+  does; tapping appends. Dragging onto the list would need a cross-screen drop
+  target, since the library is its own screen.
+- **The collapse animation.** The old cards animated open/closed in place; the
+  new list rebuilds on expand/collapse (`structuralSync`), which is instant but
+  not animated. The grid-row trick from the old `.comp-body-wrap` can come
+  back on `.ui-card.open` once the card keeps its node across the toggle.
+
+Also open: the expanded editors still use the `.pe-*` field layout, restyled;
+the design's `Card · expanded` draws them as `.ui-field`s, which would mean
+`propEditor.ts` building on `components.ts`.
+
+---
+
 ## One contact for both modes (and the chat-side avatar gap)
 
 **Status:** ready · raised 2026-10-20

@@ -245,14 +245,26 @@ export interface CardOptions {
  * queryable for the screens that need to update or drag them.
  */
 export function card(o: CardOptions): HTMLElement {
-  const c = el(o.onClick ? "button" : "div", `ui-card${o.plain ? " plain" : ""}${o.selected ? " selected" : ""}`);
-  if (o.onClick) { (c as HTMLButtonElement).type = "button"; c.addEventListener("click", () => o.onClick!()); }
+  const trailing = o.trailing ?? "drag";
+  // A card with a drag handle can't be a <button> (no interactive content inside
+  // one), so it is a div that behaves like a button; the grip keeps its own events.
+  const hasGrip = trailing === "drag" || (trailing === "badge" && !!o.badge);
+  const c = el(o.onClick && !hasGrip ? "button" : "div", `ui-card${o.plain ? " plain" : ""}${o.selected ? " selected" : ""}`);
+  if (o.onClick) {
+    if (hasGrip) {
+      c.classList.add("clickable"); c.setAttribute("role", "button"); c.tabIndex = 0;
+      c.addEventListener("click", (ev) => { if (!(ev.target as HTMLElement).closest(".ui-grip")) o.onClick!(); });
+      c.addEventListener("keydown", (ev: Event) => { const k = (ev as KeyboardEvent).key; if (k === "Enter" || k === " ") { ev.preventDefault(); o.onClick!(); } });
+    } else {
+      (c as HTMLButtonElement).type = "button";
+      c.addEventListener("click", () => o.onClick!());
+    }
+  }
   const text = el("div", "ui-card-text", el("div", "ui-card-title", o.title));
   if (o.subtitle !== undefined) text.append(el("div", "ui-card-sub", o.subtitle));
   c.append(tile(o.icon), text);
-  const trailing = o.trailing ?? "drag";
   if (trailing === "badge" && o.badge) c.append(dirBadge(o.badge));
-  if (trailing === "drag" || (trailing === "badge" && o.badge)) c.append(grip(o.gripTitle));
+  if (hasGrip) c.append(grip(o.gripTitle));
   else if (trailing === "chevron") c.append(ic("chevron-right"));
   return c;
 }
@@ -276,7 +288,9 @@ export function cardExpanded(o: CardOptions & { body: HTMLElement; actions?: HTM
   (collapse as HTMLButtonElement).type = "button";
   collapse.style.cssText = "border:0;background:none;padding:0;cursor:pointer";
   collapse.addEventListener("click", o.onCollapse);
-  head.append(tile(o.icon), text, collapse, grip(o.gripTitle));
+  head.append(tile(o.icon), text);
+  if (o.trailing === "badge" && o.badge) head.append(dirBadge(o.badge));
+  head.append(collapse, grip(o.gripTitle));
   c.append(head, o.body);
   if (o.actions?.length) c.append(el("div", "ui-card-actions", ...o.actions));
   return c;
@@ -295,6 +309,8 @@ export interface FieldOptions {
   maxLength?: number;
   trailing?: HTMLElement;
   onInput: (v: string) => void;
+  /** Fires on blur/Enter: for callers that persist on commit rather than per keystroke. */
+  onCommit?: () => void;
 }
 
 /** Label (+ red asterisk) over a bordered input. Returns the wrapper; the input is `.ui-input input`. */
@@ -306,15 +322,17 @@ export function field(o: FieldOptions): HTMLElement {
   if (o.placeholder) input.placeholder = o.placeholder;
   if (o.maxLength) input.maxLength = o.maxLength;
   input.addEventListener("input", () => o.onInput(input.value));
+  if (o.onCommit) input.addEventListener("change", o.onCommit);
   const box = el("div", `ui-input${o.mono ? " mono" : ""}`, input, o.trailing);
   const id = `f${Math.random().toString(36).slice(2, 8)}`;
   input.id = id; label.htmlFor = id;
   return el("div", "ui-field", label, box);
 }
 
-export function textArea(o: { label: string; value: string; placeholder?: string; maxLength?: number; onInput: (v: string) => void }): HTMLElement {
+export function textArea(o: { label: string; value: string; placeholder?: string; maxLength?: number; rows?: number; onInput: (v: string) => void }): HTMLElement {
   const label = el("label", "ui-field-label", el("span", "", o.label));
   const ta = el("textarea");
+  if (o.rows) ta.rows = o.rows;
   ta.value = o.value;
   if (o.placeholder) ta.placeholder = o.placeholder;
   if (o.maxLength) ta.maxLength = o.maxLength;
@@ -329,6 +347,18 @@ export function searchField(o: { placeholder: string; kbd?: string; onInput: (v:
   const s = el("div", "ui-search", ic("search"), input);
   if (o.kbd) s.append(el("span", "ui-kbd", o.kbd));
   return s;
+}
+
+/** A label over any control (a dropdown, say) in the field layout. */
+export function labeled(label: string, control: HTMLElement): HTMLElement {
+  return el("div", "ui-field", el("label", "ui-field-label", el("span", "", label)), control);
+}
+
+/** Label + switch on one line, for inside a card (the settings list uses `row`). */
+export function switchRow(label: string, on: boolean, onChange: (on: boolean) => void): HTMLElement {
+  const t = toggle(on, onChange);
+  const l = el("label", "ui-switch-row", el("span", "", label), t);
+  return l;
 }
 
 export function toggle(on: boolean, onChange: (on: boolean) => void): HTMLInputElement {
