@@ -85,9 +85,12 @@ then `npm run build`.
   in `ui.html`) and the generated screens use *real* WhatsApp sizes/colors — don't
   restyle them to match the plugin chrome. Plugin-chrome text has a **14px minimum**;
   `wa-*` does not.
-- **Theme:** tokens in `ui.html` map to `--figma-color-*` with light/dark fallbacks;
-  a manual toggle sets `:root[data-theme="light|dark"]`. The generator's own tokens
-  live in `src/main/theme.ts` and also feed the preview via CSS vars (single source).
+- **Theme:** the chrome's tokens live in `src/ui/tokens.css` (inlined into
+  `ui.html` by the build), a mirror of the Figma file's Chrome + Scale variable
+  collections with light/dark values — see `knowledge/NEW_UI.md` for the mapping
+  and the scale knob. Light/dark follows `prefers-color-scheme`; a manual toggle
+  sets `:root[data-theme="light|dark"]`. The generator's own tokens live in
+  `src/main/theme.ts` and also feed the preview via CSS vars (single source).
 - **i18n (`src/ui/i18n.ts`):** static text uses `data-i18n` / `data-i18n-ph` /
   `data-i18n-title` (filled by `applyI18n`); JS-built text uses `t(key, params)`
   with `{n}` slots. The validator emits `{key, params}` and the UI translates it.

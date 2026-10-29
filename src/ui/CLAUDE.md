@@ -9,8 +9,8 @@ only what bites *in this directory*.
 
 ## You can verify this code — do it
 
-The UI runs standalone outside Figma (the `--figma-color-*` vars fall back to
-themed defaults):
+The UI runs standalone outside Figma (the chrome tokens are literal, so nothing
+depends on Figma injecting `--figma-color-*`):
 
 ```bash
 npm run build && (cd plugin && python -m http.server 8791)
@@ -31,8 +31,10 @@ The stylesheet in `ui.html` holds two identities, and every colour belongs to
 exactly one of them. The token namespace says which, at the use site:
 
 - **`--ui-*` — the plugin's own chrome** (`.comp`, `.dd`, `.topbar`, the menu,
-  the preview's screen switcher). Derived from `--figma-color-*` so the panel
-  sits inside Figma's theme. **14px minimum** for text.
+  the preview's screen switcher). Defined in `tokens.css`, a mirror of the
+  Figma file's *Chrome* and *Scale* variable collections (light + dark), and
+  inlined into `ui.html` by the build. `knowledge/NEW_UI.md` has the mapping
+  and the one scale knob. **14px minimum** for text.
 - **`--wa-*` — WhatsApp's identity**, for the phone mockup (`.wa-*`,
   `.wa-c-*`). Set from `src/main/theme.ts` by `applyThemeVars()` — the same
   tokens the Figma generator paints with, which is what keeps the preview and

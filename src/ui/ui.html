@@ -16,45 +16,16 @@
                 WhatsApp's own surfaces; real WhatsApp sizes, often < 14px.
 
      Never point one at the other. A --wa-* value is WhatsApp's to dictate and
-     ours to copy accurately; a --ui-* value is ours to choose. The literals
-     below are fallbacks for running the UI standalone outside Figma.
+     ours to copy accurately; a --ui-* value is ours to choose. The --ui-*
+     values live in src/ui/tokens.css (mirrored from the Figma variables) and
+     are inlined at the marker below by build/esbuild.mjs.
      ======================================================================== */
-  :root {
-    --ui-bg:      var(--figma-color-bg, #fbfcfc);
-    --ui-panel:   var(--figma-color-bg-secondary, #eef2f1);
-    --ui-elev:    var(--figma-color-bg, #ffffff);
-    --ui-border:  var(--figma-color-border, #dbe3e1);
-    --ui-text:    var(--figma-color-text, #10201b);
-    --ui-dim:     var(--figma-color-text-secondary, #5d6b66);
-    /* The PLUGIN's accent — not WhatsApp's. It happens to be a WhatsApp
-       green, which is a styling choice we made, not a brand rule: changing
-       --wa-primary must never change this, nor the other way round. */
-    --ui-accent:  #008069;
-    --ui-accent-weak: rgba(0, 128, 105, .12);
-    --ui-danger:  #e5484d;
-    --ui-warn:    #b7791f;
-    --ui-ring:    rgba(0, 128, 105, .38);
-    --ui-radius:  8px;
-    color-scheme: light dark; /* let native popups/scrollbars follow the theme */
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --ui-bg:     var(--figma-color-bg, #0e1513);
-      --ui-panel:  var(--figma-color-bg-secondary, #151d1b);
-      --ui-elev:   var(--figma-color-bg, #101917);
-      --ui-border: var(--figma-color-border, #27322f);
-      --ui-text:   var(--figma-color-text, #e6edeb);
-      --ui-dim:    var(--figma-color-text-secondary, #8a9691);
-      --ui-accent: #00a884;
-      --ui-accent-weak: rgba(0, 168, 132, .16);
-    }
-  }
-  :root[data-theme="light"] { --ui-bg:#fbfcfc; --ui-panel:#eef2f1; --ui-elev:#fff; --ui-border:#dbe3e1; --ui-text:#10201b; --ui-dim:#5d6b66; --ui-accent:#008069; --ui-accent-weak:rgba(0,128,105,.12); }
-  :root[data-theme="dark"]  { --ui-bg:#0e1513; --ui-panel:#151d1b; --ui-elev:#101917; --ui-border:#27322f; --ui-text:#e6edeb; --ui-dim:#8a9691; --ui-accent:#00a884; --ui-accent-weak:rgba(0,168,132,.16); }
+  /*__UI_TOKENS__*/
+  :root { color-scheme: light dark; /* let native popups/scrollbars follow the theme */ }
 
   body {
     margin: 0;
-    font: 14px/1.45 Inter, -apple-system, system-ui, "Segoe UI", sans-serif;
+    font: 14px/1.45 var(--ui-font);
     color: var(--ui-text);
     background: var(--ui-bg);
     -webkit-font-smoothing: antialiased;

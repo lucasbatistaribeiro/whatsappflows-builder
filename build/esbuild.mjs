@@ -32,8 +32,15 @@ async function buildUI() {
     format: "iife",
   });
   const js = result.outputFiles[0].text;
+  // The design tokens live in their own file (mirrored from the Figma
+  // variables) and are inlined into the stylesheet, like the bundle is into
+  // the script. Both replacements take a function so `$` in the payload is
+  // literal, not a replacement pattern.
+  const tokens = await readFile(p("src/ui/tokens.css"), "utf8");
   const template = await readFile(p("src/ui/ui.html"), "utf8");
-  const html = template.replace("/*__UI_BUNDLE__*/", () => js);
+  const html = template
+    .replace("/*__UI_TOKENS__*/", () => tokens)
+    .replace("/*__UI_BUNDLE__*/", () => js);
   await writeFile(p("plugin/ui.html"), html);
 }
 

@@ -1,0 +1,136 @@
+/* ==========================================================================
+   DESIGN TOKENS — the plugin chrome's palette and scale, mirrored from the
+   Figma file "Flows Builder" (collections Chrome, Scale). Inlined into
+   ui.html by build/esbuild.mjs at its __UI_TOKENS__ marker.
+
+   Each custom property is named after the Figma variable it copies
+   (text/secondary -> --ui-text-secondary), so a value here is traceable to the
+   file and the file is the source of truth: change it there, then here.
+   knowledge/NEW_UI.md holds the full mapping.
+
+   Two namespaces, as before: --ui-* is the plugin's own chrome (this file);
+   --wa-* is WhatsApp's identity for the phone mockup, set from
+   src/main/theme.ts by applyThemeVars(). Never point one at the other.
+
+   SCALE. The Figma design is drawn at 578px wide; the panel is 500px
+   (src/main/index.ts, showUI). --ui-scale is that ratio, and every size token
+   below is the Figma value times it, so the file reads like the variables
+   panel and one number moves the whole chrome. Set it to 1 if the panel is
+   ever widened to the design's size.
+   ========================================================================== */
+:root {
+  --ui-scale: 0.865; /* 500 / 578 */
+
+  /* ---- Chrome · Light ------------------------------------------------- */
+  --ui-surface:          #FFFFFF; /* surface/default — rail, panel, cards, inputs */
+  --ui-surface-sunken:   #F7F7F6; /* surface/sunken  — option rows, code editor */
+  --ui-surface-muted:    #F2F2F1; /* surface/muted   — hover, dir badge (in)   */
+  --ui-border:           #E6E6E5; /* border/default */
+  --ui-text:             #1F2121; /* text/primary   — titles, values */
+  --ui-text-secondary:   #494B4B; /* text/secondary — row labels, body */
+  --ui-text-tertiary:    #929494; /* text/tertiary  — headings, meta, placeholders */
+  --ui-on-accent:        #FFFFFF; /* text/on-accent */
+  --ui-accent:           #008069; /* accent/default */
+  --ui-accent-soft:      #E6F4F0; /* accent/soft    — soft buttons, valid banner */
+  --ui-accent-text:      #00594A; /* accent/text    — text on accent/soft */
+  --ui-danger:           #D93025; /* danger/default */
+  --ui-danger-soft:      #FDECEA; /* danger/soft    — error banner */
+  --ui-tile-bg:          #2D2D32; /* tile/bg        — the dark icon tile on cards */
+  --ui-tile-icon:        #86DEC4; /* tile/icon */
+  --ui-tile-border:      #141519; /* tile/border */
+  --ui-icon-muted:       #969A98; /* icon/muted     — chevrons, grip, rail idle */
+
+  /* Not in the Figma collections yet (kept from the old chrome). */
+  --ui-warn:             #B7791F;
+  --ui-ring:             rgba(0, 128, 105, .38);
+  --ui-shadow-sm:        0 1px 2px rgba(0, 0, 0, .06);  /* nav item, segmented */
+  --ui-shadow-lg:        0 8px 24px rgba(0, 0, 0, .22); /* dropdown list, dragged card */
+
+  /* ---- Scale · radius ------------------------------------------------- */
+  --ui-radius-sm:   calc(8px  * var(--ui-scale)); /* tile, kbd, drag handle, dir badge */
+  --ui-radius-md:   calc(12px * var(--ui-scale)); /* cards, fields, buttons, banner */
+  --ui-radius-lg:   calc(16px * var(--ui-scale));
+  --ui-radius-xl:   calc(20px * var(--ui-scale)); /* chips */
+  --ui-radius-pill: 999px;
+
+  /* ---- Scale · space -------------------------------------------------- */
+  --ui-space-2:  calc(2px  * var(--ui-scale));
+  --ui-space-4:  calc(4px  * var(--ui-scale));
+  --ui-space-8:  calc(8px  * var(--ui-scale));
+  --ui-space-10: calc(10px * var(--ui-scale));
+  --ui-space-12: calc(12px * var(--ui-scale));
+  --ui-space-16: calc(16px * var(--ui-scale)); /* panel side gutter, toolbar padding */
+  --ui-space-24: calc(24px * var(--ui-scale)); /* section top padding */
+  --ui-space-48: calc(48px * var(--ui-scale)); /* rail: brand -> nav */
+
+  /* ---- Scale · icon --------------------------------------------------- */
+  --ui-icon-sm: calc(18px * var(--ui-scale)); /* grip, option row x */
+  --ui-icon-md: calc(22px * var(--ui-scale)); /* buttons, chevrons, tile, search */
+  --ui-icon-lg: calc(26px * var(--ui-scale)); /* category row leading icon */
+
+  /* ---- Scale · size --------------------------------------------------- */
+  --ui-size-row:        calc(57px  * var(--ui-scale)); /* category / settings row */
+  --ui-size-tile:       calc(40px  * var(--ui-scale));
+  --ui-size-control:    calc(48px  * var(--ui-scale)); /* buttons, toolbar actions */
+  --ui-size-control-sm: calc(40px  * var(--ui-scale)); /* card actions */
+  --ui-size-rail:       calc(79px  * var(--ui-scale));
+  --ui-size-panel:      calc(497px * var(--ui-scale));
+
+  /* ---- Type (from the components, no Figma collection) -----------------
+     Roboto in the file; the plugin can't load fonts (networkAccess: none), so
+     the stack falls through to what the machine has. Plugin-chrome text never
+     goes below 14px — max() enforces it where the design's size would. */
+  --ui-font: Inter, Roboto, -apple-system, system-ui, "Segoe UI", sans-serif;
+  --ui-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+  --ui-text-title:   calc(24px * var(--ui-scale)); /* toolbar title, 600 */
+  --ui-text-body:    calc(22px * var(--ui-scale)); /* row labels, card titles, values */
+  --ui-text-button:  calc(21px * var(--ui-scale)); /* 48px button label, 500 */
+  --ui-text-option:  calc(20px * var(--ui-scale)); /* option rows, banner, chips */
+  --ui-text-sub:     calc(18px * var(--ui-scale)); /* subtitles, field labels, section headings, 40px button */
+  --ui-text-meta:    max(14px, calc(17px * var(--ui-scale))); /* toolbar meta, hints */
+  --ui-text-badge:   max(14px, calc(14px * var(--ui-scale))); /* dir badge */
+  --ui-heading-tracking: calc(2px * var(--ui-scale)); /* section headings, uppercase */
+
+  /* ---- Legacy aliases ------------------------------------------------
+     The names the old chrome CSS uses, pointed at the new palette so the
+     existing screens keep rendering while they are rebuilt. Remove when the
+     last consumer is gone (knowledge/NEW_UI.md, layer 3). */
+  --ui-bg:          var(--ui-surface-muted);
+  --ui-panel:       var(--ui-surface-sunken);
+  --ui-elev:        var(--ui-surface);
+  --ui-dim:         var(--ui-text-secondary);
+  --ui-accent-weak: var(--ui-accent-soft);
+  --ui-radius:      var(--ui-radius-sm);
+}
+
+/* ---- Chrome · Dark ----------------------------------------------------
+   The same 17 variables in the collection's Dark mode. Applied when the OS is
+   dark and the plugin theme is "system" (no data-theme), or when it is forced
+   with data-theme="dark" (applyTheme in ui.ts). The block is repeated because
+   CSS has no way to share declarations between the two selectors. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-surface: #101917; --ui-surface-sunken: #151D1B; --ui-surface-muted: #0E1513;
+    --ui-border: #27322F;
+    --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #6B7672; --ui-on-accent: #FFFFFF;
+    --ui-accent: #00A884; --ui-accent-soft: #0D2A24; --ui-accent-text: #4FD1B0;
+    --ui-danger: #E5484D; --ui-danger-soft: #3A1A18;
+    --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E; --ui-tile-border: #C3CDC9; /* the tile inverts so it doesn't sink into the surface */
+    --ui-icon-muted: #6B7672;
+    --ui-ring: rgba(0, 168, 132, .38);
+    --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+    --ui-shadow-lg: 0 8px 24px rgba(0, 0, 0, .5);
+  }
+}
+:root[data-theme="dark"] {
+  --ui-surface: #101917; --ui-surface-sunken: #151D1B; --ui-surface-muted: #0E1513;
+  --ui-border: #27322F;
+  --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #6B7672; --ui-on-accent: #FFFFFF;
+  --ui-accent: #00A884; --ui-accent-soft: #0D2A24; --ui-accent-text: #4FD1B0;
+  --ui-danger: #E5484D; --ui-danger-soft: #3A1A18;
+  --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E; --ui-tile-border: #C3CDC9;
+  --ui-icon-muted: #6B7672;
+  --ui-ring: rgba(0, 168, 132, .38);
+  --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+  --ui-shadow-lg: 0 8px 24px rgba(0, 0, 0, .5);
+}
