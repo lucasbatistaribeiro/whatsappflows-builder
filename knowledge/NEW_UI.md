@@ -8,6 +8,12 @@ records the decisions the mapping needed. Work lands on the `new-ui` branch in
 three layers: **tokens → components → screens**, each verifiable in the
 browser before the next starts.
 
+| Layer | Status | Where |
+|---|---|---|
+| 1 · tokens | done | `src/ui/tokens.css`, inlined by the build |
+| 2 · components | done | `src/ui/components.ts` (DOM builders) + `src/ui/chrome.css` (`.ui-*`); `npm run gallery` renders every variant |
+| 3 · screens | next | `ui.ts`: the nine screens below, replacing the tabs, the mode switch and the drawer |
+
 ## Where things are in the file
 
 | Page | What | Node |
@@ -73,31 +79,35 @@ about both modes, and light/dark is still chosen by `prefers-color-scheme` +
 `--wa-*` is untouched: set at runtime by `applyThemeVars()` from
 `src/main/theme.ts`, which the WhatsApp collection merely mirrors.
 
-## Components (layer 2) — Figma → CSS class
+## Components (layer 2) — Figma → `components.ts` / `chrome.css`
 
-Measured from the Components page (values at design scale; the tokens scale them):
+Measured from the Components page (values at design scale; the tokens scale
+them). Each row is a builder in `components.ts` and a rule block in
+`chrome.css`; `npm run gallery` shows them all (`build/gallery.html`). The
+builders are pure DOM — translated strings go in, nodes come out — so the
+screens own the i18n and the model.
 
-| Figma component | Variants / props | Spec | CSS (planned) |
+| Figma component | Variants / props | Spec | Builder · CSS |
 |---|---|---|---|
-| Navigation rail | active = Flows · Chat · Settings | 79 wide, padding 18/12, 2px right border; brand 54² accent r12 + sparkle; nav gap 16, brand→nav 48; bottom: theme (sun) button 54² + help 54×48 | `.rail`, `.rail-brand`, `.rail-nav`, `.rail-foot` |
-| Navigation item | Enabled · Disabled (.38) · Selected (surface + border, shadow) · Hover (muted) · Pressed (accent/soft) · Focus (2px accent) | 54², r13, icon 28; icon colour by state: muted · accent · secondary · accent/text | `.rail-item[aria-current]` + `:hover/:active/:focus-visible` |
-| Toolbar | back · actions 0/1/2 · caret | h82, padding 16, gap 10; Back = secondary 48 icon button; title 24/600 + caret 22, meta 17 tertiary | `.toolbar`, `.toolbar-title`, `.toolbar-meta` |
-| Heading row | hint | 18 tertiary, tracking 2, uppercase; hint 17 right | `.section-head` |
-| Category row | trailing = none · chevron · count · caret · value · toggle | h57, padding 0/14, gap 12; icon 26 muted; label 22 secondary; count 18 tertiary; chevron 22 | `.row`, `.row-count`, `.row-value` |
-| Card | trailing = drag · chevron · badge · none; state default/selected; title strong/plain | padding 9/12, gap 12, r md, border 1 (selected: 2px accent); tile 40; title 22 (strong 500 primary / plain 400 secondary), subtitle 18 tertiary | `.card`, `.card.selected`, `.card-title` |
-| Card · expanded | — | header as Card + fields, option rows, Duplicate/Remove (secondary 40) | `.card.open` + `.pe-*` |
-| Option row | label | h44, r md, surface/sunken, padding 0/12, gap 10; grip 18, label 20 primary, x 18 | `.opt-row` |
-| Tile | icon swap | 40², r sm, tile/bg + 1px tile/border, icon 22 tile/icon | `.tile` |
-| Drag handle | — | 23×34, r sm, surface + border, grip 18 | `.grip` |
-| Button | style primary/secondary/soft · size 48/40 · label | padding 0/18 (40: 0/12), gap 10, r md; label 21/500 (40: 18); icon 22; primary accent+on-accent, secondary surface+border + text secondary, soft accent/soft + accent/text | `.btn`, `.btn.primary/.secondary/.soft`, `.btn.sm` |
-| Search field | kbd | h51, r md, padding 0/14, gap 13; icon 22; placeholder 22 tertiary; kbd 20 in r sm border | `.search` |
-| Field | required | label 18 tertiary (+ red *), gap 8; input h51 r md padding 0/14 value 22 primary | `.field` |
-| Validation banner | valid · error | h47, r md, padding 12/14, gap 10; icon 22; text 20; valid = accent/soft + accent/text, error = danger/soft + danger | `.banner.ok/.err` |
-| Toggle | on | 52×30 pill, padding 3, knob 24 surface; on accent, off border | `.switch` (replaces `.menu-switch`) |
-| Dir badge | dir | r sm, padding 3/8, 14/500; OUT accent/soft + accent/text, IN muted + tertiary | `.dir` |
-| Value | swatch | 20 tertiary + chevron, optional 22 swatch r6 | `.row-value` |
-| Divider | — | 2px border, full width | `.divider` |
-| Kbd | key | 20 tertiary, r sm, border | `.kbd` |
+| Navigation rail | active = Flows · Chat · Settings | 79 wide, padding 18/12, 2px right border; brand 54² accent r12 + sparkle; nav gap 16, brand→nav 48; bottom: theme (sun) button 54² + help 54×48 | `rail()` · `.ui-rail`, `.ui-rail-brand`, `.ui-rail-top/-foot` |
+| Navigation item | Enabled · Disabled (.38) · Selected (surface + border, shadow) · Hover (muted) · Pressed (accent/soft) · Focus (2px accent) | 54², r13, icon 28; icon colour by state: muted · accent · secondary · accent/text | `.ui-rail-item` + `[aria-current="page"]`, `:hover`, `:active`, `:focus-visible`, `:disabled` |
+| Toolbar | back · actions 0/1/2 · caret | h82, padding 16, gap 10; Back = secondary 48 icon button; title 24/600 + caret 22, meta 17 tertiary | `toolbar()` · `.ui-toolbar`, `-title`, `-meta` |
+| Heading row | hint | 18 tertiary, tracking 2, uppercase; hint 17 right | `section()` · `.ui-section`, `.ui-section-head`, `-hint` |
+| Category row | trailing = none · chevron · count · caret · value · toggle | h57, padding 0/14, gap 12; icon 26 muted; label 22 secondary; count 18 tertiary; chevron 22 | `row()` · `.ui-row`, `-count`, `-value`, `-swatch` |
+| Card | trailing = drag · chevron · badge · none; state default/selected; title strong/plain | padding 9/12, gap 12, r md, border 1 (selected: 2px accent); tile 40; title 22 (strong 500 primary / plain 400 secondary), subtitle 18 tertiary | `card()` · `.ui-card`, `.selected`, `.plain`, `-title`, `-sub` |
+| Card · expanded | — | header as Card + fields, option rows, Duplicate/Remove (secondary 40) | `cardExpanded()` · `.ui-card.open`, `-head`, `-actions` |
+| Option row | label | h44, r md, surface/sunken, padding 0/12, gap 10; grip 18, label 20 primary, x 18 | `optionRow()`, `addLink()` · `.ui-option`, `.ui-add` |
+| Tile | icon swap | 40², r sm, tile/bg + 1px tile/border, icon 22 tile/icon | `tile()` · `.ui-tile` |
+| Drag handle | — | 23×34, r sm, surface + border, grip 18 | `grip()` · `.ui-grip` |
+| Button | style primary/secondary/soft · size 48/40 · label | padding 0/18 (40: 0/12), gap 10, r md; label 21/500 (40: 18); icon 22; primary accent+on-accent, secondary surface+border + text secondary, soft accent/soft + accent/text | `button()` · `.ui-btn`, `.primary/.secondary/.soft`, `.sm`, `.icon` |
+| Search field | kbd | h51, r md, padding 0/14, gap 13; icon 22; placeholder 22 tertiary; kbd 20 in r sm border | `searchField()` · `.ui-search`, `.ui-kbd` |
+| Field | required | label 18 tertiary (+ red *), gap 8; input h51 r md padding 0/14 value 22 primary | `field()`, `textArea()` · `.ui-field`, `-label`, `.ui-input` |
+| Validation banner | valid · error | h47, r md, padding 12/14, gap 10; icon 22; text 20; valid = accent/soft + accent/text, error = danger/soft + danger | `banner()` · `.ui-banner.ok/.err/.warn` |
+| Toggle | on | 52×30 pill, padding 3, knob 24 surface; on accent, off border | `toggle()` · `.ui-switch` |
+| Dir badge | dir | r sm, padding 3/8, 14/500; OUT accent/soft + accent/text, IN muted + tertiary | `dirBadge()` · `.ui-dir.in/.out` |
+| Value | swatch | 20 tertiary + chevron, optional 22 swatch r6 | part of `row({trailing:"value"})` |
+| Divider | — | 2px border, full width | `divider()` · `.ui-divider` |
+| Kbd | key | 20 tertiary, r sm, border | `.ui-kbd` |
 | WA · * | status bar, chat header, nav bar, composer, bubble in/out, system pill, reply/flow button | the mockup — already in `.wa-*`; keep | — |
 
 Icons: the `icons` page is the same Lucide set as `src/ui/icons.ts` (names
@@ -107,7 +117,11 @@ match the keys used in the concept build: `box`, `msg`, `sliders`, `help`,
 `lang`, `sun`, `frame`, `import`, `copy`, `user`, `bubble`, `check`, `alert`,
 `reply`, `list`, `workflow`, `file`, `link`, `calendar`, `radio`, `checkbox`,
 `updown`, `tag`, `mic`, `video`, `sparkles`, `trash`, `x`, `more`, `flag`).
-Several are missing from `icons.ts` and get added in layer 2.
+They are in `icons.ts` under their Lucide names (`box`, `message-square-text`,
+`sliders-vertical`, `circle-help`, `arrow-left`, `text-cursor-input`,
+`list-checks`, `mouse-pointer-click`, `corner-down-right`, `code-xml`,
+`layout-template`, `languages`, `circle-dot`, `square-check`,
+`chevrons-up-down`, `ellipsis`…).
 
 ## Screens (layer 3) — navigation
 

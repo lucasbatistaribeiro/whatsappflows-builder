@@ -21,6 +21,7 @@ npm install
 npm run build      # build/esbuild.mjs -> plugin/code.js (main) + plugin/ui.html (UI inlined)
 npm run watch      # rebuild main on change (re-run for UI changes)
 npm run typecheck  # both projects: typecheck:main + typecheck:ui (strict)
+npm run gallery    # build/gallery.html: every new-chrome component, light + dark
 ```
 
 `plugin/` is the deliverable: after a build it holds only `manifest.json`,
@@ -129,13 +130,15 @@ src/
   shared/      messages                                          (UI <-> main contract)
   main/        theme, fonts, nodes, chrome, components, screen, routing, index  (Figma sandbox)
   ui/          ui.html, ui.ts, bridge, preview, propEditor, dropdown, icons, i18n (plugin UI)
+               tokens.css + chrome.css + components.ts: the new chrome (NEW_UI.md)
                each of those three carries its own CLAUDE.md with the rules
                that bite there — the compiler-enforced split, the traps, how
                to verify. They load when you open files in that directory.
 build/         esbuild.mjs (paths resolve from the file, not the cwd) + three
-               tsconfigs: base, main (no DOM), ui (no figma)
+               tsconfigs: base, main (no DOM), ui (no figma); gallery.ts/.mjs
+               render every new-chrome component (`npm run gallery`)
 knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md, BACKLOG.md,
-               CHAT_UI.md, CHAT_PATTERNS.md
+               CHAT_UI.md, CHAT_PATTERNS.md, NEW_UI.md (the rail + panel chrome)
 .claude/agents/ runnable subagent definitions — not docs (see plugin-ui-tester)
 .claude/skills/ invocable procedures: release (cut a tagged release + verify the
                published zip), meta-sync (reconcile with Meta's spec)

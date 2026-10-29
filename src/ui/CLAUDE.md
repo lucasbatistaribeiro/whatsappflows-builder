@@ -25,6 +25,23 @@ to the **`plugin-ui-tester`** subagent.
 The browser cannot emulate a narrow Figma panel reliably — test responsiveness
 by reading computed styles and clamping logic, not by resizing the window.
 
+The new chrome's components can be seen on their own, every variant at once,
+without a screen using them: `npm run gallery` builds `build/gallery.html`
+from `build/gallery.ts` + `tokens.css` + `chrome.css`. Serve `build/` and
+open it; the button in the corner flips light/dark.
+
+## The new chrome: `components.ts` + `chrome.css`
+
+The rail + panel UI (`knowledge/NEW_UI.md`) is built from DOM builders in
+`components.ts` — one per Figma component (`rail`, `toolbar`, `section`, `row`,
+`card`, `cardExpanded`, `field`, `searchField`, `banner`, `toggle`…) — styled
+by the `.ui-*` rules in `chrome.css`, which the build inlines into `ui.html`
+next to the tokens. The builders are pure DOM: callers pass translated strings
+(no `t()` inside), and sizes come from the tokens, so everything follows
+`--ui-scale`. Icons go through `ic(name, size)`, a span sized by CSS, not by
+`iconEl()`'s pixel argument. Until layer 3 lands, the old chrome CSS in
+`ui.html` and these rules coexist; the `.ui-` prefix is what keeps them apart.
+
 ## Two brands, and the prefix tells you which
 
 The stylesheet in `ui.html` holds two identities, and every colour belongs to

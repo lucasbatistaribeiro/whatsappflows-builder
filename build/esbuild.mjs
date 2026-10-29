@@ -37,9 +37,11 @@ async function buildUI() {
   // the script. Both replacements take a function so `$` in the payload is
   // literal, not a replacement pattern.
   const tokens = await readFile(p("src/ui/tokens.css"), "utf8");
+  const chrome = await readFile(p("src/ui/chrome.css"), "utf8");
   const template = await readFile(p("src/ui/ui.html"), "utf8");
   const html = template
     .replace("/*__UI_TOKENS__*/", () => tokens)
+    .replace("/*__UI_CHROME__*/", () => chrome)
     .replace("/*__UI_BUNDLE__*/", () => js);
   await writeFile(p("plugin/ui.html"), html);
 }
