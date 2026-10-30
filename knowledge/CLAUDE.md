@@ -87,9 +87,11 @@ then `npm run build`.
   restyle them to match the plugin chrome. Plugin-chrome text has a **14px minimum**;
   `wa-*` does not.
 - **Theme:** the chrome's tokens live in `src/ui/tokens.css` (inlined into
-  `ui.html` by the build), a mirror of the Figma file's Chrome + Scale variable
-  collections with light/dark values — see `knowledge/NEW_UI.md` for the mapping
-  and the scale knob. Light/dark follows `prefers-color-scheme`; a manual toggle
+  `ui.html` by the build), a mirror of the Figma file's Chrome, Typography and
+  Scale variable collections with light/dark values. Colour and type follow
+  **Material 3 system-token names** (`--md-sys-color-*`, `--md-sys-typescale-*`;
+  `knowledge/MATERIAL_TOKENS.md`), the scale keeps `--ui-*` (`knowledge/NEW_UI.md`
+  has the knob). Light/dark follows `prefers-color-scheme`; a manual toggle
   sets `:root[data-theme="light|dark"]`. The generator's own tokens live in
   `src/main/theme.ts` and also feed the preview via CSS vars (single source).
 - **i18n (`src/ui/i18n.ts`):** static text uses `data-i18n` / `data-i18n-ph` /
@@ -138,7 +140,8 @@ build/         esbuild.mjs (paths resolve from the file, not the cwd) + three
                tsconfigs: base, main (no DOM), ui (no figma); gallery.ts/.mjs
                render every new-chrome component (`npm run gallery`)
 knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md, BACKLOG.md,
-               CHAT_UI.md, CHAT_PATTERNS.md, NEW_UI.md (the rail + panel chrome)
+               CHAT_UI.md, CHAT_PATTERNS.md, NEW_UI.md (the rail + panel chrome),
+               MATERIAL_TOKENS.md (the M3 colour + type token names)
 .claude/agents/ runnable subagent definitions — not docs (see plugin-ui-tester)
 .claude/skills/ invocable procedures: release (cut a tagged release + verify the
                published zip), meta-sync (reconcile with Meta's spec)

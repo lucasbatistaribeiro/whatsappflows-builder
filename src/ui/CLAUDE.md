@@ -50,8 +50,11 @@ builder per screen, `go()` / `back()` — see "How the screens are wired" in
 The stylesheet in `ui.html` holds two identities, and every colour belongs to
 exactly one of them. The token namespace says which, at the use site:
 
-- **`--ui-*` — the plugin's own chrome** (the `.ui-*` components, `.dd`, the
-  `.pe-*` editor, the preview's screen switcher). Defined in `tokens.css`, a mirror of the
+- **`--md-sys-*` and `--ui-*` — the plugin's own chrome** (the `.ui-*`
+  components, `.dd`, the `.pe-*` editor, the preview's screen switcher). Colour
+  and type use Material 3's system-token names (`--md-sys-color-on-surface`,
+  `--md-sys-typescale-title-large-size` — `knowledge/MATERIAL_TOKENS.md`); the
+  scale keeps `--ui-*`. Defined in `tokens.css`, a mirror of the
   Figma file's *Chrome* and *Scale* variable collections (light + dark), and
   inlined into `ui.html` by the build. `knowledge/NEW_UI.md` has the mapping
   and the one scale knob. **14px minimum** for text.
@@ -61,12 +64,12 @@ exactly one of them. The token namespace says which, at the use site:
   the generated frames in step. Real WhatsApp sizes, often below 14px.
 
 **Never point one at the other**, in either direction. A `--wa-*` value is
-WhatsApp's to dictate and ours to copy accurately; a `--ui-*` value is ours to
+WhatsApp's to dictate and ours to copy accurately; a `--md-sys-*` / `--ui-*` value is ours to
 choose. The plugin accent *happens* to be a WhatsApp green — that is a styling
 choice, not a brand rule, so changing `--wa-primary` must not change it.
 
 The mockup's CSS is one contiguous block between two `####` banners. The
-invariant is checkable: no `var(--ui-*)` inside that block, no `var(--wa-*)`
+invariant is checkable: no `var(--md-sys-*)` or `var(--ui-*)` inside that block, no `var(--wa-*)`
 outside it.
 
 ## Re-render only what has to change
