@@ -25,7 +25,7 @@
 
   body {
     margin: 0;
-    font: 14px/1.45 var(--ui-font);
+    font: 14px/1.45 var(--md-ref-typeface-plain);
     color: var(--md-sys-color-on-surface);
     background: var(--md-sys-color-surface);
     -webkit-font-smoothing: antialiased;
@@ -55,8 +55,8 @@
   #offer.open { max-height: 200px; opacity: 1; visibility: visible;
     padding: var(--ui-space-12) var(--ui-space-16); border-bottom-color: var(--md-sys-color-outline-variant); }
   .offer-text { flex: 1; min-width: 0; }
-  .offer-title { font-size: var(--ui-text-sub); font-weight: 500; }
-  .offer-body { font-size: var(--ui-text-meta); opacity: .8; margin-top: 1px; }
+  .offer-title { font-size: var(--md-sys-typescale-emphasized-label-medium-size); font-weight: var(--md-sys-typescale-emphasized-label-medium-weight); }
+  .offer-body { font-size: var(--md-sys-typescale-body-small-size); opacity: .8; margin-top: 1px; }
   .offer-actions { display: flex; gap: var(--ui-space-8); flex: none; }
 
   /* Generating: an indeterminate bar under the toolbar + a skeletoned body.
@@ -91,8 +91,8 @@
      the builder's own controls. Styled as the chips of the new chrome. */
   .pv-tabs { display: flex; gap: var(--ui-space-8); flex-wrap: wrap; justify-content: center; margin-bottom: var(--ui-space-16); }
   .pv-tab { height: calc(38px * var(--ui-scale)); padding: 0 var(--ui-space-16); border-radius: var(--ui-radius-xl); font-family: inherit;
-    font-size: var(--ui-text-sub); background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); cursor: pointer; }
-  .pv-tab.active { background: var(--md-sys-color-primary); border-color: transparent; color: var(--md-sys-color-on-primary); font-weight: 500; }
+    font-size: var(--md-sys-typescale-label-medium-size); background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant); color: var(--md-sys-color-on-surface-variant); cursor: pointer; }
+  .pv-tab.active { background: var(--md-sys-color-primary); border-color: transparent; color: var(--md-sys-color-on-primary); font-weight: var(--md-sys-typescale-emphasized-label-medium-weight); }
   .pv-tab.err { box-shadow: inset 0 0 0 1.5px var(--md-sys-color-error); }
 
   /* Composer internals that sit inside a message card (chatComposer.ts). */
@@ -448,13 +448,13 @@
     font: inherit; font-size: 14px; padding: 9px 10px; outline: none; }
   .dd-search::placeholder { color: var(--md-sys-color-on-surface-variant); }
   .dd-list.dd-sm { font-size: 14px; }
-  .dd-group { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--md-sys-color-on-surface-variant);
+  .dd-group { font-size: 14px; /* no type role yet (MATERIAL_TOKENS.md) */ text-transform: uppercase; letter-spacing: .06em; color: var(--md-sys-color-on-surface-variant);
     font-weight: 600; padding: 8px 8px 4px; }
   .dd-group:first-child { padding-top: 4px; }
   .dd-option { padding: 6px 8px; border-radius: 6px; cursor: pointer;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dd-option:hover { background: var(--md-sys-color-primary-container); }
-  .dd-option.selected { color: var(--md-sys-color-primary); font-weight: 600; }
+  .dd-option.selected { color: var(--md-sys-color-primary); font-weight: 600; } /* no type role yet (MATERIAL_TOKENS.md) */
 
   /* ---- Themed scrollbars everywhere ---- */
   * { scrollbar-width: thin; scrollbar-color: var(--md-sys-color-outline-variant) transparent; }

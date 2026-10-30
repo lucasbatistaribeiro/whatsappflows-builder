@@ -83,20 +83,67 @@
   --ui-size-rail:       calc(70px  * var(--ui-scale)); /* the rail component hugs to 70; the size/rail variable still reads 79 */
   --ui-size-panel:      calc(497px * var(--ui-scale));
 
-  /* ---- Type (from the components, no Figma collection) -----------------
+  /* ---- Type (Figma collection Typography + the Chrome/* text styles) ---
+     Material 3 type scale: one group per role, size / weight / tracking.
+     The sizes and weights are ours, the role names M3's; "emphasized" is M3
+     Expressive's heavier variant of a role and shares its size. Line height is
+     not tokenised (Figma uses auto; rules here use ~1.2) — MATERIAL_TOKENS.md.
      Roboto in the file; the plugin can't load fonts (networkAccess: none), so
      the stack falls through to what the machine has. Plugin-chrome text never
      goes below 14px — max() enforces it where the design's size would. */
-  --ui-font: Inter, Roboto, -apple-system, system-ui, "Segoe UI", sans-serif;
-  --ui-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
-  --ui-text-title:   calc(24px * var(--ui-scale)); /* toolbar title, 600 */
-  --ui-text-body:    calc(22px * var(--ui-scale)); /* row labels, card titles, values */
-  --ui-text-button:  calc(21px * var(--ui-scale)); /* 48px button label, 500 */
-  --ui-text-option:  calc(20px * var(--ui-scale)); /* option rows, banner, chips */
-  --ui-text-sub:     calc(18px * var(--ui-scale)); /* subtitles, field labels, section headings, 40px button */
-  --ui-text-meta:    max(14px, calc(17px * var(--ui-scale))); /* toolbar meta, hints */
-  --ui-text-badge:   max(14px, calc(14px * var(--ui-scale))); /* dir badge */
-  --ui-heading-tracking: calc(2px * var(--ui-scale)); /* section headings, uppercase */
+  --md-ref-typeface-plain: Inter, Roboto, -apple-system, system-ui, "Segoe UI", sans-serif;
+  --ui-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace; /* not an M3 role: the Flow JSON editor */
+
+  --md-sys-typescale-headline-small-size:     calc(24px * var(--ui-scale)); /* toolbar title */
+  --md-sys-typescale-headline-small-weight:   600;
+  --md-sys-typescale-headline-small-tracking: 0;
+
+  --md-sys-typescale-title-large-size:     calc(22px * var(--ui-scale)); /* row label, input text */
+  --md-sys-typescale-title-large-weight:   400;
+  --md-sys-typescale-title-large-tracking: 0;
+  --md-sys-typescale-emphasized-title-large-size:     var(--md-sys-typescale-title-large-size); /* card title */
+  --md-sys-typescale-emphasized-title-large-weight:   500;
+  --md-sys-typescale-emphasized-title-large-tracking: var(--md-sys-typescale-title-large-tracking);
+
+  --md-sys-typescale-title-small-size:     calc(18px * var(--ui-scale)); /* section heading, uppercase */
+  --md-sys-typescale-title-small-weight:   400;
+  --md-sys-typescale-title-small-tracking: calc(2px * var(--ui-scale));
+
+  --md-sys-typescale-body-large-size:     calc(20px * var(--ui-scale)); /* trailing value, banner, option row, kbd */
+  --md-sys-typescale-body-large-weight:   400;
+  --md-sys-typescale-body-large-tracking: 0;
+  --md-sys-typescale-emphasized-body-large-size:     var(--md-sys-typescale-body-large-size); /* inline action (Add option) */
+  --md-sys-typescale-emphasized-body-large-weight:   500;
+  --md-sys-typescale-emphasized-body-large-tracking: var(--md-sys-typescale-body-large-tracking);
+
+  --md-sys-typescale-body-medium-size:     calc(18px * var(--ui-scale)); /* card subtitle, field label, count */
+  --md-sys-typescale-body-medium-weight:   400;
+  --md-sys-typescale-body-medium-tracking: 0;
+
+  --md-sys-typescale-body-small-size:     max(14px, calc(17px * var(--ui-scale))); /* toolbar meta, hints */
+  --md-sys-typescale-body-small-weight:   400;
+  --md-sys-typescale-body-small-tracking: 0;
+  --md-sys-typescale-emphasized-body-small-size:     var(--md-sys-typescale-body-small-size); /* Collapse all, status pill */
+  --md-sys-typescale-emphasized-body-small-weight:   500;
+  --md-sys-typescale-emphasized-body-small-tracking: var(--md-sys-typescale-body-small-tracking);
+
+  --md-sys-typescale-label-large-size:     calc(21px * var(--ui-scale)); /* secondary button (48) */
+  --md-sys-typescale-label-large-weight:   400;
+  --md-sys-typescale-label-large-tracking: 0;
+  --md-sys-typescale-emphasized-label-large-size:     var(--md-sys-typescale-label-large-size); /* primary / soft button (48) */
+  --md-sys-typescale-emphasized-label-large-weight:   500;
+  --md-sys-typescale-emphasized-label-large-tracking: var(--md-sys-typescale-label-large-tracking);
+
+  --md-sys-typescale-label-medium-size:     calc(18px * var(--ui-scale)); /* secondary button (40), chips */
+  --md-sys-typescale-label-medium-weight:   400;
+  --md-sys-typescale-label-medium-tracking: 0;
+  --md-sys-typescale-emphasized-label-medium-size:     var(--md-sys-typescale-label-medium-size); /* primary / soft button (40), active chip */
+  --md-sys-typescale-emphasized-label-medium-weight:   500;
+  --md-sys-typescale-emphasized-label-medium-tracking: var(--md-sys-typescale-label-medium-tracking);
+
+  --md-sys-typescale-label-small-size:     max(14px, calc(14px * var(--ui-scale))); /* IN/OUT badge */
+  --md-sys-typescale-label-small-weight:   500;
+  --md-sys-typescale-label-small-tracking: 0;
 }
 
 /* ---- Colour · Dark (Figma collection Chrome, mode Dark) ----------------

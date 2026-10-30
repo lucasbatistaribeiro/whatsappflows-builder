@@ -90,24 +90,34 @@ heavier, as in M3 Expressive.
 | `Chrome/action small` | 18 / 500 | primary small button | `Chrome/emphasized/label-medium` |
 | `Chrome/meta` | 17 / 400 | toolbar meta, hints | `Chrome/body-small` |
 | `Chrome/badge` | 14 / 500 | IN/OUT badge | `Chrome/label-small` |
+| — (code only) | 17 / 500 | "Collapse all" in a section heading, the JSON status pill | `Chrome/emphasized/body-small` (new) |
 
 Each style is backed by variables in a new **Typography** collection:
 `typeface/plain` (Roboto), and per role `size`, `weight`, `tracking`
 (emphasized variants alias the base `size` and `tracking` and carry their own
-`weight`). **Line height is not tokenised yet:** every style uses Figma's
+`weight`) — 43 variables. **Line height is not tokenised yet:** every style uses Figma's
 *auto*, and the code uses the matching ~1.2; M3 defines a line height per role,
 which would move text by a pixel or two — left as a follow-up.
 
 Roles not used by the chrome (display-*, headline-large/-medium, title-medium,
 the other emphasized variants) are not defined rather than invented.
 
+Three weights in the CSS stay literal because no role covers them yet: the
+screen id in a validation issue (600), and inside the custom dropdown the
+selected option (600) and the group header (14px / 600). Each is commented
+where it sits.
+
 ### What this changes in code
 
 - `Chrome/link` is 20 in Figma; the code drew the "Add option" link at 19 →
   now 20 (`emphasized-body-large`).
-- Nothing else moves: every size, weight and colour keeps its value.
+- Nothing else moves. Checked by recording the computed colour, background,
+  border, shadow, font size, weight, tracking and family of every chrome
+  element on nine screens in both themes (3,514 elements) before and after:
+  the only differences are this link, the `icon/muted` merge and the tile
+  border.
 
-## Migration order
+## Migration order (done)
 
 1. **Figma, colours** — version saved first; rename the 14 variables, merge
    `icon/muted` into `outline` (rebind its strokes and the Enabled alias),

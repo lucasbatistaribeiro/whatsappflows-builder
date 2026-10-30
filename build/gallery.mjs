@@ -21,7 +21,7 @@ ${tokens}
 ${chrome}
 /* What the plugin's ui.html sets globally, so the components measure the same here. */
 :root { color-scheme: light dark; } * { box-sizing: border-box; }
-body { margin: 0; padding: 24px; background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface); font: 14px/1.45 var(--ui-font); }
+body { margin: 0; padding: 24px; background: var(--md-sys-color-surface-container); color: var(--md-sys-color-on-surface); font: 14px/1.45 var(--md-ref-typeface-plain); }
 .g-block { margin-bottom: 28px; }
 .g-block h3 { font-size: 13px; font-weight: 600; color: var(--md-sys-color-outline); margin: 0 0 10px; }
 .g-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
