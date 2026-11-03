@@ -42,7 +42,7 @@
 .ui-rail-item { width: var(--ui-size-control); height: var(--ui-size-control); border-radius: var(--ui-radius-sm);
   display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid transparent;
   background: transparent; color: var(--ui-icon-muted); cursor: pointer; box-shadow: none;
-  transition: background .12s, color .12s, border-color .12s, box-shadow .12s; }
+  transition: background var(--ui-duration-state), color var(--ui-duration-state), border-color var(--ui-duration-state), box-shadow var(--ui-duration-state); }
 .ui-rail-item .ui-ic { font-size: calc(28px * var(--ui-scale)); color: inherit; }
 .ui-rail-item:hover { background: var(--ui-surface-muted); color: var(--ui-text-secondary); box-shadow: var(--ui-shadow-sm); }
 .ui-rail-item:active { background: var(--ui-accent-soft); color: var(--ui-accent-text); box-shadow: var(--ui-shadow-sm); }
@@ -99,7 +99,7 @@ button.ui-row:hover { background: var(--ui-surface-sunken); }
 /* ---- Card (padding 9/12, gap 12, r md; selected = 2px accent) ------------ */
 .ui-card { display: flex; align-items: center; gap: var(--ui-space-12); padding: calc(9px * var(--ui-scale)) var(--ui-space-12);
   border-radius: var(--ui-radius-md); background: var(--ui-surface); border: 1px solid var(--ui-border); width: 100%; text-align: left;
-  font-family: inherit; color: var(--ui-text); position: relative; transition: border-color .12s, background .12s, box-shadow .15s, opacity .15s; }
+  font-family: inherit; color: var(--ui-text); position: relative; transition: border-color var(--ui-duration-state), background var(--ui-duration-state), box-shadow var(--ui-duration-move), opacity var(--ui-duration-move); }
 .ui-card.selected { border: 2px solid var(--ui-accent); padding: calc(8px * var(--ui-scale)) calc(var(--ui-space-12) - 1px); }
 button.ui-card, .ui-card.clickable { cursor: pointer; }
 button.ui-card:hover, .ui-card.clickable:hover { background: var(--ui-surface-sunken); }
@@ -141,7 +141,7 @@ button.ui-card-caret { border: 0; background: none; padding: 0; cursor: pointer;
 .ui-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--ui-space-10); height: var(--ui-size-control);
   padding: 0 calc(18px * var(--ui-scale)); border-radius: var(--ui-radius-md); font-family: inherit; font-size: var(--ui-text-button);
   font-weight: 500; line-height: 1; border: 1px solid transparent; cursor: pointer; white-space: nowrap; flex: none;
-  transition: background .12s, border-color .12s, filter .12s; }
+  transition: background var(--ui-duration-state), border-color var(--ui-duration-state), filter var(--ui-duration-state); }
 .ui-btn.primary { background: var(--ui-accent); color: var(--ui-on-accent); }
 .ui-btn.primary:hover { filter: brightness(1.06); }
 .ui-btn.secondary { background: var(--ui-surface); border-color: var(--ui-border); color: var(--ui-text-secondary); font-weight: 400; }
@@ -163,7 +163,7 @@ button.ui-card-caret { border: 0; background: none; padding: 0; cursor: pointer;
 
 /* ---- Search field (h51, r md, padding 0/14, gap 13) + kbd ---------------- */
 .ui-search { display: flex; align-items: center; gap: calc(13px * var(--ui-scale)); height: calc(51px * var(--ui-scale)); padding: 0 calc(14px * var(--ui-scale));
-  border-radius: var(--ui-radius-md); background: var(--ui-surface); border: 1px solid var(--ui-border); transition: border-color .12s; }
+  border-radius: var(--ui-radius-md); background: var(--ui-surface); border: 1px solid var(--ui-border); transition: border-color var(--ui-duration-state); }
 .ui-search:focus-within { border-color: var(--ui-accent); box-shadow: inset 0 0 0 1px var(--ui-accent); }
 .ui-search input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; font-size: var(--ui-text-body); color: var(--ui-text); outline: none; padding: 0; }
 .ui-search input::placeholder { color: var(--ui-text-tertiary); }
@@ -183,7 +183,7 @@ button.ui-card-caret { border: 0; background: none; padding: 0; cursor: pointer;
 .ui-field-label { display: flex; gap: var(--ui-space-4); font-size: var(--ui-text-sub); color: var(--ui-text-tertiary); line-height: 1.2; }
 .ui-field-label .req { color: var(--ui-danger); }
 .ui-input { display: flex; align-items: center; gap: var(--ui-space-10); height: calc(51px * var(--ui-scale)); padding: 0 calc(14px * var(--ui-scale));
-  border-radius: var(--ui-radius-md); background: var(--ui-surface); border: 1px solid var(--ui-border); transition: border-color .12s; }
+  border-radius: var(--ui-radius-md); background: var(--ui-surface); border: 1px solid var(--ui-border); transition: border-color var(--ui-duration-state); }
 .ui-input:hover { border-color: var(--ui-text-tertiary); }
 .ui-input:focus-within { border-color: var(--ui-accent); box-shadow: inset 0 0 0 1px var(--ui-accent); }
 .ui-input input, .ui-input select { flex: 1; min-width: 0; border: 0; background: none; font: inherit; font-size: var(--ui-text-body);
@@ -210,10 +210,10 @@ button.ui-banner { border: 0; width: 100%; text-align: left; font-family: inheri
 /* ---- Toggle (52×30 pill, knob 24) ---------------------------------------- */
 .ui-switch { appearance: none; -webkit-appearance: none; flex: none; position: relative; margin: 0; cursor: pointer;
   width: calc(52px * var(--ui-scale)); height: calc(30px * var(--ui-scale)); border-radius: var(--ui-radius-pill);
-  background: var(--ui-border); transition: background .15s; }
+  background: var(--ui-border); transition: background var(--ui-duration-move); }
 .ui-switch::after { content: ""; position: absolute; top: calc(3px * var(--ui-scale)); left: calc(3px * var(--ui-scale));
   width: calc(24px * var(--ui-scale)); height: calc(24px * var(--ui-scale)); border-radius: 50%; background: var(--ui-surface);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .18); transition: transform .15s; }
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .18); transition: transform var(--ui-duration-move); }
 .ui-switch:checked { background: var(--ui-accent); }
 .ui-switch:checked::after { transform: translateX(calc(22px * var(--ui-scale))); }
 .ui-switch:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }

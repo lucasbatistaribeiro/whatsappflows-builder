@@ -122,9 +122,13 @@ bottom of `ui.html` sets `transition: none !important; animation: none
 !important` on everything. Any new motion is covered by it automatically, and
 nothing here should be reintroduced in a way that escapes that rule.
 
-The numbers live in the CSS as literals today. If they ever become
-`--ui-duration-*`, this collection is the source to copy from, the same way
-`Chrome` and `Scale` are.
+The CSS reads them as `--ui-duration-*` and `--ui-easing-*`, declared in
+`tokens.css` next to the other collections, so the file is the source to copy
+from the same way `Chrome` and `Scale` are. Every `transition` and `animation`
+in `chrome.css` and `ui.html` goes through them — there is no literal
+duration or curve left in the chrome, which is the check to re-run after
+adding motion: a `transition:` with a number in it is a token that was not
+reached for.
 
 ## Components (layer 2) — Figma → `components.ts` / `chrome.css`
 
