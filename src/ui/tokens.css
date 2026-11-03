@@ -48,7 +48,6 @@
   --ui-danger-soft:      #FDECEA; /* danger/soft    — error banner */
   --ui-tile-bg:          #2D2D32; /* tile/bg        — the dark icon tile on cards */
   --ui-tile-icon:        #86DEC4; /* tile/icon */
-  --ui-tile-border:      #141519; /* tile/border */
   --ui-icon-muted:       #6F7272; /* color/outline — chevrons, grip, idle rail icons: the
                                      same Figma variable as the text above, so it moves with it */
 
@@ -85,7 +84,13 @@
   --ui-size-tile:       max(32px, calc(40px * var(--ui-scale)));
   --ui-size-control:    max(44px, calc(48px * var(--ui-scale))); /* buttons, toolbar actions */
   --ui-size-control-sm: max(36px, calc(40px * var(--ui-scale))); /* card actions */
-  --ui-size-rail:       calc(70px  * var(--ui-scale)); /* the rail component hugs to 70; the size/rail variable still reads 79 */
+  /* The rail hugs its items rather than taking a width, the way the Figma
+     component does (74 = 48 item + 12 each side + the 2px right border). Its
+     side padding is therefore part of its width, and is expressed against the
+     item: a quarter of it, which is 12 when the item is at the design's 48 and
+     11 at the 44 the floor gives. A fixed scaled width would have squeezed the
+     rail around an item that had already stopped shrinking. */
+  --ui-rail-pad-x:      calc(var(--ui-size-control) / 4);
   --ui-size-panel:      calc(497px * var(--ui-scale));
 
   /* Where a row's text starts: its own padding + the leading icon + the gap.
@@ -131,7 +136,7 @@
     --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #7E8A85; --ui-on-accent: #FFFFFF;
     --ui-accent: #00A884; --ui-accent-soft: #0D2A24; --ui-accent-text: #4FD1B0;
     --ui-danger: #E5484D; --ui-danger-soft: #3A1A18;
-    --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E; --ui-tile-border: #C3CDC9; /* the tile inverts so it doesn't sink into the surface */
+    --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E; /* the tile inverts so it doesn't sink into the surface */
     --ui-icon-muted: #7E8A85;
     --ui-ring: rgba(0, 168, 132, .38);
     --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
@@ -144,7 +149,7 @@
   --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #7E8A85; --ui-on-accent: #FFFFFF;
   --ui-accent: #00A884; --ui-accent-soft: #0D2A24; --ui-accent-text: #4FD1B0;
   --ui-danger: #E5484D; --ui-danger-soft: #3A1A18;
-  --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E; --ui-tile-border: #C3CDC9;
+  --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E;
   --ui-icon-muted: #7E8A85;
   --ui-ring: rgba(0, 168, 132, .38);
   --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
