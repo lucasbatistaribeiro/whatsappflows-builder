@@ -103,7 +103,7 @@ screens own the i18n and the model.
 
 | Figma component | Variants / props | Spec | Builder · CSS |
 |---|---|---|---|
-| Navigation rail | active = Flows · Chat · Settings | hugs to 70 wide (48 + padding 10, 2px right border), padding 18 top/bottom; the `logo-flowbuilder` instance; nav gap 16, logo→nav 48; foot gap 16: theme (sun) as a secondary icon button 48² r12, help 48² bare | `rail()` · `.ui-rail`, `.ui-rail-brand`, `.ui-rail-top/-foot`, `.ui-rail-item.boxed/.plain` |
+| Navigation rail | active = Flows · Chat · Settings | hugs to 74 wide (48 item + 12 each side + the 2px right border), padding 18 top/bottom. The CSS hugs too rather than taking a width, and its side padding is `--ui-rail-pad-x` = a quarter of the item, so it stays 12 at knob 1 and 11 at the item's 44px floor; the `logo-flowbuilder` instance; nav gap 16, logo→nav 48; foot gap 16: theme (sun) as a secondary icon button 48² r12, help 48² bare | `rail()` · `.ui-rail`, `.ui-rail-brand`, `.ui-rail-top/-foot`, `.ui-rail-item.boxed/.plain` |
 | Navigation item | Enabled · Disabled (.38) · Selected (surface + border) · Hover (muted) · Pressed (accent/soft) · Focus (2px accent); 1px shadow on every filled state | 48², r8 (= radius/sm, not bound), icon 28; icon colour by state: muted · accent · secondary · accent/text | `.ui-rail-item` + `[aria-current="page"]`, `:hover`, `:active`, `:focus-visible`, `:disabled` |
 | logo-flowbuilder | — | 48², r12, radial gradient #008069 → #86DEC4 (literal, not bound), white four-point sparkle; the brand mark, same in both themes | `LOGO` SVG in `components.ts` · `.ui-rail-brand` |
 | Toolbar | back · actions 0/1/2 · caret | h82, padding 16, gap 10; Back = secondary 48 icon button; title 24/600 + caret 22, meta 17 tertiary | `toolbar()` · `.ui-toolbar`, `-title`, `-meta` |
@@ -175,9 +175,11 @@ drill-in screen each, not dropdowns; the text prefs persist on commit.
 `.claude/agents/plugin-ui-tester.md` has the route table with what to query on
 each screen.
 
-**Out of step in the file:** the `size/rail` variable still reads 79 while the
-rail component hugs to 70. The code follows the component
-(`--ui-size-rail: 70`); update the variable, or bind the rail's width to it.
+**The rail has no width token any more.** Both the component and `.ui-rail`
+hug their items, so the width is 48 + 12 + 12 + the 2px border = 74 and nobody
+reads a variable to draw it. `size/rail` is now 74 and purely descriptive (it
+read 79, from an older rail); `--ui-size-rail` is gone, replaced by
+`--ui-rail-pad-x`.
 
 ## Decisions taken (validate or revert)
 

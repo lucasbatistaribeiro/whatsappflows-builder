@@ -26,8 +26,8 @@
 .ui-ic svg { width: 1em; height: 1em; display: block; }
 
 /* ---- Navigation rail (70 wide = 48 + padding 10 + 2px right border; 18 top/bottom) ---- */
-.ui-rail { flex: none; width: var(--ui-size-rail); display: flex; flex-direction: column; align-items: center;
-  justify-content: space-between; padding: calc(18px * var(--ui-scale)) calc(10px * var(--ui-scale));
+.ui-rail { flex: none; display: flex; flex-direction: column; align-items: center;
+  justify-content: space-between; padding: calc(18px * var(--ui-scale)) var(--ui-rail-pad-x);
   border-right: 2px solid var(--ui-border); background: var(--ui-surface); }
 .ui-rail-top, .ui-rail-foot { display: flex; flex-direction: column; align-items: center; gap: var(--ui-space-16); }
 /* The logo is the Figma component "logo-flowbuilder" (48², r12, radial
@@ -120,13 +120,16 @@ button.ui-card-caret { border: 0; background: none; padding: 0; cursor: pointer;
 .ui-list.dragging .ui-card:not(.dragging) { opacity: .4; }
 .ui-card.dragging { opacity: 1; z-index: 2; box-shadow: var(--ui-shadow-lg); }
 /* Expanded card: the header row stays, the editor opens under it inside the border. */
-.ui-card.open { flex-direction: column; align-items: stretch; gap: calc(14px * var(--ui-scale)); padding-bottom: var(--ui-space-16); }
+/* Figma pads the open card 5 top / 16 bottom, tighter above the header than a
+   collapsed card's 9. */
+.ui-card.open { flex-direction: column; align-items: stretch; gap: calc(14px * var(--ui-scale));
+  padding-top: calc(5px * var(--ui-scale)); padding-bottom: var(--ui-space-16); }
 .ui-card-head { display: flex; align-items: center; gap: var(--ui-space-12); min-width: 0; }
 .ui-card-actions { display: flex; justify-content: flex-end; gap: var(--ui-space-8); }
 
 /* ---- Tile (40², r sm) + drag handle (23×34) ------------------------------ */
 .ui-tile { flex: none; width: var(--ui-size-tile); height: var(--ui-size-tile); border-radius: var(--ui-radius-sm);
-  background: var(--ui-tile-bg); border: 1px solid var(--ui-tile-border); display: flex; align-items: center; justify-content: center; }
+  background: var(--ui-tile-bg); display: flex; align-items: center; justify-content: center; }
 .ui-tile .ui-ic { color: var(--ui-tile-icon); }
 .ui-grip { flex: none; width: calc(23px * var(--ui-scale)); height: calc(34px * var(--ui-scale)); border-radius: var(--ui-radius-sm);
   background: var(--ui-surface); border: 1px solid var(--ui-border); display: flex; align-items: center; justify-content: center;
