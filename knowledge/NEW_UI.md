@@ -145,8 +145,28 @@ They are in `icons.ts` under their Lucide names (`box`, `message-square-text`,
 Rail ▸ Flows     01 Flow home ─▶ 02 Screen editor ─▶ 03 Component library
                  01 Flow home ─▶ 04 Live preview · 05 Flow JSON
 Rail ▸ Chat      06 Compose ─▶ 07 Add message · 08 Chat preview
-Rail ▸ Settings  09 Settings (Flow · Figma · System)
+Rail ▸ Settings  09 Settings (Flow · Conversation · Figma · System)
+Both rails       10 Picker — one list, reached from a value row
 ```
+
+### The states, 11–17
+
+Ten routes is not ten screens' worth of design: most of what the chrome does
+is show the same route in a different condition. Those are drawn too, as
+frames 11–17 of the concept section, each one a state the code actually
+produces rather than a state worth having:
+
+| | state | what it shows |
+|---|---|---|
+| 11 | validation error | `err` banner, one `Issue row` per problem (with the screen id when the issue has one), the offending card ringed in `color/error`, Generate disabled |
+| 12 | validation warning | `warn` banner; Generate stays enabled — warnings never block |
+| 13 | generating | the 3px bar under the toolbar, the button on `loader-circle` + "Generating…", and every card and row skeletoned |
+| 14 | generated | the button's 2.2s confirmation, `check` + "Generated!" |
+| 15 | linked section | meta on `linkedMeta`, Generate becomes `refresh-cw` + "Update", and the unlink button appears beside it |
+| 16 | import offer | the `Import offer` strip above the toolbar |
+| 17 | empty screen | screen editor with no components: the `Hint` replaces the list |
+
+11–16 are the same route (01) in seven conditions, not seven routes; 17 is 02.
 
 Rules: root of each rail = title + Generate in the toolbar; drill-in screens =
 Back + title, no Generate; the two libraries (03, 07) share one pattern (search
