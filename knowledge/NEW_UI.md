@@ -93,6 +93,39 @@ about both modes, and light/dark is still chosen by `prefers-color-scheme` +
 `--wa-*` is untouched: set at runtime by `applyThemeVars()` from
 `src/main/theme.ts`, which the WhatsApp collection merely mirrors.
 
+## Motion (`Motion` collection in the file)
+
+The chrome's durations and curves, read off `chrome.css` and `ui.html` rather
+than chosen — there is no `--ui-duration-*` in the CSS, so the file is the
+first place they are written down as a set. Eight durations in ms and three
+easings:
+
+| token | ms | where |
+|---|---|---|
+| `duration/state` | 120 | colour, border and shadow on hover/press/selected — rail item, button, card, row, input, search, the toggle's track, the dropdown. The one most of the chrome uses |
+| `duration/move` | 150 | what moves rather than recolours: the toggle's knob (`transform`) and the card's own state change |
+| `duration/fade` | 180 | the import offer's opacity, deliberately shorter than its height so the text arrives with the strip nearly open |
+| `duration/expand` | 220 | the offer opening: `max-height`, `padding`, bottom-border colour. `display` cannot transition, which is why it is built this way |
+| `duration/confirm` | 340 | the Generate confirmation — `gen-pop` and `gen-check`. The return to idle is a 2200ms timer, not an animation |
+| `duration/spin` | 900 | one turn of the spinner (`gen-spin`) |
+| `duration/sweep` | 1100 | one pass of the 3px bar under the toolbar (`gen-bar`) |
+| `duration/shimmer` | 1200 | one pass of the skeleton's highlight (`skel`) |
+
+| token | value | where |
+|---|---|---|
+| `easing/standard` | `ease` | the CSS default, which is what every transition that names no curve gets — so, nearly everything |
+| `easing/linear` | `linear` | the spinner only; any easing on an endless rotation stutters once per turn |
+| `easing/loop` | `ease-in-out` | the two looping sweeps, the progress bar and the skeleton |
+
+**`prefers-reduced-motion` turns all of it off at once** — one rule at the
+bottom of `ui.html` sets `transition: none !important; animation: none
+!important` on everything. Any new motion is covered by it automatically, and
+nothing here should be reintroduced in a way that escapes that rule.
+
+The numbers live in the CSS as literals today. If they ever become
+`--ui-duration-*`, this collection is the source to copy from, the same way
+`Chrome` and `Scale` are.
+
 ## Components (layer 2) — Figma → `components.ts` / `chrome.css`
 
 Measured from the Components page (values at design scale; the tokens scale
