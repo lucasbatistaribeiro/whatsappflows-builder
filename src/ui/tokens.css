@@ -12,14 +12,25 @@
    --wa-* is WhatsApp's identity for the phone mockup, set from
    src/main/theme.ts by applyThemeVars(). Never point one at the other.
 
-   SCALE. The Figma design is drawn at 578px wide; the panel is 500px
-   (src/main/index.ts, showUI). --ui-scale is that ratio, and every size token
-   below is the Figma value times it, so the file reads like the variables
-   panel and one number moves the whole chrome. Set it to 1 if the panel is
-   ever widened to the design's size.
+   SCALE. Every size token below is the Figma value times --ui-scale, so the
+   file reads like the variables panel and one number moves the whole chrome.
+
+   The knob started at 0.865 (500/578, the plain width ratio) and is now 0.75,
+   which is a density choice rather than a conversion: at 0.865 the body text
+   landed on 19px and a row on 49px, so the home already scrolled with two
+   screens and Settings ran to 1.7 viewports. 0.75 puts the body at 16.5px and
+   a row at ~43px — still well above Figma's own 11-12px chrome, and about a
+   fifth more content per screen.
+
+   Shrinking type is the point; shrinking what you click is not. The sizes
+   people hit (rows, controls, tiles, icons) are wrapped in max() with a floor,
+   the same way the text tokens already guard the 14px chrome minimum, so
+   lowering the knob further thins the typography without turning the rail and
+   the toolbar buttons into pinpricks. Raise the knob (or set it to 1) if the
+   panel is ever widened to the design's size.
    ========================================================================== */
 :root {
-  --ui-scale: 0.865; /* 500 / 578 */
+  --ui-scale: 0.75;
 
   /* ---- Chrome · Light ------------------------------------------------- */
   --ui-surface:          #FFFFFF; /* surface/default — rail, panel, cards, inputs */
@@ -28,7 +39,7 @@
   --ui-border:           #E6E6E5; /* border/default */
   --ui-text:             #1F2121; /* text/primary   — titles, values */
   --ui-text-secondary:   #494B4B; /* text/secondary — row labels, body */
-  --ui-text-tertiary:    #929494; /* text/tertiary  — headings, meta, placeholders */
+  --ui-text-tertiary:    #6F7272; /* color/outline — headings, meta, row values, placeholders */
   --ui-on-accent:        #FFFFFF; /* text/on-accent */
   --ui-accent:           #008069; /* accent/default */
   --ui-accent-soft:      #E6F4F0; /* accent/soft    — soft buttons, valid banner */
@@ -38,7 +49,8 @@
   --ui-tile-bg:          #2D2D32; /* tile/bg        — the dark icon tile on cards */
   --ui-tile-icon:        #86DEC4; /* tile/icon */
   --ui-tile-border:      #141519; /* tile/border */
-  --ui-icon-muted:       #969A98; /* icon/muted     — chevrons, grip, rail idle */
+  --ui-icon-muted:       #6F7272; /* color/outline — chevrons, grip, idle rail icons: the
+                                     same Figma variable as the text above, so it moves with it */
 
   /* Not in the Figma collections yet (kept from the old chrome). */
   --ui-warn:             #B7791F;
@@ -64,17 +76,21 @@
   --ui-space-48: calc(48px * var(--ui-scale)); /* rail: brand -> nav */
 
   /* ---- Scale · icon --------------------------------------------------- */
-  --ui-icon-sm: calc(18px * var(--ui-scale)); /* grip, option row x */
-  --ui-icon-md: calc(22px * var(--ui-scale)); /* buttons, chevrons, tile, search */
-  --ui-icon-lg: calc(26px * var(--ui-scale)); /* category row leading icon */
+  --ui-icon-sm: max(16px, calc(18px * var(--ui-scale))); /* grip, option row x */
+  --ui-icon-md: max(18px, calc(22px * var(--ui-scale))); /* buttons, chevrons, tile, search */
+  --ui-icon-lg: max(20px, calc(26px * var(--ui-scale))); /* category row leading icon */
 
   /* ---- Scale · size --------------------------------------------------- */
-  --ui-size-row:        calc(57px  * var(--ui-scale)); /* category / settings row */
-  --ui-size-tile:       calc(40px  * var(--ui-scale));
-  --ui-size-control:    calc(48px  * var(--ui-scale)); /* buttons, toolbar actions */
-  --ui-size-control-sm: calc(40px  * var(--ui-scale)); /* card actions */
+  --ui-size-row:        max(44px, calc(57px * var(--ui-scale))); /* category / settings row */
+  --ui-size-tile:       max(32px, calc(40px * var(--ui-scale)));
+  --ui-size-control:    max(44px, calc(48px * var(--ui-scale))); /* buttons, toolbar actions */
+  --ui-size-control-sm: max(36px, calc(40px * var(--ui-scale))); /* card actions */
   --ui-size-rail:       calc(70px  * var(--ui-scale)); /* the rail component hugs to 70; the size/rail variable still reads 79 */
   --ui-size-panel:      calc(497px * var(--ui-scale));
+
+  /* Where a row's text starts: its own padding + the leading icon + the gap.
+     Fields are indented to this so every label in a section shares one edge. */
+  --ui-row-indent: calc(14px * var(--ui-scale) + var(--ui-icon-lg) + var(--ui-space-12));
 
   /* ---- Type (from the components, no Figma collection) -----------------
      Roboto in the file; the plugin can't load fonts (networkAccess: none), so
@@ -86,7 +102,7 @@
   --ui-text-body:    calc(22px * var(--ui-scale)); /* row labels, card titles, values */
   --ui-text-button:  calc(21px * var(--ui-scale)); /* 48px button label, 500 */
   --ui-text-option:  calc(20px * var(--ui-scale)); /* option rows, banner, chips */
-  --ui-text-sub:     calc(18px * var(--ui-scale)); /* subtitles, field labels, section headings, 40px button */
+  --ui-text-sub:     max(14px, calc(18px * var(--ui-scale))); /* subtitles, field labels, section headings, 40px button */
   --ui-text-meta:    max(14px, calc(17px * var(--ui-scale))); /* toolbar meta, hints */
   --ui-text-badge:   max(14px, calc(14px * var(--ui-scale))); /* dir badge */
   --ui-heading-tracking: calc(2px * var(--ui-scale)); /* section headings, uppercase */
@@ -112,11 +128,11 @@
   :root:not([data-theme="light"]) {
     --ui-surface: #101917; --ui-surface-sunken: #151D1B; --ui-surface-muted: #0E1513;
     --ui-border: #27322F;
-    --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #6B7672; --ui-on-accent: #FFFFFF;
+    --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #7E8A85; --ui-on-accent: #FFFFFF;
     --ui-accent: #00A884; --ui-accent-soft: #0D2A24; --ui-accent-text: #4FD1B0;
     --ui-danger: #E5484D; --ui-danger-soft: #3A1A18;
     --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E; --ui-tile-border: #C3CDC9; /* the tile inverts so it doesn't sink into the surface */
-    --ui-icon-muted: #6B7672;
+    --ui-icon-muted: #7E8A85;
     --ui-ring: rgba(0, 168, 132, .38);
     --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
     --ui-shadow-lg: 0 8px 24px rgba(0, 0, 0, .5);
@@ -125,11 +141,11 @@
 :root[data-theme="dark"] {
   --ui-surface: #101917; --ui-surface-sunken: #151D1B; --ui-surface-muted: #0E1513;
   --ui-border: #27322F;
-  --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #6B7672; --ui-on-accent: #FFFFFF;
+  --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #7E8A85; --ui-on-accent: #FFFFFF;
   --ui-accent: #00A884; --ui-accent-soft: #0D2A24; --ui-accent-text: #4FD1B0;
   --ui-danger: #E5484D; --ui-danger-soft: #3A1A18;
   --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E; --ui-tile-border: #C3CDC9;
-  --ui-icon-muted: #6B7672;
+  --ui-icon-muted: #7E8A85;
   --ui-ring: rgba(0, 168, 132, .38);
   --ui-shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
   --ui-shadow-lg: 0 8px 24px rgba(0, 0, 0, .5);

@@ -36,16 +36,30 @@ annotated "não editar por gosto"), **Scale** (radius, space, icon, size) and
 The old screens in the file are 1:1 (500px, 14px text). The new design is drawn
 at 578px with 22px body text — everything is ~1.16× the panel. Rather than
 hand-round every value, `src/ui/tokens.css` keeps the Figma numbers literally
-and multiplies them by one knob, `--ui-scale: 0.865` (500/578). Consequences:
+and multiplies them by one knob, `--ui-scale`.
 
-- body text 22 → ~19px, titles 24 → ~21px, section headings 18 → ~15.6px;
-- the 14px chrome minimum still holds: tokens that would drop under it
-  (`--ui-text-meta`, `--ui-text-badge`) are wrapped in `max(14px, …)`;
+The knob is **0.75**. It started at 0.865 (500/578, the plain width ratio),
+which is what prompted the question this section used to leave open — whether
+19px labels in a 500px panel were wanted. Measured, they were not: a row came
+out 49px, the home already scrolled with two screens (695px of content in a
+661px viewport) and Settings ran to 1.7 viewports. At 0.75 the body is 16.5px
+and a row 44px, the home fits, and the chrome is still well above Figma's own
+11–12px. Consequences:
+
+- body text 22 → 16.5px, titles 24 → 18px, section headings 18 → 14px;
+- the 14px chrome minimum still holds, now also for `--ui-text-sub`, which
+  would land on 13.5px. `max(14px, …)` is what enforces it;
+- **the knob thins type, not targets.** `--ui-size-row`, `--ui-size-control`,
+  `--ui-size-tile`, `--ui-size-control-sm` and the three `--ui-icon-*` are
+  wrapped in `max()` with a floor, so lowering it further does not shrink what
+  you click. Rows and buttons both floor at 44px — the rail item used to come
+  out 42px, under the usual target, and now does not;
+- `--ui-row-indent` (a row's own padding + its leading icon + the gap) is where
+  a row's *text* starts. Fields are padded to it so every label in a section
+  shares one left edge; see "Decisions taken";
 - if the panel is ever widened to the design's size (`showUI` in
-  `src/main/index.ts`), set the knob to 1 and nothing else moves.
-
-**Open for validation:** whether the chunky scale (19px labels in a 500px
-panel) is what is wanted, or the panel should grow instead.
+  `src/main/index.ts`), raise the knob — at 1 the floors stop binding and the
+  chrome is the design, 1:1.
 
 ## Tokens (`src/ui/tokens.css`)
 
@@ -167,6 +181,37 @@ rail component hugs to 70. The code follows the component
 
 ## Decisions taken (validate or revert)
 
+- **Fields sit in a row's content box, not at the section gutter.** A settings
+  list alternated two left edges — row labels after the leading icon, field
+  labels ~40px to their left — with no single edge to follow. `.ui-field` is
+  padded by `--ui-row-indent`; inside a card it is not (the card already
+  indents). The Figma `Field` component mirrors this with an `inset` variant.
+- **A card that opens shows a caret.** The collapsed card was mute while the
+  expanded one closed with a chevron-up. `card({ expands: true })` draws the
+  chevron-down and sets `aria-expanded`; the Figma `Card` set has a matching
+  `caret` boolean.
+- **Deleting a screen arms before it fires.** It is irreversible and the button
+  sits 8px from the preview one. It is `style: "danger"` at rest, goes solid on
+  the first click with "Click again to delete this screen", and disarms on blur
+  or Escape. No modal, no toast — neither exists yet in this chrome.
+- **`color/outline` carries the WCAG floor.** It was #929494 / #6B7672, which
+  measured 3.05:1 and 3.80:1 against the surface and failed AA for text — and
+  it paints row *values* ("Medium", "Light", "Current"), which are data, not
+  decoration. Now #6F7272 / #7E8A85 (4.85:1 and 5.11:1). The CSS splits it into
+  `--ui-text-tertiary` and `--ui-icon-muted`; both carry the new value.
+- **Settings has a Conversation group.** "Flow" held seven rows, five of them
+  about the conversation drawn behind the sheet. Flow keeps Interactive mode
+  and Business name; Conversation takes the rest.
+- **A chat message card gets two lines.** There the title *is* the content, and
+  one ellipsed line hid about half of it (265px of up to 549px).
+  `card({ clamp: true })`.
+- **The sample conversation follows the language**, like the sample flow:
+  `sampleThread(lang)` in `src/model/sampleThread.ts` — its own module, so the
+  Figma sandbox does not carry two languages of copy it never renders (it
+  imports `chatTypes` for the types and the run helpers). `applyLang` now runs
+  both `localizeInitialFlow` and `localizeInitialThread`, each guarded by
+  "still byte-identical to the sample we loaded", so switching language can
+  never discard an edit.
 - **Back on the left** of the toolbar (the sketch's `Toolbar` frame had it on
   the right; the `Toolbar` component now has it on the left).
 - **Library "Action" group** holds Footer, NavigationList and EmbeddedLink

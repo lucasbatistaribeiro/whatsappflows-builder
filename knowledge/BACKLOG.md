@@ -9,6 +9,35 @@ Status: **idea** (no design yet) · **ready** (approach settled) · **blocked**.
 
 ---
 
+## The token names in the repo still read the pre-M3 Figma variables
+
+**Status:** ready · raised 2026-11-03
+
+The Chrome collection in the Figma file was renamed to Material 3 names
+(`color/surface`, `color/on-surface-variant`, `color/outline`, `color/primary`,
+`color/inverse-surface`…), and each variable's description records what it used
+to be. `src/ui/tokens.css` and the mapping table in `knowledge/NEW_UI.md` still
+name the old ones (`surface/default`, `text/secondary`, `text/tertiary`,
+`accent/default`, `tile/bg`…), so the promise that "a value here is traceable
+to the file" no longer holds by name — only by value.
+
+The UI-review pass touched the two lines it had to (`--ui-text-tertiary` and
+`--ui-icon-muted`, now both `color/outline`) and left the rest, because
+renaming the whole set is a mechanical sweep that would bury a behaviour change
+in a diff full of comment edits.
+
+What it needs: rename the CSS custom properties to the M3 names (or, if the
+`--ui-*` names are worth keeping as the CSS vocabulary, state in `tokens.css`
+that the comment names the *Figma* variable and fix every comment), redo the
+table in `NEW_UI.md`, and check `chrome.css` for any stale name in a comment.
+Worth doing in one commit with no behaviour change, so the diff is reviewable.
+
+One real merge to decide while in there: Figma has a single `color/outline`
+where the CSS has `--ui-text-tertiary` and `--ui-icon-muted`. They now carry
+the same value, so either the CSS drops one or Figma gains a second variable.
+
+---
+
 ## New UI: what the rail + panel pass left out
 
 **Status:** ready · raised 2026-10-29

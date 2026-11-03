@@ -92,6 +92,7 @@ const DICT: Record<string, Entry> = {
   sizeMd: { en: "Medium", pt: "Médio" },
   sizeLg: { en: "Large", pt: "Grande" },
   groupFlow: { en: "Flow", pt: "Fluxo" },
+  groupConversation: { en: "Conversation", pt: "Conversa" },
   theme: { en: "Theme", pt: "Tema" },
   waTheme: { en: "WhatsApp theme", pt: "Tema do WhatsApp" },
   appTheme: { en: "Plugin theme", pt: "Tema do plugin" },
@@ -163,6 +164,8 @@ const DICT: Record<string, Entry> = {
   components: { en: "Components", pt: "Componentes" },
   terminalScreen: { en: "Terminal screen", pt: "Tela final" },
   deleteScreen: { en: "Delete this screen", pt: "Excluir esta tela" },
+  deleteScreenConfirm: { en: "Click again to delete this screen", pt: "Clique de novo para excluir esta tela" },
+  collapse: { en: "Collapse", pt: "Recolher" },
   // 03 Library
   addComponentTo: { en: "to {0}", pt: "em {0}" },
   componentHint: { en: "Tap a component to add it to the screen.", pt: "Toque num componente para adicioná-lo à tela." },
