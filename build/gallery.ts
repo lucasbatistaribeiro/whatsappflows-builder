@@ -81,7 +81,6 @@ block("Search field · kbd, Field · required, Validation banner, Toggle, Dir ba
     C.field({ label: "Label", value: "", placeholder: "Placeholder", onInput: noop }),
     C.field({ label: "Showing", value: "Whole flow", trailing: C.ic("chevron-down"), onInput: noop }),
     C.textArea({ label: "Body", value: "Answer a couple of quick questions.", onInput: noop }),
-    C.banner("ok", "Flow is valid — ready to generate"),
     C.banner("err", "2 errors found", noop),
     C.banner("warn", "1 warning"),
     hrow(C.toggle(true, noop), C.toggle(false, noop), C.dirBadge("out"), C.dirBadge("in"), C.el("span", "ui-kbd", "⌘K"), C.pill("ok", "Valid"), C.pill("err", "Invalid")),

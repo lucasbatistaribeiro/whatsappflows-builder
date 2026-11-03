@@ -121,7 +121,17 @@ function errorScreenIds(): Set<string> {
 }
 const errorCount = (): number => validateFlow(flow).filter((i) => i.level === "error").length;
 
-// The banner on Flow home: one line for the state, then the issues under it.
+/**
+ * The banner on Flow home: one line for the state, then the issues under it.
+ *
+ * A valid flow says nothing. The Generate button is already enabled and the
+ * list is already clean, so a green "ready to generate" only repeated what the
+ * screen showed and cost a row of height on the view that needs it most.
+ *
+ * The host stays in the DOM when there is nothing to say, because `softSync`
+ * swaps it in place and needs something to swap; its section collapses on
+ * `:empty` instead (chrome.css).
+ */
 function validationBlock(): HTMLElement {
   const issues = validateFlow(flow);
   const errors = issues.filter((i) => i.level === "error").length;
@@ -130,7 +140,6 @@ function validationBlock(): HTMLElement {
   host.id = "validation";
   if (errors > 0) host.append(C.banner("err", errors === 1 ? t("errorFound") : t("errorsFound", [errors])));
   else if (warnings > 0) host.append(C.banner("warn", warnings === 1 ? t("warningFound") : t("warningsFound", [warnings])));
-  else host.append(C.banner("ok", t("validOk")));
   for (const issue of issues) host.append(issueRow(issue));
   return host;
 }

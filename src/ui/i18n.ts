@@ -145,7 +145,6 @@ const DICT: Record<string, Entry> = {
   flowMeta: { en: "{0} screens · Flow JSON {1}", pt: "{0} telas · Flow JSON {1}" },
   flowMetaOne: { en: "1 screen · Flow JSON {0}", pt: "1 tela · Flow JSON {0}" },
   linkedMeta: { en: "Linked to {0} — Generate updates it", pt: "Vinculado a {0} — Gerar o atualiza" },
-  validOk: { en: "Flow is valid — ready to generate", pt: "Fluxo válido — pronto para gerar" },
   errorFound: { en: "1 error found", pt: "1 erro encontrado" },
   errorsFound: { en: "{0} errors found", pt: "{0} erros encontrados" },
   warningFound: { en: "1 warning", pt: "1 aviso" },

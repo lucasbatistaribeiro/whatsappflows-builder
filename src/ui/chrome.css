@@ -198,8 +198,10 @@ button.ui-card-caret { border: 0; background: none; padding: 0; cursor: pointer;
 /* ---- Validation banner (padding 12/14, gap 10, r md, text 20) ------------ */
 .ui-banner { display: flex; align-items: center; gap: var(--ui-space-10); padding: var(--ui-space-12) calc(14px * var(--ui-scale));
   border-radius: var(--ui-radius-md); font-size: var(--ui-text-option); line-height: 1.2; }
-.ui-banner.ok { background: var(--ui-accent-soft); color: var(--ui-accent-text); }
 .ui-banner.err { background: var(--ui-danger-soft); color: var(--ui-danger); }
+/* A clean flow leaves #validation empty; collapse its section so it costs no
+   height, while the element itself stays for softSync to swap. */
+.ui-section:has(> #validation:empty) { display: none; }
 .ui-banner.warn { background: var(--ui-warn-soft); color: var(--ui-warn); }
 .ui-banner .ui-ic { color: inherit; }
 .ui-banner > span:not(.ui-ic) { flex: 1; min-width: 0; }
