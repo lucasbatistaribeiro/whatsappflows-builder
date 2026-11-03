@@ -200,7 +200,7 @@ button.ui-card-caret { border: 0; background: none; padding: 0; cursor: pointer;
   border-radius: var(--ui-radius-md); font-size: var(--ui-text-option); line-height: 1.2; }
 .ui-banner.ok { background: var(--ui-accent-soft); color: var(--ui-accent-text); }
 .ui-banner.err { background: var(--ui-danger-soft); color: var(--ui-danger); }
-.ui-banner.warn { background: color-mix(in srgb, var(--ui-warn) 14%, var(--ui-surface)); color: var(--ui-warn); }
+.ui-banner.warn { background: var(--ui-warn-soft); color: var(--ui-warn); }
 .ui-banner .ui-ic { color: inherit; }
 .ui-banner > span:not(.ui-ic) { flex: 1; min-width: 0; }
 button.ui-banner { border: 0; width: 100%; text-align: left; font-family: inherit; cursor: pointer; }

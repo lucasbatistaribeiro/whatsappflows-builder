@@ -54,6 +54,10 @@
                 border-bottom-color .22s ease, visibility .22s; }
   #offer.open { max-height: 200px; opacity: 1; visibility: visible;
     padding: var(--ui-space-12) var(--ui-space-16); border-bottom-color: var(--ui-border); }
+  /* The Figma component has three tones; only `accent` has something that
+     raises it today, so warn/err are the surface and text and nothing else. */
+  #offer.warn { background: var(--ui-warn-soft); color: var(--ui-warn); }
+  #offer.err  { background: var(--ui-danger-soft); color: var(--ui-danger); }
   .offer-text { flex: 1; min-width: 0; }
   .offer-title { font-size: var(--ui-text-sub); font-weight: 500; }
   .offer-body { font-size: var(--ui-text-meta); opacity: .8; margin-top: 1px; }

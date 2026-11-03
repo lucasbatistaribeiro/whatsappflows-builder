@@ -52,7 +52,8 @@
                                      same Figma variable as the text above, so it moves with it */
 
   /* Not in the Figma collections yet (kept from the old chrome). */
-  --ui-warn:             #B7791F;
+  --ui-warn:             #B7791F; /* color/warning */
+  --ui-warn-soft:        #F5ECE0; /* color/warning-container — warning banner, warning offer */
   --ui-ring:             rgba(0, 128, 105, .38);
   --ui-shadow-sm:        0 1px 2px rgba(0, 0, 0, .06);  /* nav item, segmented */
   --ui-shadow-lg:        0 8px 24px rgba(0, 0, 0, .22); /* dropdown list, dragged card */
@@ -135,7 +136,7 @@
     --ui-border: #27322F;
     --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #7E8A85; --ui-on-accent: #FFFFFF;
     --ui-accent: #00A884; --ui-accent-soft: #0D2A24; --ui-accent-text: #4FD1B0;
-    --ui-danger: #E5484D; --ui-danger-soft: #3A1A18;
+    --ui-danger: #E5484D; --ui-danger-soft: #3A1A18; --ui-warn-soft: #272618;
     --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E; /* the tile inverts so it doesn't sink into the surface */
     --ui-icon-muted: #7E8A85;
     --ui-ring: rgba(0, 168, 132, .38);
@@ -148,7 +149,7 @@
   --ui-border: #27322F;
   --ui-text: #E6EDEB; --ui-text-secondary: #8A9691; --ui-text-tertiary: #7E8A85; --ui-on-accent: #FFFFFF;
   --ui-accent: #00A884; --ui-accent-soft: #0D2A24; --ui-accent-text: #4FD1B0;
-  --ui-danger: #E5484D; --ui-danger-soft: #3A1A18;
+  --ui-danger: #E5484D; --ui-danger-soft: #3A1A18; --ui-warn-soft: #272618;
   --ui-tile-bg: #E6EDEB; --ui-tile-icon: #0B3D2E;
   --ui-icon-muted: #7E8A85;
   --ui-ring: rgba(0, 168, 132, .38);
