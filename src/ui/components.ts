@@ -411,8 +411,9 @@ export function addLink(label: string, onClick: () => void): HTMLButtonElement {
 
 // ---- Feedback -------------------------------------------------------------
 
-export function banner(state: "ok" | "err" | "warn", message: string, onClick?: () => void): HTMLElement {
-  const icon = state === "ok" ? "check" : state === "err" ? "circle-alert" : "triangle-alert";
+/** Only the two states worth interrupting for — a valid flow says nothing. */
+export function banner(state: "err" | "warn", message: string, onClick?: () => void): HTMLElement {
+  const icon = state === "err" ? "circle-alert" : "triangle-alert";
   const b = el(onClick ? "button" : "div", `ui-banner ${state}`, ic(icon), el("span", "", message));
   if (onClick) { (b as HTMLButtonElement).type = "button"; b.addEventListener("click", onClick); }
   return b;

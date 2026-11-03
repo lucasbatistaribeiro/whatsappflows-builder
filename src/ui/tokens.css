@@ -113,6 +113,24 @@
   --ui-text-badge:   max(14px, calc(14px * var(--ui-scale))); /* dir badge */
   --ui-heading-tracking: calc(2px * var(--ui-scale)); /* section headings, uppercase */
 
+  /* ---- Motion -----------------------------------------------------------
+     A coleção `Motion` do arquivo, nome por nome. Os valores não foram
+     escolhidos aqui: são os que o chrome já usava como literais, agora com
+     nome. prefers-reduced-motion desliga transição e animação de uma vez no
+     fim de ui.html, então nada disto roda nesse modo — motion novo nasce
+     coberto, desde que não seja escrito de um jeito que escape daquela regra. */
+  --ui-duration-state:   120ms; /* cor/borda/sombra em hover, press, selected */
+  --ui-duration-move:    150ms; /* o que se move: o botão do toggle, o card mudando de estado */
+  --ui-duration-fade:    180ms; /* a opacidade da faixa de oferta */
+  --ui-duration-expand:  220ms; /* a altura/padding da faixa de oferta */
+  --ui-duration-confirm: 340ms; /* o pulo e o check do Gerar */
+  --ui-duration-spin:    900ms;  /* uma volta do spinner */
+  --ui-duration-sweep:   1100ms; /* uma passada da barra de progresso */
+  --ui-duration-shimmer: 1200ms; /* uma passada do brilho do esqueleto */
+  --ui-easing-standard:  ease;        /* o padrão do CSS: quase tudo */
+  --ui-easing-linear:    linear;      /* só o spinner — easing em giro infinito dá solavanco */
+  --ui-easing-loop:      ease-in-out; /* os dois laços que vão e voltam */
+
   /* ---- Legacy aliases ------------------------------------------------
      The names the old chrome CSS uses, pointed at the new palette so the
      existing screens keep rendering while they are rebuilt. Remove when the

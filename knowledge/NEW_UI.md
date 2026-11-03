@@ -93,6 +93,43 @@ about both modes, and light/dark is still chosen by `prefers-color-scheme` +
 `--wa-*` is untouched: set at runtime by `applyThemeVars()` from
 `src/main/theme.ts`, which the WhatsApp collection merely mirrors.
 
+## Motion (`Motion` collection in the file)
+
+The chrome's durations and curves, read off `chrome.css` and `ui.html` rather
+than chosen — there is no `--ui-duration-*` in the CSS, so the file is the
+first place they are written down as a set. Eight durations in ms and three
+easings:
+
+| token | ms | where |
+|---|---|---|
+| `duration/state` | 120 | colour, border and shadow on hover/press/selected — rail item, button, card, row, input, search, the toggle's track, the dropdown. The one most of the chrome uses |
+| `duration/move` | 150 | what moves rather than recolours: the toggle's knob (`transform`) and the card's own state change |
+| `duration/fade` | 180 | the import offer's opacity, deliberately shorter than its height so the text arrives with the strip nearly open |
+| `duration/expand` | 220 | the offer opening: `max-height`, `padding`, bottom-border colour. `display` cannot transition, which is why it is built this way |
+| `duration/confirm` | 340 | the Generate confirmation — `gen-pop` and `gen-check`. The return to idle is a 2200ms timer, not an animation |
+| `duration/spin` | 900 | one turn of the spinner (`gen-spin`) |
+| `duration/sweep` | 1100 | one pass of the 3px bar under the toolbar (`gen-bar`) |
+| `duration/shimmer` | 1200 | one pass of the skeleton's highlight (`skel`) |
+
+| token | value | where |
+|---|---|---|
+| `easing/standard` | `ease` | the CSS default, which is what every transition that names no curve gets — so, nearly everything |
+| `easing/linear` | `linear` | the spinner only; any easing on an endless rotation stutters once per turn |
+| `easing/loop` | `ease-in-out` | the two looping sweeps, the progress bar and the skeleton |
+
+**`prefers-reduced-motion` turns all of it off at once** — one rule at the
+bottom of `ui.html` sets `transition: none !important; animation: none
+!important` on everything. Any new motion is covered by it automatically, and
+nothing here should be reintroduced in a way that escapes that rule.
+
+The CSS reads them as `--ui-duration-*` and `--ui-easing-*`, declared in
+`tokens.css` next to the other collections, so the file is the source to copy
+from the same way `Chrome` and `Scale` are. Every `transition` and `animation`
+in `chrome.css` and `ui.html` goes through them — there is no literal
+duration or curve left in the chrome, which is the check to re-run after
+adding motion: a `transition:` with a number in it is a token that was not
+reached for.
+
 ## Components (layer 2) — Figma → `components.ts` / `chrome.css`
 
 Measured from the Components page (values at design scale; the tokens scale
@@ -118,7 +155,7 @@ screens own the i18n and the model.
 | Search field | kbd | h51, r md, padding 0/14, gap 13; icon 22; placeholder 22 tertiary; kbd 20 in r sm border | `searchField()` · `.ui-search`, `.ui-kbd` |
 | Field | required | label 18 tertiary (+ red *), gap 8; input h51 r md padding 0/14 value 22 primary | `field()`, `textArea()` · `.ui-field`, `-label`, `.ui-input` |
 | Import offer | tone accent · warning · danger | The strip at the top of the panel when a generated section is clicked in Figma: w497 (fills), padding 12/16, gap 10, 1px bottom border, title 18/500 + body 17 at .8 opacity, two 40 buttons (Cancel secondary, Import primary) with no icon. `accent` is the only tone anything raises today; `warning` and `danger` are surface + text, ready for a warning or an error in the same strip | `#offer` in `ui.html` · `.offer-text/-title/-body/-actions`, `#offer.warn/.err` |
-| Validation banner | valid · error | h47, r md, padding 12/14, gap 10; icon 22; text 20; valid = accent/soft + accent/text, error = danger/soft + danger | `banner()` · `.ui-banner.ok/.err/.warn` |
+| Validation banner | error · warning | h47, r md, padding 12/14, gap 10; icon 22; text 20; error = error-container + error, warning = warning-container + warning. **There is no valid state**: a flow with nothing to report says nothing, so the host `#validation` stays in the DOM (softSync swaps it in place) and its section collapses on `:empty`. The icon is `triangle-alert`, added to the icon page for this | `banner()` · `.ui-banner.ok/.err/.warn` |
 | Toggle | on | 52×30 pill, padding 3, knob 24 surface; on accent, off border | `toggle()` · `.ui-switch` |
 | Dir badge | dir | r sm, padding 3/8, 14/500; OUT accent/soft + accent/text, IN muted + tertiary | `dirBadge()` · `.ui-dir.in/.out` |
 | Value | swatch | 20 tertiary + chevron, optional 22 swatch r6 | part of `row({trailing:"value"})` |
@@ -145,8 +182,28 @@ They are in `icons.ts` under their Lucide names (`box`, `message-square-text`,
 Rail ▸ Flows     01 Flow home ─▶ 02 Screen editor ─▶ 03 Component library
                  01 Flow home ─▶ 04 Live preview · 05 Flow JSON
 Rail ▸ Chat      06 Compose ─▶ 07 Add message · 08 Chat preview
-Rail ▸ Settings  09 Settings (Flow · Figma · System)
+Rail ▸ Settings  09 Settings (Flow · Conversation · Figma · System)
+Both rails       10 Picker — one list, reached from a value row
 ```
+
+### The states, 11–17
+
+Ten routes is not ten screens' worth of design: most of what the chrome does
+is show the same route in a different condition. Those are drawn too, as
+frames 11–17 of the concept section, each one a state the code actually
+produces rather than a state worth having:
+
+| | state | what it shows |
+|---|---|---|
+| 11 | validation error | `err` banner, one `Issue row` per problem (with the screen id when the issue has one), the offending card ringed in `color/error`, Generate disabled |
+| 12 | validation warning | `warn` banner; Generate stays enabled — warnings never block |
+| 13 | generating | the 3px bar under the toolbar, the button on `loader-circle` + "Generating…", and every card and row skeletoned |
+| 14 | generated | the button's 2.2s confirmation, `check` + "Generated!" |
+| 15 | linked section | meta on `linkedMeta`, Generate becomes `refresh-cw` + "Update", and the unlink button appears beside it |
+| 16 | import offer | the `Import offer` strip above the toolbar |
+| 17 | empty screen | screen editor with no components: the `Hint` replaces the list |
+
+11–16 are the same route (01) in seven conditions, not seven routes; 17 is 02.
 
 Rules: root of each rail = title + Generate in the toolbar; drill-in screens =
 Back + title, no Generate; the two libraries (03, 07) share one pattern (search
