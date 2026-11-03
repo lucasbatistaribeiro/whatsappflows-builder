@@ -228,6 +228,8 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
 
   if (collapsed.has(msg)) {
     const card = C.card({ icon: icon(msg), title: title(msg), subtitle: summary(msg), trailing: "badge", badge: msg.direction,
+      // The title here is the message itself, so one ellipsed line hid half of it.
+      clamp: true, expands: true,
       gripTitle: t("dragToReorder"), onClick: () => { collapsed.delete(msg); redraw(); } });
     card.querySelector(".ui-grip")?.addEventListener("pointerdown", drag(card));
     return card;
@@ -290,7 +292,7 @@ function messageCard(msg: Message, i: number, thread: Thread, host: HTMLElement,
 
   card = C.cardExpanded({
     icon: icon(msg), title: title(msg), subtitle: summary(msg), body, gripTitle: t("dragToReorder"),
-    trailing: "badge", badge: msg.direction,
+    trailing: "badge", badge: msg.direction, clamp: true, collapseTitle: t("collapse"),
     onCollapse: () => { collapsed.add(msg); redraw(); },
     actions: [
       C.button({ icon: "copy", label: t("duplicate"), sm: true, onClick: () => {

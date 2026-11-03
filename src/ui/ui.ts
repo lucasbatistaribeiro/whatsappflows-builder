@@ -12,7 +12,8 @@ import { postToMain } from "./bridge";
 import { renderPreview, applyThemeVars, setPreviewInteractive, setPreviewSize, setPreviewTheme, setPreviewBusiness, setPreviewChat } from "./preview";
 import { renderChat } from "./chat";
 import { renderComposer, addMessage } from "./chatComposer";
-import { sampleThread, type Thread } from "../model/chatTypes";
+import type { Thread } from "../model/chatTypes";
+import { SAMPLE_THREAD, sampleThread } from "../model/sampleThread";
 import { CHAT_PALETTE, CHAT_PALETTE_GROUPS } from "../model/chatPalette";
 import { validateFlow, type Issue } from "../model/validate";
 import { buildPropEditor } from "./propEditor";
@@ -178,8 +179,11 @@ function homeScreen(): ScreenView {
     });
     list.append(card);
   });
+  // The banner reports on the whole flow, not on the screen list, so it sits in
+  // its own section above it — under "SCREENS" it read as a heading for it.
+  const validation = C.section({ tight: true }, validationBlock());
   const screens = C.section({ heading: t("screens"), hint: flow.screens.length > 1 ? t("dragToReorder") : undefined },
-    validationBlock(), list,
+    list,
     C.row({ icon: "plus", label: t("newScreen"), trailing: "none", action: true, onClick: () => {
       const id = uniqueId("SCREEN");
       flow.screens.push({ id, title: "New screen", layout: { type: "SingleColumnLayout", children: [] } });
@@ -198,21 +202,38 @@ function homeScreen(): ScreenView {
     C.row({ icon: "import", label: t("import"), trailing: "none", action: true, onClick: () => ($("#file") as HTMLInputElement).click() }),
     C.row({ icon: "copy", label: t("copy"), trailing: "none", action: true, onClick: copyJson }),
   );
-  return { toolbar, body: [screens, C.divider(), view, C.divider(), flowSec] };
+  return { toolbar, body: [validation, screens, C.divider(), view, C.divider(), flowSec] };
 }
 
 // ---- Screen 02 · Screen editor -------------------------------------------
+
+/** Arm/disarm the delete button: solid red and a changed label while armed. */
+function armDelete(b: HTMLButtonElement, on: boolean): void {
+  b.classList.toggle("armed", on);
+  const label = t(on ? "deleteScreenConfirm" : "deleteScreen");
+  b.title = label;
+  b.setAttribute("aria-label", label);
+  if (on) b.focus();
+}
 
 function screenEditor(): ScreenView {
   const s = screen();
   const actions = [C.button({ icon: "eye", title: t("livePreview"), onClick: () => go("preview") })];
   if (flow.screens.length > 1) {
-    actions.push(C.button({ icon: "trash-2", title: t("deleteScreen"), onClick: () => {
+    // Deleting a screen cannot be undone, and the button sits 8px from the
+    // preview one, so it arms instead of firing: the first click turns it
+    // solid red and relabels it, the second commits. Blur disarms, which makes
+    // wandering off the way to cancel.
+    const del: HTMLButtonElement = C.button({ icon: "trash-2", style: "danger", title: t("deleteScreen"), onClick: () => {
+      if (!del.classList.contains("armed")) { armDelete(del, true); return; }
       flow.screens.splice(current, 1);
       current = Math.max(0, current - 1);
       syncJson();
       go("home");
-    } }));
+    } });
+    del.addEventListener("blur", () => armDelete(del, false));
+    del.addEventListener("keydown", (e) => { if ((e as KeyboardEvent).key === "Escape") armDelete(del, false); });
+    actions.push(del);
   }
   const toolbar = C.toolbar({ title: s.id, meta: t("screenMeta", [current + 1, flow.screens.length]), back: { title: t("back"), onClick: back }, actions });
 
@@ -275,7 +296,7 @@ function componentCard(c: Component, i: number, kids: Component[], list: HTMLEle
   const drag = (card: HTMLElement) => (e: Event) => startDrag(e as PointerEvent, card, list, kids, syncAndRender);
   if (COLLAPSED.has(c)) {
     const card = C.card({ icon: typeIcon(c.type), title: c.type, subtitle: componentSummary(c), gripTitle: t("dragToReorder"),
-      onClick: () => { COLLAPSED.delete(c); structuralSync(); } });
+      expands: true, onClick: () => { COLLAPSED.delete(c); structuralSync(); } });
     card.querySelector(".ui-grip")?.addEventListener("pointerdown", drag(card));
     return card;
   }
@@ -287,6 +308,7 @@ function componentCard(c: Component, i: number, kids: Component[], list: HTMLEle
   });
   card = C.cardExpanded({
     icon: typeIcon(c.type), title: c.type, subtitle: componentSummary(c), body: editor, gripTitle: t("dragToReorder"),
+    collapseTitle: t("collapse"),
     onCollapse: () => { COLLAPSED.add(c); structuralSync(); },
     actions: [
       C.button({ icon: "copy", label: t("duplicate"), sm: true, onClick: () => {
@@ -383,7 +405,7 @@ function jsonScreen(): ScreenView {
 
 // Chat mode: a sample thread stands in until something is composed
 // (knowledge/CHAT_UI.md); the composer mutates it in place.
-const thread: Thread = sampleThread();
+let thread: Thread = clone(SAMPLE_THREAD);
 
 function chatScreen(): ScreenView {
   const toolbar = C.toolbar({ title: t("chatTitle"), meta: t("chatMeta", [thread.messages.length]),
@@ -463,9 +485,15 @@ function settingsScreen(): ScreenView {
     flowRows.push(C.field({ label: t("businessName"), value: p.businessName, maxLength: 40, placeholder: t("businessNamePh"),
       onInput: (v) => { prefs = { ...prefs, businessName: v }; applyPreviewPrefs(); }, onCommit: savePrefs }));
   }
-  flowRows.push(C.row({ icon: "message-square-text", label: t("showChat"), trailing: "toggle", toggle: { on: p.showChat, onChange: (on) => save({ showChat: on }, true) } }));
+  const flowSec = C.section({ heading: t("groupFlow") }, ...flowRows);
+
+  // The conversation drawn behind the flow sheet is its own group: it was five
+  // of the seven rows under "Flow", which made that heading say very little.
+  const chatRows: HTMLElement[] = [
+    C.row({ icon: "message-square-text", label: t("showChat"), trailing: "toggle", toggle: { on: p.showChat, onChange: (on) => save({ showChat: on }, true) } }),
+  ];
   if (p.showChat) {
-    flowRows.push(
+    chatRows.push(
       C.row({ icon: "layout-template", label: t("headerStyle"), trailing: "value", value: p.headerStyle === "classic" ? t("headerClassic") : t("headerCurrent"), onClick: () => go("pick", "headerStyle") }),
       C.field({ label: t("contactName"), value: p.contact.name, maxLength: 40, placeholder: t("contactNamePh"),
         onInput: (v) => { prefs = { ...prefs, contact: { ...prefs.contact, name: v } }; applyPreviewPrefs(); }, onCommit: savePrefs }),
@@ -473,7 +501,7 @@ function settingsScreen(): ScreenView {
       C.row({ icon: "badge-check", label: t("contactVerified"), trailing: "toggle", toggle: { on: !!p.contact.verified, onChange: (on) => contact({ verified: on || undefined }) } }),
     );
   }
-  const flowSec = C.section({ heading: t("groupFlow") }, ...flowRows);
+  const chatSec = C.section({ heading: t("groupConversation") }, ...chatRows);
 
   const sizeLabel = { sm: t("sizeSm"), md: t("sizeMd"), lg: t("sizeLg") }[p.size];
   const figma = C.section({ heading: t("groupFigma") },
@@ -496,7 +524,7 @@ function settingsScreen(): ScreenView {
     C.row({ icon: "palette", label: t("appTheme"), trailing: "value", value: themeLabel, onClick: () => go("pick", "appTheme") }),
     C.row({ icon: "languages", label: t("language"), trailing: "value", value: p.lang === "pt" ? t("langPt") : t("langEn"), onClick: () => go("pick", "lang") }),
   );
-  return { toolbar, body: [flowSec, C.divider(), figma, C.divider(), system] };
+  return { toolbar, body: [flowSec, C.divider(), chatSec, C.divider(), figma, C.divider(), system] };
 }
 
 // The contact photo: a row that opens the file picker, with a thumbnail and a
@@ -926,6 +954,11 @@ function setWaTheme(theme: PreviewTheme): void {
 
 function applyLang(lang: Lang): void {
   setLang(lang);
+  // Authored content follows the language too, not just the chrome. Both swaps
+  // are guarded by "still byte-identical to the sample we loaded", so changing
+  // the language can never discard an edit or an imported flow.
+  localizeInitialFlow(lang);
+  localizeInitialThread(lang);
   applyI18n(document);
   buildRail(); // tooltips
   jsonScopeSig = ""; // the scope picker must rebuild with the new locale
@@ -944,9 +977,16 @@ function localizeInitialFlow(lang: Lang): void {
   collapseAllCards(flow);
 }
 
+/** The same swap for chat mode's sample conversation. */
+function localizeInitialThread(lang: Lang): void {
+  if (JSON.stringify(thread) !== JSON.stringify(SAMPLE_THREAD)) return;
+  thread = clone(sampleThread(lang));
+}
+
 function applyPrefs(p: Prefs): void {
   prefs = { ...prefs, ...p };
   localizeInitialFlow(prefs.lang);
+  localizeInitialThread(prefs.lang);
   applyTheme(prefs.theme);
   applyPreviewPrefs();
   setLang(prefs.lang);

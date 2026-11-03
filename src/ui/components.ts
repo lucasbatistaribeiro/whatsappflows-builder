@@ -149,7 +149,7 @@ export function setToolbarText(toolbarEl: HTMLElement, title: string, meta?: str
 export interface ButtonOptions {
   label?: string;
   icon?: string;
-  style?: "primary" | "secondary" | "soft";
+  style?: "primary" | "secondary" | "soft" | "danger";
   sm?: boolean;
   title?: string;
   disabled?: boolean;
@@ -246,6 +246,14 @@ export interface CardOptions {
   trailing?: "drag" | "chevron" | "badge" | "none";
   badge?: "in" | "out";
   gripTitle?: string;
+  /**
+   * The card opens in place (`cardExpanded` replaces it). Draws the caret that
+   * says so and sets `aria-expanded`, so the affordance matches the chevron-up
+   * the expanded card closes with instead of leaving the collapsed state mute.
+   */
+  expands?: boolean;
+  /** Let the title run to two lines — for cards whose title is the content. */
+  clamp?: boolean;
   onClick?: () => void;
 }
 
@@ -259,7 +267,7 @@ export function card(o: CardOptions): HTMLElement {
   // A card with a drag handle can't be a <button> (no interactive content inside
   // one), so it is a div that behaves like a button; the grip keeps its own events.
   const hasGrip = trailing === "drag" || (trailing === "badge" && !!o.badge);
-  const c = el(o.onClick && !hasGrip ? "button" : "div", `ui-card${o.plain ? " plain" : ""}${o.selected ? " selected" : ""}`);
+  const c = el(o.onClick && !hasGrip ? "button" : "div", `ui-card${o.plain ? " plain" : ""}${o.selected ? " selected" : ""}${o.clamp ? " clamp" : ""}`);
   if (o.onClick) {
     if (hasGrip) {
       c.classList.add("clickable"); c.setAttribute("role", "button"); c.tabIndex = 0;
@@ -274,6 +282,7 @@ export function card(o: CardOptions): HTMLElement {
   if (o.subtitle !== undefined) text.append(el("div", "ui-card-sub", o.subtitle));
   c.append(tile(o.icon), text);
   if (trailing === "badge" && o.badge) c.append(dirBadge(o.badge));
+  if (o.expands) { c.append(ic("chevron-down", "md", "ui-card-caret")); c.setAttribute("aria-expanded", "false"); }
   if (hasGrip) c.append(grip(o.gripTitle));
   else if (trailing === "chevron") c.append(ic("chevron-right"));
   return c;
@@ -289,14 +298,15 @@ export function setCardText(cardEl: HTMLElement, title: string, subtitle?: strin
  * block and an actions row inside the same border. The header toggles via
  * `onCollapse`; the caller fills `body`.
  */
-export function cardExpanded(o: CardOptions & { body: HTMLElement; actions?: HTMLElement[]; onCollapse: () => void }): HTMLElement {
+export function cardExpanded(o: CardOptions & { body: HTMLElement; actions?: HTMLElement[]; onCollapse: () => void; collapseTitle?: string }): HTMLElement {
   const c = el("div", "ui-card open selected");
+  c.setAttribute("aria-expanded", "true");
   const head = el("div", "ui-card-head");
   const text = el("div", "ui-card-text", el("div", "ui-card-title", o.title));
   if (o.subtitle !== undefined) text.append(el("div", "ui-card-sub", o.subtitle));
-  const collapse = el("button", "ui-ic", iconEl("chevron-up", 24));
+  const collapse = el("button", "ui-ic ui-card-caret", iconEl("chevron-up", 24));
   (collapse as HTMLButtonElement).type = "button";
-  collapse.style.cssText = "border:0;background:none;padding:0;cursor:pointer";
+  if (o.collapseTitle) { collapse.title = o.collapseTitle; collapse.setAttribute("aria-label", o.collapseTitle); }
   collapse.addEventListener("click", o.onCollapse);
   head.append(tile(o.icon), text);
   if (o.trailing === "badge" && o.badge) head.append(dirBadge(o.badge));

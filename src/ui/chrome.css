@@ -107,6 +107,14 @@ button.ui-card:hover, .ui-card.clickable:hover { background: var(--ui-surface-su
 .ui-card-title { font-size: var(--ui-text-body); font-weight: 500; color: var(--ui-text); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ui-card.plain .ui-card-title { font-weight: 400; color: var(--ui-text-secondary); }
 .ui-card-sub { font-size: var(--ui-text-sub); color: var(--ui-text-tertiary); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Where the title IS the content — a chat message — one ellipsed line hides
+   about half of it, so those cards get two. */
+.ui-card.clamp .ui-card-title { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* The caret that says a card opens in place; the expanded card closes with the
+   same element as a button. */
+.ui-card-caret { flex: none; color: var(--ui-icon-muted); }
+button.ui-card-caret { border: 0; background: none; padding: 0; cursor: pointer; }
+.ui-card.clickable:hover > .ui-card-caret, button.ui-card-caret:hover { color: var(--ui-text-secondary); }
 /* Dragging (drag.ts): spotlight the moving card, fade the rest. */
 .ui-list { display: flex; flex-direction: column; gap: var(--ui-space-12); position: relative; }
 .ui-list.dragging .ui-card:not(.dragging) { opacity: .4; }
@@ -137,6 +145,11 @@ button.ui-card:hover, .ui-card.clickable:hover { background: var(--ui-surface-su
 .ui-btn.secondary:hover { background: var(--ui-surface-sunken); }
 .ui-btn.soft { background: var(--ui-accent-soft); color: var(--ui-accent-text); }
 .ui-btn.soft:hover { filter: brightness(.97); }
+/* Destructive: reads red at rest so it never looks like its neighbours, and
+   goes solid once armed (the first click) to say the next one commits. */
+.ui-btn.danger { background: var(--ui-surface); border-color: var(--ui-border); color: var(--ui-danger); }
+.ui-btn.danger:hover { background: var(--ui-danger-soft); border-color: var(--ui-danger); }
+.ui-btn.danger.armed { background: var(--ui-danger); border-color: var(--ui-danger); color: var(--ui-on-accent); }
 .ui-btn .ui-ic { color: inherit; }
 .ui-btn.sm { height: var(--ui-size-control-sm); padding: 0 var(--ui-space-12); font-size: var(--ui-text-sub); }
 .ui-btn.icon { width: var(--ui-size-control); padding: 0; }
@@ -156,7 +169,14 @@ button.ui-card:hover, .ui-card.clickable:hover { background: var(--ui-surface-su
   padding: var(--ui-space-2) calc(5px * var(--ui-scale)); line-height: 1.15; flex: none; }
 
 /* ---- Field (label 18 + input h51, r md, padding 0/14) -------------------- */
-.ui-field { display: flex; flex-direction: column; gap: var(--ui-space-8); }
+/* A field sits in the same content box as a row's label, not at the section
+   gutter. Without this a settings list alternates two left edges down the
+   page — row labels start after the leading icon, field labels at the gutter,
+   ~40px apart — and there is no single edge for the eye to follow. Cards keep
+   the full width: they are objects in a list, not settings in a column. */
+.ui-field { display: flex; flex-direction: column; gap: var(--ui-space-8);
+  padding-left: var(--ui-row-indent); padding-right: calc(14px * var(--ui-scale)); }
+.ui-card .ui-field, .ui-field .ui-field { padding-left: 0; padding-right: 0; }
 .ui-field-label { display: flex; gap: var(--ui-space-4); font-size: var(--ui-text-sub); color: var(--ui-text-tertiary); line-height: 1.2; }
 .ui-field-label .req { color: var(--ui-danger); }
 .ui-input { display: flex; align-items: center; gap: var(--ui-space-10); height: calc(51px * var(--ui-scale)); padding: 0 calc(14px * var(--ui-scale));
