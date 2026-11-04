@@ -186,19 +186,43 @@ Rail ▸ Settings  09 Settings (Flow · Conversation · Figma · System)
 Both rails       10 Picker — one list, reached from a value row
 ```
 
-### The section is drawn in Dark
+### One slide per screen
 
-The concept section carries an explicit **Dark** mode for the `Chrome`
-collection, set on the section node itself, so the 17 screens document the
-theme most people have Figma in. Flipping the whole thing back is one property
-on that node — nothing is duplicated and there is no light copy to keep in
-step.
+The screens no longer sit in a grid inside one section. Each is its own
+section on the `New` page, laid out as a slide — the pattern set on `Home` and
+followed by the other sixteen:
 
-Getting there needed the section to be honest about its colours first: 212
-paints outside the components were still literal hex — the screen frames'
-white background and grey border, the caption text, the navigation map's
-chips, the code editor, the pills. They are bound now, so the mode actually
-reaches them. Three were stale rather than loose: two `#00806A`, the drift
+| | |
+|---|---|
+| slide | section, 1756×1588, `#0B0B0B` |
+| title | 48/SemiBold white at 77, 100 |
+| description | 20/Regular `#9F9F9F`, 578 wide, at 77, 180 |
+| stage | nested section, 778×1388, `#1B1B1B`, at 878, 100 |
+| screen | 578×1224 at 100, 109 inside the stage |
+
+They are arranged four across from (3633, −874), stepping 1876 right and 1708
+down, in the order `Home · Screen editor · Component library · Live preview ·
+Flow JSON · Chat compose · Chat add message · Chat preview · Settings ·
+Picker`, then the seven states.
+
+Each screen is the original node, moved — there is no copy to keep in step
+with the components. The old section keeps the header and the navigation map
+and is now the index the slides hang off.
+
+### Dark
+
+
+
+The index section carries an explicit **Dark** mode for the `Chrome`
+collection, set on the section node itself. The slides render their screens
+light, which is what `Home` established and the pairing most people see — but
+each slide can be flipped on its own, because the screens are now bound rather
+than painted in literal hex.
+
+That binding is the part that matters and it came first: 212 paints outside
+the components were still literal hex — the screen frames' white background
+and grey border, the navigation map's chips, the code editor, the pills. Until
+they were bound, no mode reached them, on any node. Three were stale rather than loose: two `#00806A`, the drift
 twin of the accent, and one leftover `#929494` from before `color/outline`
 moved for contrast.
 
