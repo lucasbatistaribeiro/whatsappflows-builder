@@ -9,32 +9,39 @@ Status: **idea** (no design yet) · **ready** (approach settled) · **blocked**.
 
 ---
 
-## The token names in the repo still read the pre-M3 Figma variables
+## The code still names the pre-M3 tokens; the Figma file does not
 
-**Status:** ready · raised 2026-11-03
+**Status:** ready · raised 2026-11-03 · prior art in the closed PR #81
 
-The Chrome collection in the Figma file was renamed to Material 3 names
-(`color/surface`, `color/on-surface-variant`, `color/outline`, `color/primary`,
-`color/inverse-surface`…), and each variable's description records what it used
-to be. `src/ui/tokens.css` and the mapping table in `knowledge/NEW_UI.md` still
-name the old ones (`surface/default`, `text/secondary`, `text/tertiary`,
-`accent/default`, `tile/bg`…), so the promise that "a value here is traceable
-to the file" no longer holds by name — only by value.
+**The Figma half already shipped.** The *Chrome* collection carries Material 3
+role names (`color/surface`, `color/on-surface-variant`, `color/outline`,
+`color/primary`, `color/inverse-surface`…), each variable's description records
+what it used to be, and a *Typography* collection of 43 variables sits behind
+the 13 `Chrome/*` text styles. Only the code was left behind:
+`src/ui/tokens.css` still says `--ui-text-tertiary`, `--ui-accent`, `--ui-tile-bg`,
+and `knowledge/NEW_UI.md`'s table lists the old names, so "a value here is
+traceable to the file" holds by value and not by name. The type side is not
+mapped at all.
 
-The UI-review pass touched the two lines it had to (`--ui-text-tertiary` and
-`--ui-icon-muted`, now both `color/outline`) and left the rest, because
-renaming the whole set is a mechanical sweep that would bury a behaviour change
-in a diff full of comment edits.
+**PR #81 did this and was closed, not merged.** It renamed both halves —
+`--md-sys-color-*` and `--md-sys-typescale-<role>-{size,weight,tracking}`, the
+Figma path with `/` → `-` — and carried a `knowledge/MATERIAL_TOKENS.md` with
+the full old → new table and the reason for each role. It went stale: eight
+commits behind, twenty conflict blocks in exactly the files that moved most,
+and three of its changes had already landed by other routes. Its diff is still
+on GitHub and the naming rule in it is worth reusing; **its values are not** —
+it carries `outline` at `#929494`, which is the pre-WCAG value, and resurrecting
+it wholesale would undo the contrast fix.
 
-What it needs: rename the CSS custom properties to the M3 names (or, if the
-`--ui-*` names are worth keeping as the CSS vocabulary, state in `tokens.css`
-that the comment names the *Figma* variable and fix every comment), redo the
-table in `NEW_UI.md`, and check `chrome.css` for any stale name in a comment.
-Worth doing in one commit with no behaviour change, so the diff is reviewable.
+So: redo the rename on top of current `main` rather than reviving the branch.
+Rename the custom properties, redo the `NEW_UI.md` table, check `chrome.css`
+for stale names in comments, and bring back the survey document. One commit,
+no behaviour change, so the diff stays reviewable.
 
 One real merge to decide while in there: Figma has a single `color/outline`
 where the CSS has `--ui-text-tertiary` and `--ui-icon-muted`. They now carry
-the same value, so either the CSS drops one or Figma gains a second variable.
+the same value (`#6F7272` / `#7E8A85`), so either the CSS drops one or Figma
+gains a second variable.
 
 ---
 
