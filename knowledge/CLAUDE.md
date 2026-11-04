@@ -141,7 +141,8 @@ knowledge/     docs to read: this file, BUGFIXES.md, META_SYNC.md, BACKLOG.md,
                CHAT_UI.md, CHAT_PATTERNS.md, NEW_UI.md (the rail + panel chrome)
 .claude/agents/ runnable subagent definitions — not docs (see plugin-ui-tester)
 .claude/skills/ invocable procedures: release (cut a tagged release + verify the
-               published zip), meta-sync (reconcile with Meta's spec)
+               published zip), meta-sync (reconcile with Meta's spec),
+               screen-slides (document a screen in the Figma file)
 CLAUDE.md      root pointer here (agent tooling looks for it there); AGENTS.md too
 ```
 
