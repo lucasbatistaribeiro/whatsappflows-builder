@@ -200,16 +200,22 @@ followed by the other sixteen:
 | stage | nested section, 778×1388, `#1B1B1B`, at 878, 100 |
 | screen | 578×1224 at 100, 109 inside the stage |
 
-Eleven slides, not seventeen: **`Home` holds the flow home and its six
-states on one wide stage**, left to right in the order the left column lists
-them — normal, generating, generated, error, warning, linked, import offer.
-Seven variants of one route read as a strip; seven slides read as seven
-routes, which they are not. Its stage is 4846 wide against the others' 778,
-and the slide follows.
+Nine slides, not seventeen — a slide is a **destination**, not a frame:
 
-That is why the left column of `Home` is not just a title and a paragraph: it
-carries the roll-call of the states, each name in white against the grey, in
-stage order, so a reader can map text to screen without counting.
+| slide | stage | holds |
+|---|---|---|
+| `Home` | 4846 | the flow home and its six states |
+| `Chat` | 2134 | compose, add message, preview |
+| the other seven | 778 | one screen each |
+
+Seven variants of one route read as a strip; as seven slides they read as
+seven routes, which they are not. The same for Chat: one rail destination,
+three screens, one slide.
+
+A grouped slide's left column therefore does more than title and paragraph —
+it carries the **roll-call**, each name in white against the grey, in stage
+order, so a reader maps text to screen without counting. Both grouped slides
+open it with "Da esquerda para a direita".
 
 Each screen is the original node, moved — there is no copy to keep in step
 with the components. The old section keeps the header and the navigation map
