@@ -186,6 +186,72 @@ Rail ▸ Settings  09 Settings (Flow · Conversation · Figma · System)
 Both rails       10 Picker — one list, reached from a value row
 ```
 
+### One slide per screen
+
+The screens no longer sit in a grid inside one section. Each is its own
+section on the `New` page, laid out as a slide — the pattern set on `Home` and
+followed by the other sixteen:
+
+| | |
+|---|---|
+| slide | section, 1756×1588, `#0B0B0B` |
+| title | 48/SemiBold white at 77, 100 |
+| description | 20/Regular `#9F9F9F`, 578 wide, at 77, 180 |
+| stage | nested section, 778×1388, `#1B1B1B`, at 878, 100 |
+| screen | 578×1224 at 100, 109 inside the stage |
+
+Seven slides, not seventeen — a slide is a **place in the product**, not a
+frame:
+
+| slide | stage | holds |
+|---|---|---|
+| `Home` | 4846 | 01 and its six states: generating, generated, error, warning, linked, import offer |
+| `Screen editor` | 2134 | 02, 17 (the same screen with nothing in it), 03 (what "Add component" opens) |
+| `Chat` | 2134 | 06, 07, 08 |
+| `Live preview` · `Flow JSON` · `Settings` · `Picker` | 778 | one screen each |
+
+Seven variants of one route read as a strip; as seven slides they read as
+seven routes, which they are not. Chat is one rail destination with three
+screens. The screen editor is a screen, the same screen empty, and the library
+it opens — put side by side, the empty state is a comparison rather than a
+frame you have to remember.
+
+A grouped slide's left column therefore does more than title and paragraph —
+it carries the **roll-call**, each name in white against the grey, in stage
+order, so a reader maps text to screen without counting. Both grouped slides
+open it with "Da esquerda para a direita".
+
+Each screen is the original node, moved — there is no copy to keep in step
+with the components. The old section keeps the header and the navigation map
+and is now the index the slides hang off.
+
+### Dark
+
+
+
+The index section carries an explicit **Dark** mode for the `Chrome`
+collection, set on the section node itself. The slides render their screens
+light, which is what `Home` established and the pairing most people see — but
+each slide can be flipped on its own, because the screens are now bound rather
+than painted in literal hex.
+
+That binding is the part that matters and it came first: 212 paints outside
+the components were still literal hex — the screen frames' white background
+and grey border, the navigation map's chips, the code editor, the pills. Until
+they were bound, no mode reached them, on any node. Three were stale rather than loose: two `#00806A`, the drift
+twin of the accent, and one leftover `#929494` from before `color/outline`
+moved for contrast.
+
+The section's own canvas is bound to `color/surface-container`, which is
+`#F2F2F1` in light and `#0E1513` in dark — a shade darker than the panel, so
+the screens sit slightly raised on it either way.
+
+**The WhatsApp mockups in 04 and 08 stay light on purpose.** The plugin theme
+and the preview theme are separate preferences (`theme` and `previewTheme`),
+and a dark builder around a light WhatsApp is the pairing most people will
+actually see. Their colours come from the `WhatsApp` collection, which the
+section's mode does not touch.
+
 ### The states, 11–17
 
 Ten routes is not ten screens' worth of design: most of what the chrome does
