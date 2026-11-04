@@ -200,17 +200,21 @@ followed by the other sixteen:
 | stage | nested section, 778×1388, `#1B1B1B`, at 878, 100 |
 | screen | 578×1224 at 100, 109 inside the stage |
 
-Nine slides, not seventeen — a slide is a **destination**, not a frame:
+Seven slides, not seventeen — a slide is a **place in the product**, not a
+frame:
 
 | slide | stage | holds |
 |---|---|---|
-| `Home` | 4846 | the flow home and its six states |
-| `Chat` | 2134 | compose, add message, preview |
-| the other seven | 778 | one screen each |
+| `Home` | 4846 | 01 and its six states: generating, generated, error, warning, linked, import offer |
+| `Screen editor` | 2134 | 02, 17 (the same screen with nothing in it), 03 (what "Add component" opens) |
+| `Chat` | 2134 | 06, 07, 08 |
+| `Live preview` · `Flow JSON` · `Settings` · `Picker` | 778 | one screen each |
 
 Seven variants of one route read as a strip; as seven slides they read as
-seven routes, which they are not. The same for Chat: one rail destination,
-three screens, one slide.
+seven routes, which they are not. Chat is one rail destination with three
+screens. The screen editor is a screen, the same screen empty, and the library
+it opens — put side by side, the empty state is a comparison rather than a
+frame you have to remember.
 
 A grouped slide's left column therefore does more than title and paragraph —
 it carries the **roll-call**, each name in white against the grey, in stage
