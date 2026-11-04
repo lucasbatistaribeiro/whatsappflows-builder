@@ -186,6 +186,32 @@ Rail ▸ Settings  09 Settings (Flow · Conversation · Figma · System)
 Both rails       10 Picker — one list, reached from a value row
 ```
 
+### The section is drawn in Dark
+
+The concept section carries an explicit **Dark** mode for the `Chrome`
+collection, set on the section node itself, so the 17 screens document the
+theme most people have Figma in. Flipping the whole thing back is one property
+on that node — nothing is duplicated and there is no light copy to keep in
+step.
+
+Getting there needed the section to be honest about its colours first: 212
+paints outside the components were still literal hex — the screen frames'
+white background and grey border, the caption text, the navigation map's
+chips, the code editor, the pills. They are bound now, so the mode actually
+reaches them. Three were stale rather than loose: two `#00806A`, the drift
+twin of the accent, and one leftover `#929494` from before `color/outline`
+moved for contrast.
+
+The section's own canvas is bound to `color/surface-container`, which is
+`#F2F2F1` in light and `#0E1513` in dark — a shade darker than the panel, so
+the screens sit slightly raised on it either way.
+
+**The WhatsApp mockups in 04 and 08 stay light on purpose.** The plugin theme
+and the preview theme are separate preferences (`theme` and `previewTheme`),
+and a dark builder around a light WhatsApp is the pairing most people will
+actually see. Their colours come from the `WhatsApp` collection, which the
+section's mode does not touch.
+
 ### The states, 11–17
 
 Ten routes is not ten screens' worth of design: most of what the chrome does
